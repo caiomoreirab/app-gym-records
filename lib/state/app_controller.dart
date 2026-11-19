@@ -44,6 +44,11 @@ class AppController extends ChangeNotifier {
   Future<void> _writeQueue = Future<void>.value();
   bool analyticsConsent = false;
   String? persistenceError;
+  bool _failedToReadStorage = false;
+
+  /// A failed read is not a blank database. Never overwrite its contents
+  /// accidentally with an empty state after a startup error.
+  bool get storageRecoveryRequired => _failedToReadStorage;
   bool _onboardingCompleted = false;
 
   String displayName = '';
@@ -128,10 +133,11 @@ class AppController extends ChangeNotifier {
         if (snapshot != null) {
           WorkoutSnapshotCodec.decode(snapshot).applyTo(_machines, _cardioActivities);
         }
+        _failedToReadStorage = false;
         persistenceError = null;
       } catch (error) {
-        // Do not replace a damaged database: the user can still export a
-        // backup for support, and a read error is visible in Settings.
+        // A broken database must not be overwritten with an empty snapshot.
+        _failedToReadStorage = true;
         persistenceError = 'Não foi possível ler os dados locais: $error';
       }
     }
@@ -145,7 +151,7 @@ class AppController extends ChangeNotifier {
 
   void _scheduleSave() {
     final store = _store;
-    if (store == null || persistenceError != null) return;
+    if (store == null || _failedToReadStorage) return;
     final snapshot = WorkoutSnapshotCodec.encode(
       machines: _machines,
       cardioActivities: _cardioActivities,
@@ -162,6 +168,15 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> flushPendingWrites() => _writeQueue;
+
+  /// Allows retry after a transient write failure (low disk space, I/O
+  /// interruption). It deliberately refuses to overwrite an unreadable DB.
+  Future<bool> retrySave() async {
+    if (_failedToReadStorage) return false;
+    _scheduleSave();
+    await flushPendingWrites();
+    return persistenceError == null;
+  }
 
   String exportBackup() => const JsonEncoder.withIndent('  ').convert(
         WorkoutSnapshotCodec.encode(
@@ -180,6 +195,7 @@ class AppController extends ChangeNotifier {
     final store = _store;
     if (store != null) await store.save(decoded);
     restored.applyTo(_machines, _cardioActivities);
+    _failedToReadStorage = false;
     persistenceError = null;
     notifyListeners();
   }
