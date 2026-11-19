@@ -1,0 +1,84 @@
+name: GymRecords - Prévia Web
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'lib/**'
+      - 'assets/**'
+      - 'web/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - '.github/workflows/web-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: gymrecords-web-preview
+  cancel-in-progress: true
+
+jobs:
+  build-web:
+    name: Compilar Flutter Web
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.50.0'
+          cache: true
+
+      # A primeira versão do aplicativo é Android-only.
+      # Geramos o scaffold Web no runner, sem alterar a pasta Android.
+      - name: Adicionar suporte à plataforma Web
+        run: |
+          if [ ! -f web/index.html ]; then
+            flutter create --platforms=web --project-name=gymrecords --no-pub .
+          fi
+
+      - name: Instalar dependências
+        run: flutter pub get
+
+      - name: Compilar prévia para GitHub Pages
+        run: flutter build web --release --base-href "/app-gym-records/" --web-content-hash
+
+      - name: Preparar distribuição estática
+        run: |
+          touch build/web/.nojekyll
+          cp build/web/index.html build/web/404.html
+          test -s build/web/index.html
+
+      - name: Publicar pacote Web para implantação
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  deploy-web:
+    name: Disponibilizar prévia online
+    needs: build-web
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Implantar site
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Mostrar link da prévia
+        run: |
+          echo '### GymRecords Web disponível' >> "$GITHUB_STEP_SUMMARY"
+          echo '${{ steps.deployment.outputs.page_url }}' >> "$GITHUB_STEP_SUMMARY"
