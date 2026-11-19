@@ -132,6 +132,10 @@ class AppController extends ChangeNotifier {
         persistenceError = 'Não foi possível ler os dados locais: $error';
       }
     }
+    final sink = _analyticsSink;
+    if (sink is ConsentAwareUsageEventSink) {
+      await sink.setEnabled(analyticsConsent);
+    }
     notifyListeners();
     trackUsage('app_opened');
   }
@@ -180,6 +184,10 @@ class AppController extends ChangeNotifier {
   void setAnalyticsConsent(bool value) {
     analyticsConsent = value;
     _saveBool(_analyticsConsentKey, value);
+    final sink = _analyticsSink;
+    if (sink is ConsentAwareUsageEventSink) {
+      unawaited(sink.setEnabled(value).catchError((Object _) {}));
+    }
     notifyListeners();
   }
 
