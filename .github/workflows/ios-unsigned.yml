@@ -1,0 +1,125 @@
+name: GymRecords - IPA iOS sem assinatura (Sideloadly)
+
+# Um runner macOS compila o app nativo; o .ipa gerado NAO e instalavel
+# diretamente. Sideloadly precisa assina-lo com a Conta Apple do usuario.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/ios-unsigned.yml'
+      - 'lib/**'
+      - 'assets/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gymrecords-ios-unsigned-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ios-unsigned:
+    name: Compilar IPA para assinatura no Sideloadly
+    # Firebase Apple SDK 13 requer Xcode 26.2+; macOS 26 traz o toolchain correto.
+    runs-on: macos-26
+    timeout-minutes: 70
+    steps:
+      - name: Baixar codigo
+        uses: actions/checkout@v4
+
+      - name: Verificar ambiente Apple
+        run: |
+          sw_vers
+          xcodebuild -version
+          xcode-select -p
+          pod --version
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.50.0'
+          cache: true
+
+      - name: Gerar projeto iOS nativo
+        run: |
+          flutter create --platforms=ios --project-name=gymrecords --org=com.cmvis --no-pub .
+          test -f ios/Runner.xcodeproj/project.pbxproj
+          test -f ios/Runner/Info.plist
+
+      - name: Definir identificacao e iOS minimo
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          project = Path('ios/Runner.xcodeproj/project.pbxproj')
+          contents = project.read_text()
+          contents = re.sub(r'IPHONEOS_DEPLOYMENT_TARGET = [0-9.]+;', 'IPHONEOS_DEPLOYMENT_TARGET = 15.0;', contents)
+          if 'IPHONEOS_DEPLOYMENT_TARGET = 15.0;' not in contents:
+              raise SystemExit('Could not set iOS deployment target.')
+          project.write_text(contents)
+          podfile = Path('ios/Podfile')
+          if podfile.exists():
+              raw = podfile.read_text()
+              raw = re.sub(r"(?m)^#?\s*platform :ios, '[0-9.]+'", "platform :ios, '15.0'", raw)
+              if "platform :ios, '15.0'" not in raw:
+                  raw = "platform :ios, '15.0'\n" + raw
+              podfile.write_text(raw)
+          plist = Path('ios/Runner/Info.plist')
+          raw = plist.read_text()
+          raw = raw.replace('<string>gymrecords</string>', '<string>GymRecords</string>')
+          raw = raw.replace('<string>Runner</string>', '<string>GymRecords</string>')
+          plist.write_text(raw)
+          print('Bundle ID esperado: com.cmvis.gymrecords')
+          PY
+
+      - name: Instalar dependencias Flutter
+        run: flutter pub get
+
+      - name: Resolver dependencias CocoaPods quando aplicavel
+        run: |
+          if [ -f ios/Podfile ]; then
+            (cd ios && pod install --repo-update)
+          else
+            echo "Projeto sem Podfile; Flutter gerenciara dependencias nativas no build."
+          fi
+
+      - name: Compilar Runner.app sem assinatura
+        run: flutter build ios --release --no-codesign
+
+      - name: Verificar app compilado
+        run: |
+          test -d build/ios/iphoneos/Runner.app
+          /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" \
+            build/ios/iphoneos/Runner.app/Info.plist
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' \
+            build/ios/iphoneos/Runner.app/Info.plist)" = "com.cmvis.gymrecords"
+          test -s build/ios/iphoneos/Runner.app/Runner
+
+      - name: Empacotar IPA nao assinado
+        run: |
+          mkdir -p build/ios/sideloadly/Payload
+          ditto build/ios/iphoneos/Runner.app build/ios/sideloadly/Payload/Runner.app
+          cd build/ios/sideloadly
+          ditto -c -k --sequesterRsrc --keepParent Payload GymRecords-unsigned.ipa
+          unzip -t GymRecords-unsigned.ipa | tail -n 2
+          test -s GymRecords-unsigned.ipa
+
+      - name: Disponibilizar IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: GymRecords-iOS-IPA-unsigned-${{ github.run_number }}
+          path: build/ios/sideloadly/GymRecords-unsigned.ipa
+          retention-days: 14
+          if-no-files-found: error
+          compression-level: 0
+
+      - name: Instrucoes de teste no iPhone
+        run: |
+          echo '### GymRecords para iPhone (IPA sem assinatura)' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Baixe o artefato GymRecords-iOS-IPA-unsigned na secao Artifacts, extraia o ZIP e selecione GymRecords-unsigned.ipa no Sideloadly para Windows.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Conecte seu iPhone por USB, use sua propria Conta Apple no Sideloadly e habilite Modo de Desenvolvedor se solicitado.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Importante: um IPA sem assinatura nao instala diretamente no iPhone. Em uma Conta Apple gratuita, a assinatura costuma durar 7 dias.' >> "$GITHUB_STEP_SUMMARY"
