@@ -15,6 +15,7 @@ class WorkoutSnapshotCodec {
   static Map<String, dynamic> encode({
     required List<Machine> machines,
     required List<CardioActivity> cardioActivities,
+    Map<String, List<CardioRecord>> preservedCardio = const {},
   }) =>
       {
         'schemaVersion': schemaVersion,
@@ -39,6 +40,22 @@ class WorkoutSnapshotCodec {
             },
         ],
         'cardio': {
+          // Keep historical activity IDs that are no longer in the current
+          // catalog. A future version may restore their UI without losing data.
+          for (final entry in preservedCardio.entries)
+            entry.key: [
+              for (final r in entry.value)
+                {
+                  'date': r.date.toUtc().toIso8601String(),
+                  'seconds': r.duration.inSeconds,
+                  'distanceKm': r.distanceKm,
+                  'heartRateBpm': r.heartRateBpm,
+                  'calories': r.calories,
+                  'inclinePercent': r.inclinePercent,
+                  'resistanceLevel': r.resistanceLevel,
+                  'notes': r.notes,
+                },
+            ],
           for (final activity in cardioActivities)
             activity.id: [
               for (final r in activity.records)
@@ -91,7 +108,10 @@ class WorkoutSnapshotCodec {
       totalRecords += entries.length;
       if (totalRecords > 100000) throw const FormatException('Histórico muito grande.');
       Machine? machine = catalog[id];
-      if (custom) {
+      if (custom || machine == null) {
+        // Preserve historical exercises even if a later version removes or
+        // renames an ID in its built-in catalog. They remain visible as custom
+        // entries with their original IDs and full workout history.
         final group = _byName(MuscleGroup.values, m['group']);
         final equipment = _byName(EquipmentType.values, m['equipment']);
         machine = Machine(
@@ -102,9 +122,6 @@ class WorkoutSnapshotCodec {
           imageAsset: 'assets/illustrations/generic_machine.webp',
           isCustom: true,
         );
-      } else if (machine == null) {
-        // Unknown exercise from a newer catalog: do not silently discard it.
-        throw FormatException('Exercício não encontrado: $id');
       }
       machine.name = name.trim();
       machine.nameEn = custom ? name.trim() : machine.nameEn;
@@ -114,9 +131,9 @@ class WorkoutSnapshotCodec {
         final r = Map<String, dynamic>.from(value);
         return WorkoutRecord(
           date: _date(r['date']),
-          weight: _number(r['weight']) ?? 0,
-          repetitions: _integer(r['repetitions']),
-          durationSeconds: _integer(r['durationSeconds']),
+          weight: _nonNegativeNumber(r['weight']) ?? 0,
+          repetitions: _nonNegativeInteger(r['repetitions']),
+          durationSeconds: _nonNegativeInteger(r['durationSeconds']),
         );
       }));
       newMachines.add(machine);
@@ -124,7 +141,10 @@ class WorkoutSnapshotCodec {
 
     final newCardio = <String, List<CardioRecord>>{};
     for (final entry in savedCardio.entries) {
-      if (entry.key is! String || entry.value is! List) {
+      if (entry.key is! String ||
+          (entry.key as String).isEmpty ||
+          (entry.key as String).length > 120 ||
+          entry.value is! List) {
         throw const FormatException('Atividade de cardio inválida.');
       }
       final records = <CardioRecord>[];
@@ -134,17 +154,21 @@ class WorkoutSnapshotCodec {
       for (final raw in list) {
         if (raw is! Map) throw const FormatException('Registro de cardio inválido.');
         final r = Map<String, dynamic>.from(raw);
-        final seconds = _integer(r['seconds']);
-        if (seconds == null || seconds < 0) throw const FormatException('Duração inválida.');
+        final seconds = _nonNegativeInteger(r['seconds']);
+        if (seconds == null) throw const FormatException('Duração inválida.');
+        final notes = r['notes'];
+        if (notes is! String || notes.length > 3000) {
+          throw const FormatException('Anotações de Cardio inválidas.');
+        }
         records.add(CardioRecord(
           date: _date(r['date']),
           duration: Duration(seconds: seconds),
-          distanceKm: _number(r['distanceKm']),
-          heartRateBpm: _integer(r['heartRateBpm']),
-          calories: _integer(r['calories']),
+          distanceKm: _nonNegativeNumber(r['distanceKm']),
+          heartRateBpm: _nonNegativeInteger(r['heartRateBpm']),
+          calories: _nonNegativeInteger(r['calories']),
           inclinePercent: _number(r['inclinePercent']),
-          resistanceLevel: _number(r['resistanceLevel']),
-          notes: r['notes'] is String ? r['notes'] as String : '',
+          resistanceLevel: _nonNegativeNumber(r['resistanceLevel']),
+          notes: notes,
         ));
       }
       newCardio[entry.key as String] = records;
@@ -172,9 +196,19 @@ class WorkoutSnapshotCodec {
     return value.toDouble();
   }
 
-  static int? _integer(Object? value) {
+  static double? _nonNegativeNumber(Object? value) {
+    final parsed = _number(value);
+    if (parsed != null && parsed < 0) {
+      throw const FormatException('Valor negativo inválido.');
+    }
+    return parsed;
+  }
+
+  static int? _nonNegativeInteger(Object? value) {
     if (value == null) return null;
-    if (value is! int) throw const FormatException('Número inteiro inválido.');
+    if (value is! int || value < 0) {
+      throw const FormatException('Número inteiro não negativo inválido.');
+    }
     return value;
   }
 }
@@ -184,7 +218,15 @@ class WorkoutRestoredState {
   final List<Machine> machines;
   final Map<String, List<CardioRecord>> cardio;
 
-  void applyTo(List<Machine> registered, List<CardioActivity> activities) {
+  /// Returns records for activities that no longer exist in this version.
+  /// Callers must preserve these records in subsequent saves and backups.
+  Map<String, List<CardioRecord>> applyTo(
+      List<Machine> registered, List<CardioActivity> activities) {
+    final knownIds = {for (final activity in activities) activity.id};
+    final preserved = <String, List<CardioRecord>>{
+      for (final entry in cardio.entries)
+        if (!knownIds.contains(entry.key)) entry.key: List.of(entry.value),
+    };
     registered
       ..clear()
       ..addAll(machines);
@@ -193,5 +235,6 @@ class WorkoutRestoredState {
         ..clear()
         ..addAll(cardio[activity.id] ?? const <CardioRecord>[]);
     }
+    return preserved;
   }
 }

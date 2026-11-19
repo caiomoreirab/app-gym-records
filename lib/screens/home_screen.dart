@@ -15,6 +15,7 @@ import '../widgets/page_body.dart';
 import 'group_screen.dart';
 import 'machine_screen.dart';
 import 'settings_screen.dart';
+import 'data_privacy_screen.dart';
 import 'cardio_screen.dart';
 import 'pro_overview_screen.dart';
 
@@ -82,6 +83,52 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 22),
+            if (controller.persistenceError != null) ...[
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceNavy,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.orangeAccent),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(children: [
+                      Icon(Icons.warning_amber_rounded, color: Colors.orangeAccent),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Problema no armazenamento local',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ]),
+                    const SizedBox(height: 8),
+                    Text(context.strings.t(
+                      'Não conseguimos garantir que seus registros estejam salvos. '
+                      'Não limpe os dados do aplicativo.',
+                      'Your workout history may not be saved. Do not clear app data.',
+                      'No podemos garantizar que tus registros estén guardados. '
+                      'No borres los datos de la aplicación.',
+                    )),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const DataPrivacyScreen(),
+                        ),
+                      ),
+                      child: Text(context.strings.t(
+                        'Abrir recuperação de dados',
+                        'Open data recovery',
+                        'Abrir recuperación de datos',
+                      )),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+            ],
             Text(
               controller.displayName.isEmpty ? context.strings.user : controller.displayName,
               style: Theme.of(context).textTheme.headlineLarge,

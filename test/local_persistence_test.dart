@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gymrecords/data/mock_data.dart';
 import 'package:gymrecords/models/cardio_record.dart';
@@ -73,4 +75,127 @@ void main() {
     expect(sink.events.single.attributes, isEmpty);
     app.dispose();
   });
+
+  test('backup corrompido com valores negativos não modifica registros existentes', () async {
+    final store = MemoryLocalDataStore();
+    final app = AppController(persistenceEnabled: false, store: store);
+    final machine = app.ensureMachineAdded(
+      buildExerciseCatalog().firstWhere((m) => m.id == 'barbell_bench_press'),
+    );
+    app.addRecord(machine, weight: 70, repetitions: 8);
+    await app.flushPendingWrites();
+    final backup = jsonDecode(app.exportBackup()) as Map<String, dynamic>;
+    final machines = backup['machines'] as List;
+    final entry = machines.firstWhere((m) => m['id'] == 'barbell_bench_press') as Map;
+    final firstRecord = (entry['records'] as List).last as Map;
+    firstRecord['weight'] = -100;
+    await expectLater(app.importBackup(jsonEncode(backup)),
+        throwsA(isA<FormatException>()));
+    expect(app.machineById('barbell_bench_press').records.last.weight, 70);
+
+    final other = AppController(persistenceEnabled: false, store: store);
+    await other.loadPreferences();
+    expect(other.machineById('barbell_bench_press').records.last.weight, 70);
+    app.dispose();
+    other.dispose();
+  });
+
+  test('permite retentar gravação após erro temporário', () async {
+    final store = _FlakyDataStore();
+    final controller = AppController(persistenceEnabled: false, store: store);
+    await controller.loadPreferences();
+    final exercise = controller.ensureMachineAdded(
+      buildExerciseCatalog().firstWhere((m) => m.id == 'barbell_bench_press'),
+    );
+    store.rejectWrites = true;
+    controller.addRecord(exercise, weight: 65, repetitions: 10);
+    await controller.flushPendingWrites();
+    expect(controller.persistenceError, isNotNull);
+    expect(store.writes, 0); // no snapshot was committed while storage was failing.
+    store.rejectWrites = false;
+    expect(await controller.retrySave(), isTrue);
+    expect(controller.persistenceError, isNull);
+    final next = AppController(persistenceEnabled: false, store: store);
+    await next.loadPreferences();
+    expect(next.machineById(exercise.id).records.single.weight, 65);
+    controller.dispose();
+    next.dispose();
+  });
+
+  test('não sobrescreve um banco se a leitura inicial falhar', () async {
+    final store = _FlakyDataStore()..rejectReads = true;
+    final controller = AppController(persistenceEnabled: false, store: store);
+    await controller.loadPreferences();
+    expect(controller.storageRecoveryRequired, isTrue);
+    final exercise = controller.ensureMachineAdded(
+      buildExerciseCatalog().firstWhere((m) => m.id == 'barbell_bench_press'),
+    );
+    controller.addRecord(exercise, weight: 99);
+    await controller.flushPendingWrites();
+    expect(store.writes, 0);
+    expect(await controller.retrySave(), isFalse);
+    expect(store.writes, 0);
+    controller.dispose();
+  });
+
+  test('backup mantém exercícios e atividades descontinuadas', () async {
+    final store = MemoryLocalDataStore();
+    final controller = AppController(persistenceEnabled: false, store: store);
+    final data = jsonDecode(controller.exportBackup()) as Map<String, dynamic>;
+    final oldDate = DateTime.utc(2025, 8, 15).toIso8601String();
+    (data['machines'] as List).add({
+      'id': 'legacy_movement_0001',
+      'name': 'Meu exercício antigo',
+      'custom': false,
+      'note': 'Preservar histórico',
+      'group': 'chest',
+      'equipment': 'barbell',
+      'records': [
+        {'date': oldDate, 'weight': 71.5,
+         'repetitions': 8, 'durationSeconds': null}
+      ],
+    });
+    (data['cardio'] as Map<String, dynamic>)['legacy_cardio_001'] = [
+      {'date': oldDate, 'seconds': 1540, 'distanceKm': 4.2,
+       'heartRateBpm': null, 'calories': null, 'inclinePercent': null,
+       'resistanceLevel': null, 'notes': ''}
+    ];
+    await controller.importBackup(jsonEncode(data));
+    expect(controller.machineById('legacy_movement_0001').isCustom, isTrue);
+    final saved = jsonDecode(controller.exportBackup()) as Map<String, dynamic>;
+    expect((saved['cardio'] as Map).containsKey('legacy_cardio_001'), isTrue);
+
+    final next = AppController(persistenceEnabled: false, store: store);
+    await next.loadPreferences();
+    expect(next.machineById('legacy_movement_0001').records.single.weight, 71.5);
+    final afterRestart = jsonDecode(next.exportBackup()) as Map<String, dynamic>;
+    expect(((afterRestart['cardio'] as Map)['legacy_cardio_001'] as List).length, 1);
+    controller.dispose();
+    next.dispose();
+  });
+}
+
+class _FlakyDataStore implements LocalDataStore {
+  bool rejectReads = false;
+  bool rejectWrites = false;
+  int writes = 0;
+  Map<String, dynamic>? snapshot;
+
+  @override
+  Future<Map<String, dynamic>?> load() async {
+    if (rejectReads) throw StateError('test read failure');
+    return snapshot == null
+        ? null
+        : jsonDecode(jsonEncode(snapshot)) as Map<String, dynamic>;
+  }
+
+  @override
+  Future<void> save(Map<String, dynamic> value) async {
+    if (rejectWrites) throw StateError('test storage full');
+    writes++;
+    snapshot = jsonDecode(jsonEncode(value)) as Map<String, dynamic>;
+  }
+
+  @override
+  Future<void> close() async {}
 }

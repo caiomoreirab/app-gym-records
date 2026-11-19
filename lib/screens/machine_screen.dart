@@ -27,6 +27,7 @@ class MachineScreen extends StatefulWidget {
 
 class _MachineScreenState extends State<MachineScreen> {
   bool _initialized = false;
+  bool _saving = false;
   double _weight = 0;
   int? _repetitions;
   bool _showAdditionalWeight = false;
@@ -75,7 +76,7 @@ class _MachineScreenState extends State<MachineScreen> {
       ),
       bottomNavigationBar: PrimaryBottomBar(
         label: context.strings.saveRecord,
-        onPressed: _canSave(machine) ? () => _saveRecord(machine) : null,
+        onPressed: !_saving && _canSave(machine) ? () => _saveRecord(machine) : null,
       ),
       body: PageBody(
         child: ListView(
@@ -169,6 +170,9 @@ class _MachineScreenState extends State<MachineScreen> {
   }
 
   Future<void> _saveRecord(Machine machine) async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
     final app = AppScope.of(context);
     final previousWeight = machine.recordWeight;
     final previousRepetitions = machine.bestRepetitions;
@@ -181,8 +185,18 @@ class _MachineScreenState extends State<MachineScreen> {
       repetitions: (_repetitions ?? 0) > 0 ? _repetitions : null,
       durationSeconds: durationSeconds > 0 ? durationSeconds : null,
     );
-    HapticFeedback.lightImpact();
+    // Do not announce a successful save or PR until the local database
+    // acknowledges the write. Retain the in-memory record for recovery.
+    await app.flushPendingWrites();
     if (!mounted) return;
+    if (app.persistenceError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('O registro está na memória, mas não foi salvo no aparelho. '
+            'Abra Configurações → Dados e privacidade para tentar novamente.'),
+      ));
+      return;
+    }
+    HapticFeedback.lightImpact();
 
     final isNewWeight = _weight > 0 && _weight > previousWeight;
     final isNewReps = (_repetitions ?? 0) > 0 && _repetitions! > previousRepetitions;
@@ -205,6 +219,9 @@ class _MachineScreenState extends State<MachineScreen> {
       SnackBar(content: Text(context.strings.t('Registro salvo.', 'Record saved.', 'Registro guardado.'))),
     );
     setState(() {});
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   Future<void> _editWeight() async {

@@ -20,6 +20,7 @@ class CardioActivityScreen extends StatefulWidget {
 }
 
 class _CardioActivityScreenState extends State<CardioActivityScreen> {
+  bool _saving = false;
   final _distance = TextEditingController();
   final _minutes = TextEditingController();
   final _seconds = TextEditingController();
@@ -133,7 +134,7 @@ class _CardioActivityScreenState extends State<CardioActivityScreen> {
                   TextField(controller: _notes, maxLines: 2, decoration: InputDecoration(labelText: '${context.strings.notes} (${context.strings.optional})')),
                   const SizedBox(height: 16),
                   FilledButton.icon(
-                    onPressed: _canSave(activity) ? () => _save(app, activity) : null,
+                    onPressed: !_saving && _canSave(activity) ? () => _save(app, activity) : null,
                     icon: const Icon(Icons.check_rounded),
                     label: Text(context.strings.saveRecord),
                   ),
@@ -189,6 +190,9 @@ class _CardioActivityScreenState extends State<CardioActivityScreen> {
   }
 
   Future<void> _save(AppController app, CardioActivity activity) async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
     final duration = Duration(
       minutes: int.tryParse(_minutes.text) ?? 0,
       seconds: int.tryParse(_seconds.text) ?? 0,
@@ -206,7 +210,15 @@ class _CardioActivityScreenState extends State<CardioActivityScreen> {
         notes: _notes.text.trim(),
       ),
     );
+    await app.flushPendingWrites();
     if (!mounted) return;
+    if (app.persistenceError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('O Cardio ficou na memória, mas não foi salvo no aparelho. '
+            'Use Configurações → Dados e privacidade para tentar salvar novamente.'),
+      ));
+      return;
+    }
     setState(() {
       _distance.clear(); _minutes.clear(); _seconds.clear(); _heartRate.clear(); _calories.clear();
       _incline.clear(); _resistance.clear(); _notes.clear();
@@ -221,6 +233,9 @@ class _CardioActivityScreenState extends State<CardioActivityScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.strings.t('Cardio registrado.', 'Cardio logged.', 'Cardio registrado.'))),
       );
+    }
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
   }
 
