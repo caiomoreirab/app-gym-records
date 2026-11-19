@@ -181,8 +181,18 @@ class _MachineScreenState extends State<MachineScreen> {
       repetitions: (_repetitions ?? 0) > 0 ? _repetitions : null,
       durationSeconds: durationSeconds > 0 ? durationSeconds : null,
     );
-    HapticFeedback.lightImpact();
+    // Do not announce a successful save or PR until the local database
+    // acknowledges the write. Retain the in-memory record for recovery.
+    await app.flushPendingWrites();
     if (!mounted) return;
+    if (app.persistenceError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('O registro está na memória, mas não foi salvo no aparelho. '
+            'Abra Configurações → Dados e privacidade para tentar novamente.'),
+      ));
+      return;
+    }
+    HapticFeedback.lightImpact();
 
     final isNewWeight = _weight > 0 && _weight > previousWeight;
     final isNewReps = (_repetitions ?? 0) > 0 && _repetitions! > previousRepetitions;
