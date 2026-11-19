@@ -85,6 +85,9 @@ class PreferencesLocalDataStore implements LocalDataStore {
   final SharedPreferencesAsync _preferences;
 
   @override
+  Future<void> close() async {}
+
+  @override
   Future<Map<String, dynamic>?> load() async {
     final raw = await _preferences.getString(key);
     if (raw == null) return null;
@@ -101,6 +104,9 @@ class PreferencesLocalDataStore implements LocalDataStore {
 
 class MemoryLocalDataStore implements LocalDataStore {
   Map<String, dynamic>? _snapshot;
+
+  @override
+  Future<void> close() async {}
 
   @override
   Future<Map<String, dynamic>?> load() async {
