@@ -98,8 +98,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       Icon(Icons.warning_amber_rounded, color: Colors.orangeAccent),
                       SizedBox(width: 8),
                       Expanded(
-                        child: Text('Problema no armazenamento local',
-                          style: TextStyle(fontWeight: FontWeight.w600)),
+                        child: Text(
+                          'Problema no armazenamento local',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
                     ]),
                     const SizedBox(height: 8),
                     Text(context.strings.t(
