@@ -8,7 +8,7 @@ import 'package:path/path.dart' as p;
 /// Persists the user's private workout history. No network is used.
 ///
 /// Android/iOS: SQLite. Web preview and desktop: local preferences.
-/// desktop preferences. Inject [MemoryLocalDataStore] for deterministic tests.
+/// Inject [MemoryLocalDataStore] for deterministic tests.
 abstract class LocalDataStore {
   Future<Map<String, dynamic>?> load();
   Future<void> save(Map<String, dynamic> snapshot);
