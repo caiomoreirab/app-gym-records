@@ -206,7 +206,15 @@ class _CardioActivityScreenState extends State<CardioActivityScreen> {
         notes: _notes.text.trim(),
       ),
     );
+    await app.flushPendingWrites();
     if (!mounted) return;
+    if (app.persistenceError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('O Cardio ficou na memória, mas não foi salvo no aparelho. '
+            'Use Configurações → Dados e privacidade para tentar salvar novamente.'),
+      ));
+      return;
+    }
     setState(() {
       _distance.clear(); _minutes.clear(); _seconds.clear(); _heartRate.clear(); _calories.clear();
       _incline.clear(); _resistance.clear(); _notes.clear();
