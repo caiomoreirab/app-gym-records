@@ -15,6 +15,7 @@ class WorkoutSnapshotCodec {
   static Map<String, dynamic> encode({
     required List<Machine> machines,
     required List<CardioActivity> cardioActivities,
+    Map<String, List<CardioRecord>> preservedCardio = const {},
   }) =>
       {
         'schemaVersion': schemaVersion,
@@ -39,6 +40,22 @@ class WorkoutSnapshotCodec {
             },
         ],
         'cardio': {
+          // Keep historical activity IDs that are no longer in the current
+          // catalog. A future version may restore their UI without losing data.
+          for (final entry in preservedCardio.entries)
+            entry.key: [
+              for (final r in entry.value)
+                {
+                  'date': r.date.toUtc().toIso8601String(),
+                  'seconds': r.duration.inSeconds,
+                  'distanceKm': r.distanceKm,
+                  'heartRateBpm': r.heartRateBpm,
+                  'calories': r.calories,
+                  'inclinePercent': r.inclinePercent,
+                  'resistanceLevel': r.resistanceLevel,
+                  'notes': r.notes,
+                },
+            ],
           for (final activity in cardioActivities)
             activity.id: [
               for (final r in activity.records)
@@ -91,7 +108,10 @@ class WorkoutSnapshotCodec {
       totalRecords += entries.length;
       if (totalRecords > 100000) throw const FormatException('Histórico muito grande.');
       Machine? machine = catalog[id];
-      if (custom) {
+      if (custom || machine == null) {
+        // Preserve historical exercises even if a later version removes or
+        // renames an ID in its built-in catalog. They remain visible as custom
+        // entries with their original IDs and full workout history.
         final group = _byName(MuscleGroup.values, m['group']);
         final equipment = _byName(EquipmentType.values, m['equipment']);
         machine = Machine(
@@ -102,9 +122,6 @@ class WorkoutSnapshotCodec {
           imageAsset: 'assets/illustrations/generic_machine.webp',
           isCustom: true,
         );
-      } else if (machine == null) {
-        // Unknown exercise from a newer catalog: do not silently discard it.
-        throw FormatException('Exercício não encontrado: $id');
       }
       machine.name = name.trim();
       machine.nameEn = custom ? name.trim() : machine.nameEn;
@@ -184,7 +201,15 @@ class WorkoutRestoredState {
   final List<Machine> machines;
   final Map<String, List<CardioRecord>> cardio;
 
-  void applyTo(List<Machine> registered, List<CardioActivity> activities) {
+  /// Returns records for activities that no longer exist in this version.
+  /// Callers must preserve these records in subsequent saves and backups.
+  Map<String, List<CardioRecord>> applyTo(
+      List<Machine> registered, List<CardioActivity> activities) {
+    final knownIds = {for (final activity in activities) activity.id};
+    final preserved = <String, List<CardioRecord>>{
+      for (final entry in cardio.entries)
+        if (!knownIds.contains(entry.key)) entry.key: List.of(entry.value),
+    };
     registered
       ..clear()
       ..addAll(machines);
@@ -193,5 +218,6 @@ class WorkoutRestoredState {
         ..clear()
         ..addAll(cardio[activity.id] ?? const <CardioRecord>[]);
     }
+    return preserved;
   }
 }
