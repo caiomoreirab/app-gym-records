@@ -10,6 +10,7 @@ import '../widgets/page_body.dart';
 import '../widgets/pro_widgets.dart';
 import '../widgets/section_card.dart';
 import 'evolution_screen.dart';
+import 'data_privacy_screen.dart';
 import 'pro_overview_screen.dart';
 import 'pro_export_screen.dart';
 
@@ -72,6 +73,19 @@ class SettingsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             _ProSettingsCard(app: app),
+            const SizedBox(height: 16),
+            SectionCard(
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.storage_rounded, color: AppTheme.electricLime),
+                title: const Text('Dados e privacidade'),
+                subtitle: const Text('Histórico offline, backup e consentimento'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (_) => const DataPrivacyScreen()),
+                ),
+              ),
+            ),
             const SizedBox(height: 16),
             SectionCard(
               child: Column(
