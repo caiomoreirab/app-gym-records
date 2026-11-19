@@ -78,10 +78,13 @@ jobs:
       - name: Instalar dependencias Flutter
         run: flutter pub get
 
-      - name: Resolver dependencias CocoaPods
+      - name: Resolver dependencias CocoaPods quando aplicavel
         run: |
-          cd ios
-          pod install --repo-update
+          if [ -f ios/Podfile ]; then
+            (cd ios && pod install --repo-update)
+          else
+            echo "Projeto sem Podfile; Flutter gerenciara dependencias nativas no build."
+          fi
 
       - name: Compilar Runner.app sem assinatura
         run: flutter build ios --release --no-codesign
