@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'app.dart';
 import 'state/app_controller.dart';
+import 'services/firebase_usage_sink.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,7 +17,7 @@ Future<void> main() async {
     ),
   );
 
-  final controller = AppController();
+  final controller = AppController(analyticsSink: FirebaseUsageSink());
   await controller.loadPreferences();
   runApp(GymRecordsApp(controller: controller));
 }
