@@ -61,6 +61,7 @@ class AppController extends ChangeNotifier {
 
   final List<Machine> _machines;
   final List<CardioActivity> _cardioActivities;
+  final Map<String, List<CardioRecord>> _preservedCardio = {};
 
   bool get onboardingComplete =>
       _onboardingCompleted &&
@@ -131,7 +132,10 @@ class AppController extends ChangeNotifier {
       try {
         final snapshot = await store.load();
         if (snapshot != null) {
-          WorkoutSnapshotCodec.decode(snapshot).applyTo(_machines, _cardioActivities);
+          final restored = WorkoutSnapshotCodec.decode(snapshot);
+          _preservedCardio
+            ..clear()
+            ..addAll(restored.applyTo(_machines, _cardioActivities));
         }
         _failedToReadStorage = false;
         persistenceError = null;
@@ -155,6 +159,7 @@ class AppController extends ChangeNotifier {
     final snapshot = WorkoutSnapshotCodec.encode(
       machines: _machines,
       cardioActivities: _cardioActivities,
+      preservedCardio: _preservedCardio,
     );
     // Serializing the writes prevents a slow older save from overwriting a
     // newer record. Capture the snapshot before queuing it.
@@ -182,6 +187,7 @@ class AppController extends ChangeNotifier {
         WorkoutSnapshotCodec.encode(
           machines: _machines,
           cardioActivities: _cardioActivities,
+          preservedCardio: _preservedCardio,
         ),
       );
 
@@ -194,7 +200,9 @@ class AppController extends ChangeNotifier {
     await flushPendingWrites();
     final store = _store;
     if (store != null) await store.save(decoded);
-    restored.applyTo(_machines, _cardioActivities);
+    _preservedCardio
+      ..clear()
+      ..addAll(restored.applyTo(_machines, _cardioActivities));
     _failedToReadStorage = false;
     persistenceError = null;
     notifyListeners();
