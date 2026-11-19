@@ -131,9 +131,9 @@ class WorkoutSnapshotCodec {
         final r = Map<String, dynamic>.from(value);
         return WorkoutRecord(
           date: _date(r['date']),
-          weight: _number(r['weight']) ?? 0,
-          repetitions: _integer(r['repetitions']),
-          durationSeconds: _integer(r['durationSeconds']),
+          weight: _nonNegativeNumber(r['weight']) ?? 0,
+          repetitions: _nonNegativeInteger(r['repetitions']),
+          durationSeconds: _nonNegativeInteger(r['durationSeconds']),
         );
       }));
       newMachines.add(machine);
@@ -141,7 +141,10 @@ class WorkoutSnapshotCodec {
 
     final newCardio = <String, List<CardioRecord>>{};
     for (final entry in savedCardio.entries) {
-      if (entry.key is! String || entry.value is! List) {
+      if (entry.key is! String ||
+          (entry.key as String).isEmpty ||
+          (entry.key as String).length > 120 ||
+          entry.value is! List) {
         throw const FormatException('Atividade de cardio inválida.');
       }
       final records = <CardioRecord>[];
@@ -151,17 +154,21 @@ class WorkoutSnapshotCodec {
       for (final raw in list) {
         if (raw is! Map) throw const FormatException('Registro de cardio inválido.');
         final r = Map<String, dynamic>.from(raw);
-        final seconds = _integer(r['seconds']);
-        if (seconds == null || seconds < 0) throw const FormatException('Duração inválida.');
+        final seconds = _nonNegativeInteger(r['seconds']);
+        if (seconds == null) throw const FormatException('Duração inválida.');
+        final notes = r['notes'];
+        if (notes is! String || notes.length > 3000) {
+          throw const FormatException('Anotações de Cardio inválidas.');
+        }
         records.add(CardioRecord(
           date: _date(r['date']),
           duration: Duration(seconds: seconds),
-          distanceKm: _number(r['distanceKm']),
-          heartRateBpm: _integer(r['heartRateBpm']),
-          calories: _integer(r['calories']),
+          distanceKm: _nonNegativeNumber(r['distanceKm']),
+          heartRateBpm: _nonNegativeInteger(r['heartRateBpm']),
+          calories: _nonNegativeInteger(r['calories']),
           inclinePercent: _number(r['inclinePercent']),
-          resistanceLevel: _number(r['resistanceLevel']),
-          notes: r['notes'] is String ? r['notes'] as String : '',
+          resistanceLevel: _nonNegativeNumber(r['resistanceLevel']),
+          notes: notes,
         ));
       }
       newCardio[entry.key as String] = records;
@@ -189,9 +196,19 @@ class WorkoutSnapshotCodec {
     return value.toDouble();
   }
 
-  static int? _integer(Object? value) {
+  static double? _nonNegativeNumber(Object? value) {
+    final parsed = _number(value);
+    if (parsed != null && parsed < 0) {
+      throw const FormatException('Valor negativo inválido.');
+    }
+    return parsed;
+  }
+
+  static int? _nonNegativeInteger(Object? value) {
     if (value == null) return null;
-    if (value is! int) throw const FormatException('Número inteiro inválido.');
+    if (value is! int || value < 0) {
+      throw const FormatException('Número inteiro não negativo inválido.');
+    }
     return value;
   }
 }
