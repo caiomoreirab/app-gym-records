@@ -35,6 +35,10 @@ void main() {
       find.byKey(const Key('displayNameField')),
       '  Caio  ',
     );
+    // The TextEditingController listener enables the button on the next frame.
+    await tester.pumpAndSettle();
+    await tester.testTextInput.hide();
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Continuar →'));
     await tester.pumpAndSettle();
 
