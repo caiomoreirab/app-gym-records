@@ -52,7 +52,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('style_feminine')), findsOneWidget);
     await tester.tap(find.byKey(const Key('style_feminine')));
-    await tester.tap(find.text('Continuar →'));
+    // The selection rebuilds the bottom navigation button on the next frame.
+    await tester.pumpAndSettle();
+    final continueButton = find.widgetWithText(FilledButton, 'Continuar →');
+    expect(tester.widget<FilledButton>(continueButton).onPressed, isNotNull);
+    await tester.tap(continueButton);
     await tester.pumpAndSettle();
 
     expect(controller.displayName, 'Caio');
