@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gymrecords/app.dart';
+import 'package:gymrecords/screens/onboarding/illustration_style_screen.dart';
 import 'package:gymrecords/models/user_profile.dart';
 import 'package:gymrecords/state/app_controller.dart';
 
@@ -44,6 +45,11 @@ void main() {
 
     // Verify navigation and persisted name without depending on Text.rich matching.
     expect(controller.displayName, 'Caio');
+    expect(find.byType(IllustrationStyleScreen), findsOneWidget);
+    // The appearance cards live in a lazily built ListView. On compact
+    // test screens the feminine choice may start outside the viewport.
+    await tester.drag(find.byType(ListView).last, const Offset(0, -420));
+    await tester.pumpAndSettle();
     expect(find.byKey(const Key('style_feminine')), findsOneWidget);
     await tester.tap(find.byKey(const Key('style_feminine')));
     await tester.tap(find.text('Continuar →'));
