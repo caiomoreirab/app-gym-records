@@ -84,7 +84,17 @@ jobs:
           GROOVY
 
       - name: Compilar AAB assinado
-        run: flutter build appbundle --release
+        env:
+          FB_API_KEY: ${{ vars.GYM_FIREBASE_API_KEY }}
+          FB_APP_ID: ${{ vars.GYM_FIREBASE_ANDROID_APP_ID }}
+          FB_PROJECT_ID: ${{ vars.GYM_FIREBASE_PROJECT_ID }}
+          FB_SENDER_ID: ${{ vars.GYM_FIREBASE_SENDER_ID }}
+        run: |
+          flutter build appbundle --release \
+            --dart-define="GYM_FIREBASE_API_KEY=$FB_API_KEY" \
+            --dart-define="GYM_FIREBASE_APP_ID=$FB_APP_ID" \
+            --dart-define="GYM_FIREBASE_PROJECT_ID=$FB_PROJECT_ID" \
+            --dart-define="GYM_FIREBASE_SENDER_ID=$FB_SENDER_ID"
 
       - name: Verificar artefato
         run: test -s build/app/outputs/bundle/release/app-release.aab
