@@ -5,6 +5,10 @@ abstract class UsageEventSink {
   Future<void> track(String event, Map<String, String> attributes);
 }
 
+abstract class ConsentAwareUsageEventSink implements UsageEventSink {
+  Future<void> setEnabled(bool enabled);
+}
+
 class DisabledUsageEventSink implements UsageEventSink {
   const DisabledUsageEventSink();
 
