@@ -1,0 +1,102 @@
+name: GymRecords - Testes e APK Android
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gymrecords-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Flutter 3.50.0 inclui Dart >= 3.13, exigido em pubspec.yaml.
+# A versao fixada impede que atualizacoes automaticas quebrem o build.
+
+jobs:
+  qualidade:
+    name: Analise + testes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Baixar codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.50.0'
+          cache: true
+
+      - name: Verificar ambiente Flutter
+        run: flutter --version
+
+      - name: Instalar dependencias
+        run: flutter pub get
+
+      - name: Auditar assets do catalogo visual
+        run: python3 tools/verify_visual_assets.py
+
+      - name: Analisar codigo Dart
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Executar testes automatizados
+        run: flutter test --reporter expanded
+
+  android-debug:
+    name: Compilar APK Android (debug)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    # Este job roda independentemente dos testes: se eles falharem,
+    # ainda tentamos gerar o APK para identificar problemas separados.
+    steps:
+      - name: Baixar codigo
+        uses: actions/checkout@v4
+
+      - name: Preparar Java para Gradle
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.50.0'
+          cache: true
+
+      - name: Verificar versoes
+        run: |
+          flutter --version
+          java -version
+
+      - name: Instalar dependencias
+        run: flutter pub get
+
+      - name: Compilar APK debug
+        run: flutter build apk --debug
+
+      - name: Verificar APK gerado
+        run: test -s build/app/outputs/flutter-apk/app-debug.apk
+
+      - name: Publicar APK para download
+        uses: actions/upload-artifact@v4
+        with:
+          name: GymRecords-APK-debug-${{ github.run_number }}
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+
+      - name: Mostrar instrucoes de instalacao
+        if: success()
+        run: |
+          echo '### APK pronto' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Abra esta execucao do GitHub Actions e baixe **GymRecords-APK-debug** na secao **Artifacts**.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Extraia o ZIP baixado e instale **app-debug.apk** no Android/emulador.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Este APK de depuracao nao e assinado para publicacao na Play Store.' >> "$GITHUB_STEP_SUMMARY"

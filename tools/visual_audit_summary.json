@@ -1,0 +1,135 @@
+{
+  "catalog_total": 124,
+  "profiles": [
+    "masculine",
+    "feminine",
+    "neutral"
+  ],
+  "execution_base_images_per_profile": 32,
+  "muscle_base_images_per_profile": 32,
+  "cardio_activities": 9,
+  "missing_paths": 0,
+  "per_profile": {
+    "masculine": {
+      "unique_exercise_paths": 31,
+      "shared_execution_exercises": 120,
+      "unique_execution_hashes": 31,
+      "dedicated_explicit_references": 39,
+      "most_reused_execution": [
+        [
+          "assets/images/exercises/masculine/biceps_0.webp",
+          11
+        ],
+        [
+          "assets/images/exercises/masculine/hack_squat.webp",
+          11
+        ],
+        [
+          "assets/images/exercises/masculine/chest_0.webp",
+          6
+        ],
+        [
+          "assets/images/exercises/masculine/back_4.webp",
+          6
+        ],
+        [
+          "assets/images/exercises/masculine/shoulders_1.webp",
+          6
+        ],
+        [
+          "assets/images/exercises/masculine/lying_leg_curl.webp",
+          6
+        ],
+        [
+          "assets/images/exercises/masculine/hip_abductor.webp",
+          6
+        ],
+        [
+          "assets/images/exercises/masculine/shoulders_0.webp",
+          5
+        ]
+      ]
+    },
+    "feminine": {
+      "unique_exercise_paths": 31,
+      "shared_execution_exercises": 120,
+      "unique_execution_hashes": 31,
+      "dedicated_explicit_references": 39,
+      "most_reused_execution": [
+        [
+          "assets/images/exercises/feminine/biceps_0.webp",
+          11
+        ],
+        [
+          "assets/images/exercises/feminine/hack_squat.webp",
+          11
+        ],
+        [
+          "assets/images/exercises/feminine/chest_0.webp",
+          6
+        ],
+        [
+          "assets/images/exercises/feminine/back_4.webp",
+          6
+        ],
+        [
+          "assets/images/exercises/feminine/shoulders_1.webp",
+          6
+        ],
+        [
+          "assets/images/exercises/feminine/lying_leg_curl.webp",
+          6
+        ],
+        [
+          "assets/images/exercises/feminine/hip_abductor.webp",
+          6
+        ],
+        [
+          "assets/images/exercises/feminine/shoulders_0.webp",
+          5
+        ]
+      ]
+    },
+    "neutral": {
+      "unique_exercise_paths": 31,
+      "shared_execution_exercises": 120,
+      "unique_execution_hashes": 31,
+      "dedicated_explicit_references": 39,
+      "most_reused_execution": [
+        [
+          "assets/images/exercises/neutral/biceps_0.webp",
+          11
+        ],
+        [
+          "assets/images/exercises/neutral/hack_squat.webp",
+          11
+        ],
+        [
+          "assets/images/exercises/neutral/chest_0.webp",
+          6
+        ],
+        [
+          "assets/images/exercises/neutral/back_4.webp",
+          6
+        ],
+        [
+          "assets/images/exercises/neutral/shoulders_1.webp",
+          6
+        ],
+        [
+          "assets/images/exercises/neutral/lying_leg_curl.webp",
+          6
+        ],
+        [
+          "assets/images/exercises/neutral/hip_abductor.webp",
+          6
+        ],
+        [
+          "assets/images/exercises/neutral/shoulders_0.webp",
+          5
+        ]
+      ]
+    }
+  },
+  "warning": "An asset path is not proof that the illustrated exercise is biomechanically correct; reused execution art requires manual review."
+}

@@ -1,0 +1,125 @@
+﻿id,pt_BR,en_US,group,equipment,subgroup_pt,subgroup_en,visual_asset
+chest_press_machine,Supino máquina,Machine chest press,chest,machine,,,chest_0
+barbell_bench_press,Supino reto com barra,Barbell bench press,chest,barbell,,,fallback
+dumbbell_bench_press,Supino reto com halteres,Dumbbell bench press,chest,dumbbell,,,fallback
+incline_barbell_press,Supino inclinado com barra,Incline barbell press,chest,barbell,,,fallback
+incline_dumbbell_press,Supino inclinado com halteres,Incline dumbbell press,chest,dumbbell,,,fallback
+incline_chest_press_machine,Supino inclinado máquina,Incline chest press machine,chest,machine,,,chest_2
+smith_bench_press,Supino reto no Smith,Smith machine bench press,chest,smith,,,fallback
+pec_deck,Voador (peck deck),Pec deck fly,chest,machine,,,chest_1
+cable_crossover,Crossover na polia,Cable crossover,chest,cable,,,chest_3
+push_up,Flexão de braços,Push-up,chest,bodyweight,,,fallback
+chest_dip,Paralelas para peito,Chest dip,chest,bodyweight,,,fallback
+decline_barbell_press,Supino declinado com barra,Decline barbell press,chest,barbell,,,fallback
+decline_dumbbell_press,Supino declinado com halteres,Decline dumbbell press,chest,dumbbell,,,fallback
+dumbbell_fly,Crucifixo com halteres,Dumbbell fly,chest,dumbbell,,,fallback
+incline_dumbbell_fly,Crucifixo inclinado com halteres,Incline dumbbell fly,chest,dumbbell,,,fallback
+low_to_high_cable_fly,Crossover baixo para cima,Low-to-high cable fly,chest,cable,,,fallback
+high_to_low_cable_fly,Crossover alto para baixo,High-to-low cable fly,chest,cable,,,fallback
+lat_pulldown,Puxada frontal,Lat pulldown,back,cable,,,back_0
+pull_up,Barra fixa pronada,Pull-up,back,bodyweight,,,fallback
+chin_up,Barra fixa supinada,Chin-up,back,bodyweight,,,fallback
+seated_row_machine,Remada sentada máquina,Seated row machine,back,machine,,,back_1
+low_cable_row,Remada baixa na polia,Low cable row,back,cable,,,back_2
+barbell_row,Remada curvada com barra,Barbell bent-over row,back,barbell,,,fallback
+one_arm_dumbbell_row,Remada unilateral com halter,One-arm dumbbell row,back,dumbbell,,,fallback
+t_bar_row,Remada T-bar,T-bar row,back,barbell,,,fallback
+plate_loaded_row,Remada articulada,Plate-loaded row,back,machine,,,back_3
+pullover_machine,Pullover máquina,Pullover machine,back,machine,,,back_4
+straight_arm_pulldown,Pulldown com braços estendidos,Straight-arm pulldown,back,cable,,,fallback
+deadlift,Levantamento terra,Deadlift,back,barbell,Cadeia posterior,Posterior chain,fallback
+chest_supported_dumbbell_row,Remada apoiada com halteres,Chest-supported dumbbell row,back,dumbbell,,,fallback
+high_row_machine,Remada alta articulada,High row machine,back,machine,,,fallback
+single_arm_cable_row,Remada unilateral na polia,Single-arm cable row,back,cable,,,fallback
+barbell_shrug,Encolhimento com barra,Barbell shrug,back,barbell,Trapézio,Traps,fallback
+dumbbell_shrug,Encolhimento com halteres,Dumbbell shrug,back,dumbbell,Trapézio,Traps,fallback
+back_extension,Extensão lombar,Back extension,back,bodyweight,Lombar,Lower back,fallback
+shoulder_press_machine,Desenvolvimento máquina,Machine shoulder press,shoulders,machine,,,shoulders_0
+barbell_overhead_press,Desenvolvimento com barra,Barbell overhead press,shoulders,barbell,,,fallback
+dumbbell_shoulder_press,Desenvolvimento com halteres,Dumbbell shoulder press,shoulders,dumbbell,,,fallback
+arnold_press,Desenvolvimento Arnold,Arnold press,shoulders,dumbbell,,,fallback
+lateral_raise_machine,Elevação lateral máquina,Machine lateral raise,shoulders,machine,,,shoulders_1
+dumbbell_lateral_raise,Elevação lateral com halteres,Dumbbell lateral raise,shoulders,dumbbell,,,fallback
+cable_lateral_raise,Elevação lateral na polia,Cable lateral raise,shoulders,cable,,,fallback
+front_raise,Elevação frontal,Front raise,shoulders,dumbbell,,,fallback
+reverse_fly_machine,Voador invertido,Reverse fly machine,shoulders,machine,,,shoulders_2
+face_pull,Face pull,Face pull,shoulders,cable,,,fallback
+upright_row,Remada alta,Upright row,shoulders,barbell,,,fallback
+smith_shoulder_press,Desenvolvimento no Smith,Smith machine shoulder press,shoulders,smith,,,fallback
+cable_front_raise,Elevação frontal na polia,Cable front raise,shoulders,cable,,,fallback
+cable_reverse_fly,Crucifixo inverso na polia,Cable reverse fly,shoulders,cable,,,fallback
+landmine_press,Landmine press,Landmine press,shoulders,barbell,,,fallback
+preacher_curl_machine,Rosca Scott máquina,Machine preacher curl,biceps,machine,,,biceps_0
+barbell_curl,Rosca direta com barra,Barbell curl,biceps,barbell,,,fallback
+ez_bar_curl,Rosca direta com barra W,EZ-bar curl,biceps,barbell,,,fallback
+dumbbell_curl,Rosca alternada com halteres,Dumbbell curl,biceps,dumbbell,,,fallback
+incline_dumbbell_curl,Rosca inclinada com halteres,Incline dumbbell curl,biceps,dumbbell,,,fallback
+hammer_curl,Rosca martelo,Hammer curl,biceps,dumbbell,,,fallback
+cable_curl,Rosca na polia,Cable curl,biceps,cable,,,biceps_1
+preacher_curl_free,Rosca Scott livre,Free-weight preacher curl,biceps,barbell,,,fallback
+concentration_curl,Rosca concentrada,Concentration curl,biceps,dumbbell,,,fallback
+spider_curl,Rosca spider,Spider curl,biceps,dumbbell,,,fallback
+bayesian_curl,Rosca Bayesian na polia,Bayesian cable curl,biceps,cable,,,fallback
+reverse_curl,Rosca inversa,Reverse curl,biceps,barbell,,,fallback
+zottman_curl,Rosca Zottman,Zottman curl,biceps,dumbbell,,,fallback
+triceps_pushdown,Tríceps na polia,Triceps pushdown,triceps,cable,,,triceps_0
+rope_pushdown,Tríceps corda,Rope pushdown,triceps,cable,,,fallback
+overhead_cable_extension,Tríceps francês na polia,Overhead cable extension,triceps,cable,,,fallback
+skull_crusher,Tríceps testa com barra,Skull crusher,triceps,barbell,,,fallback
+dumbbell_french_press,Tríceps francês com halter,Dumbbell overhead triceps extension,triceps,dumbbell,,,fallback
+close_grip_bench,Supino fechado,Close-grip bench press,triceps,barbell,,,fallback
+seated_triceps_machine,Extensão de tríceps sentado,Seated triceps extension machine,triceps,machine,,,triceps_1
+assisted_dip,Mergulho em máquina,Assisted dip machine,triceps,machine,,,triceps_2
+bench_dip,Mergulho no banco,Bench dip,triceps,bodyweight,,,fallback
+dumbbell_kickback,Coice de tríceps com halter,Dumbbell triceps kickback,triceps,dumbbell,,,fallback
+cable_kickback_triceps,Coice de tríceps na polia,Cable triceps kickback,triceps,cable,,,fallback
+jm_press,JM press,JM press,triceps,barbell,,,fallback
+diamond_push_up,Flexão diamante,Diamond push-up,triceps,bodyweight,,,fallback
+leg_press_45,Leg press 45°,45° leg press,legs,machine,Quadríceps,Quadriceps,leg_press_45
+leg_extension,Cadeira extensora,Leg extension,legs,machine,Quadríceps,Quadriceps,leg_extension
+hack_squat,Agachamento hack,Hack squat,legs,machine,Quadríceps,Quadriceps,hack_squat
+barbell_squat,Agachamento livre,Barbell back squat,legs,barbell,Quadríceps,Quadriceps,fallback
+front_squat,Agachamento frontal,Front squat,legs,barbell,Quadríceps,Quadriceps,fallback
+smith_squat,Agachamento no Smith,Smith machine squat,legs,smith,Quadríceps,Quadriceps,fallback
+goblet_squat,Agachamento goblet,Goblet squat,legs,dumbbell,Quadríceps,Quadriceps,fallback
+bulgarian_split_squat,Agachamento búlgaro,Bulgarian split squat,legs,dumbbell,Quadríceps / Glúteos,Quadriceps / Glutes,fallback
+walking_lunge,Avanço / passada,Walking lunge,legs,dumbbell,Quadríceps / Glúteos,Quadriceps / Glutes,fallback
+lying_leg_curl,Mesa flexora,Lying leg curl,legs,machine,Posterior de coxa,Hamstrings,lying_leg_curl
+seated_leg_curl,Cadeira flexora,Seated leg curl,legs,machine,Posterior de coxa,Hamstrings,seated_leg_curl
+romanian_deadlift,Levantamento terra romeno,Romanian deadlift,legs,barbell,Posterior de coxa,Hamstrings,fallback
+stiff_leg_deadlift,Stiff,Stiff-leg deadlift,legs,barbell,Posterior de coxa,Hamstrings,fallback
+hip_thrust,Hip thrust,Hip thrust,legs,barbell,Glúteos,Glutes,fallback
+glute_bridge,Ponte de glúteos,Glute bridge,legs,bodyweight,Glúteos,Glutes,fallback
+hip_abductor,Cadeira abdutora,Hip abductor machine,legs,machine,Glúteos / Abdutores,Glutes / Abductors,hip_abductor
+hip_adductor,Cadeira adutora,Hip adductor machine,legs,machine,Adutores,Adductors,hip_adductor
+cable_kickback,Coice na polia,Cable glute kickback,legs,cable,Glúteos,Glutes,fallback
+seated_calf,Panturrilha sentado,Seated calf raise,legs,machine,Panturrilhas,Calves,seated_calf
+standing_calf,Panturrilha em pé,Standing calf raise,legs,machine,Panturrilhas,Calves,fallback
+horizontal_leg_press,Leg press horizontal,Horizontal leg press,legs,machine,Quadríceps,Quadriceps,fallback
+pendulum_squat,Agachamento pêndulo,Pendulum squat,legs,machine,Quadríceps,Quadriceps,fallback
+single_leg_press,Leg press unilateral,Single-leg press,legs,machine,Quadríceps,Quadriceps,fallback
+sissy_squat,Sissy squat,Sissy squat,legs,bodyweight,Quadríceps,Quadriceps,fallback
+step_up,Step-up no banco,Step-up,legs,dumbbell,Quadríceps / Glúteos,Quadriceps / Glutes,fallback
+good_morning,Good morning,Good morning,legs,barbell,Posterior de coxa,Hamstrings,fallback
+single_leg_curl,Flexora unilateral,Single-leg curl,legs,machine,Posterior de coxa,Hamstrings,fallback
+nordic_curl,Nordic curl,Nordic hamstring curl,legs,bodyweight,Posterior de coxa,Hamstrings,fallback
+sumo_squat,Agachamento sumô,Sumo squat,legs,dumbbell,Glúteos / Adutores,Glutes / Adductors,fallback
+smith_hip_thrust,Hip thrust no Smith,Smith machine hip thrust,legs,smith,Glúteos,Glutes,fallback
+cable_hip_abduction,Abdução de quadril na polia,Cable hip abduction,legs,cable,Glúteos / Abdutores,Glutes / Abductors,fallback
+cable_hip_adduction,Adução de quadril na polia,Cable hip adduction,legs,cable,Adutores,Adductors,fallback
+smith_standing_calf,Panturrilha em pé no Smith,Smith standing calf raise,legs,smith,Panturrilhas,Calves,fallback
+leg_press_calf,Panturrilha no leg press,Leg press calf raise,legs,machine,Panturrilhas,Calves,fallback
+ab_machine,Abdominal máquina,Abdominal crunch machine,abs,machine,,,abs_0
+cable_crunch,Abdominal na polia,Cable crunch,abs,cable,,,fallback
+crunch,Abdominal crunch,Crunch,abs,bodyweight,,,fallback
+reverse_crunch,Abdominal reverso,Reverse crunch,abs,bodyweight,,,fallback
+hanging_leg_raise,Elevação de pernas suspenso,Hanging leg raise,abs,bodyweight,,,fallback
+captain_chair_raise,Elevação de pernas na paralela,Captain chair leg raise,abs,bodyweight,,,fallback
+plank,Prancha,Plank,abs,bodyweight,,,fallback
+side_plank,Prancha lateral,Side plank,abs,bodyweight,,,fallback
+ab_wheel,Roda abdominal,Ab wheel rollout,abs,other,,,fallback
+russian_twist,Rotação russa,Russian twist,abs,bodyweight,,,fallback
+hanging_knee_raise,Elevação de joelhos suspenso,Hanging knee raise,abs,bodyweight,,,fallback
+dead_bug,Dead bug,Dead bug,abs,bodyweight,,,fallback
+pallof_press,Pallof press,Pallof press,abs,cable,,,fallback
+cable_woodchop,Woodchop na polia,Cable woodchop,abs,cable,,,fallback

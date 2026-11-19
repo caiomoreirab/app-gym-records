@@ -1,0 +1,22 @@
+ALTERADOS
+- pubspec.yaml
+- lib/main.dart
+- lib/theme/app_theme.dart
+- lib/state/app_controller.dart
+- lib/screens/home_screen.dart
+- lib/screens/machine_screen.dart
+- lib/screens/settings_screen.dart
+- lib/screens/splash_screen.dart
+- lib/widgets/brand_header.dart
+- test/frontend_flow_test.dart
+- android/app/src/main/res/values/colors.xml
+
+CRIADOS
+- lib/services/pro_insights.dart
+- lib/widgets/pro_widgets.dart
+- lib/screens/evolution_screen.dart
+- lib/screens/exercise_insights_screen.dart
+- lib/screens/pro_overview_screen.dart
+- assets/branding/pro_mascot.webp
+- docs/FRONTEND_PRO_0.5.0.md
+- docs/CHANGED_FILES_0.5.0.txt

@@ -1,0 +1,52 @@
+name: gymrecords
+description: Front-end de validação do GymRecords.
+publish_to: none
+version: 0.8.0+16
+
+environment:
+  sdk: '>=3.13.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  material_ui: ^1.11.0
+  flutter_localizations:
+    sdk: flutter
+  shared_preferences: ^2.5.6
+  pdf: ^3.11.3
+  printing: ^5.14.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/branding/
+    - assets/illustrations/
+    - assets/images/onboarding/
+    - assets/images/groups/masculine/
+    - assets/images/groups/feminine/
+    - assets/images/groups/neutral/
+    - assets/images/exercises/masculine/
+    - assets/images/exercises/feminine/
+    - assets/images/exercises/neutral/
+    - assets/images/muscles/masculine/
+    - assets/images/muscles/feminine/
+    - assets/images/muscles/neutral/
+    - assets/images/cardio/
+    - assets/images/cardio/groups/
+    - assets/images/cardio/masculine/
+    - assets/images/cardio/feminine/
+    - assets/images/cardio/neutral/
+    - assets/images/cardio_activation/masculine/
+    - assets/images/cardio_activation/feminine/
+    - assets/images/cardio_activation/neutral/
+  fonts:
+    - family: Barlow
+      fonts:
+        - asset: assets/fonts/Barlow-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Barlow-SemiBold.ttf
+          weight: 600

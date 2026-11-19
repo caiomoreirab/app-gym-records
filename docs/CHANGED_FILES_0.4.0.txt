@@ -1,0 +1,37 @@
+GymRecords Front-end v0.4.0 — Home orientada a registro
+
+ALTERADOS
+- lib/screens/home_screen.dart
+  - mensagem principal "Registre sua execução"
+  - busca global por grupo muscular, aparelho ou exercício
+  - acesso direto ao exercício sem passar obrigatoriamente pelo grupo
+  - seção Acesso rápido com exercícios recentes
+  - filtros Todos / Já registrados / Sem registros
+  - ordenação Mais recentes / A-Z / Z-A / Maior recorde / Grupo muscular
+  - bottom sheet de filtros e ordenação
+  - lista global de exercícios e aparelhos
+- lib/state/app_controller.dart
+  - catálogo global disponível na Home
+  - acesso direto adiciona silenciosamente ao conjunto do usuário quando necessário
+  - SharedPreferencesAsync passa a ser criado apenas quando persistência está habilitada
+    (corrige widget tests com persistenceEnabled=false)
+- lib/widgets/muscle_group_card.dart
+  - contagem passa a usar "exercício(s)" em vez de "aparelho(s)"
+- lib/screens/group_screen.dart
+  - busca renomeada para "Buscar exercício ou aparelho..."
+- lib/widgets/brand_header.dart
+  - const aplicado ao TextSpan
+- test/frontend_flow_test.dart
+  - expectativa da Home atualizada para "Registre sua execução"
+  - valida presença da busca global
+- pubspec.yaml
+  - versão 0.4.0+5
+- lib/screens/settings_screen.dart
+  - versão visual 0.4.0
+
+COMPORTAMENTO
+- Grupos musculares continuam disponíveis como forma de exploração.
+- O usuário pode pesquisar "leg", "supino", "peito" etc. na Home.
+- Busca por grupo também retorna os exercícios daquele grupo.
+- Tocar em um exercício ainda não adicionado no catálogo o torna disponível e abre o registro diretamente.
+- Filtros da Home são de sessão (front-end); preferências de nome/estilo/unidade continuam persistidas localmente.

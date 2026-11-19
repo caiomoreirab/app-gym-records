@@ -1,0 +1,30 @@
+GymRecords v0.6.3
+
+Created:
+- lib/models/cardio_achievement.dart
+- lib/widgets/cardio_visual_pager.dart
+- lib/widgets/cardio_record_achievement_sheet.dart
+- test/cardio_record_test.dart
+- assets/images/cardio/groups/masculine.webp
+- assets/images/cardio/groups/feminine.webp
+- assets/images/cardio/groups/neutral.webp
+
+Updated:
+- lib/app.dart
+- lib/l10n/app_strings.dart
+- lib/models/cardio_activity.dart
+- lib/models/machine.dart
+- lib/models/muscle_group.dart
+- lib/models/user_profile.dart
+- lib/data/mock_data.dart
+- lib/screens/cardio_screen.dart
+- lib/screens/cardio_activity_screen.dart
+- lib/screens/home_screen.dart
+- lib/screens/settings_screen.dart
+- lib/services/cardio_assets.dart
+- lib/services/pro_insights.dart
+- lib/state/app_controller.dart
+- lib/widgets/adaptive_illustration.dart
+- lib/widgets/cardio_group_card.dart
+- pubspec.yaml
+- README.md

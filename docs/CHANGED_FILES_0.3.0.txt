@@ -1,0 +1,33 @@
+Files gymrecords_original_v021/gymrecords/README.md and gymrecords_onboarding_update/gymrecords/README.md differ
+Files gymrecords_original_v021/gymrecords/android/app/build.gradle.kts and gymrecords_onboarding_update/gymrecords/android/app/build.gradle.kts differ
+Only in gymrecords_onboarding_update/gymrecords/assets: images
+Only in gymrecords_onboarding_update/gymrecords/docs: ASSETS_MANIFEST.md
+Only in gymrecords_onboarding_update/gymrecords/docs: CHANGED_FILES_0.3.0.txt
+Files gymrecords_original_v021/gymrecords/docs/ESTADO_DO_PROJETO.md and gymrecords_onboarding_update/gymrecords/docs/ESTADO_DO_PROJETO.md differ
+Files gymrecords_original_v021/gymrecords/docs/FRONTEND_VALIDACAO.md and gymrecords_onboarding_update/gymrecords/docs/FRONTEND_VALIDACAO.md differ
+Only in gymrecords_onboarding_update/gymrecords/docs: generated_assets_contact_sheet.jpg
+Only in gymrecords_original_v021/gymrecords/docs: prototipo
+Only in gymrecords_onboarding_update/gymrecords/docs: prototipo_v02_archived
+Only in gymrecords_onboarding_update/gymrecords/docs: references
+Files gymrecords_original_v021/gymrecords/lib/app.dart and gymrecords_onboarding_update/gymrecords/lib/app.dart differ
+Files gymrecords_original_v021/gymrecords/lib/main.dart and gymrecords_onboarding_update/gymrecords/lib/main.dart differ
+Files gymrecords_original_v021/gymrecords/lib/models/muscle_group.dart and gymrecords_onboarding_update/gymrecords/lib/models/muscle_group.dart differ
+Files gymrecords_original_v021/gymrecords/lib/models/user_profile.dart and gymrecords_onboarding_update/gymrecords/lib/models/user_profile.dart differ
+Files gymrecords_original_v021/gymrecords/lib/screens/add_machine_screen.dart and gymrecords_onboarding_update/gymrecords/lib/screens/add_machine_screen.dart differ
+Files gymrecords_original_v021/gymrecords/lib/screens/group_screen.dart and gymrecords_onboarding_update/gymrecords/lib/screens/group_screen.dart differ
+Files gymrecords_original_v021/gymrecords/lib/screens/home_screen.dart and gymrecords_onboarding_update/gymrecords/lib/screens/home_screen.dart differ
+Files gymrecords_original_v021/gymrecords/lib/screens/machine_screen.dart and gymrecords_onboarding_update/gymrecords/lib/screens/machine_screen.dart differ
+Only in gymrecords_original_v021/gymrecords/lib/screens/onboarding: gender_screen.dart
+Only in gymrecords_onboarding_update/gymrecords/lib/screens/onboarding: illustration_style_screen.dart
+Files gymrecords_original_v021/gymrecords/lib/screens/onboarding/name_screen.dart and gymrecords_onboarding_update/gymrecords/lib/screens/onboarding/name_screen.dart differ
+Files gymrecords_original_v021/gymrecords/lib/screens/settings_screen.dart and gymrecords_onboarding_update/gymrecords/lib/screens/settings_screen.dart differ
+Files gymrecords_original_v021/gymrecords/lib/screens/splash_screen.dart and gymrecords_onboarding_update/gymrecords/lib/screens/splash_screen.dart differ
+Only in gymrecords_onboarding_update/gymrecords/lib: services
+Files gymrecords_original_v021/gymrecords/lib/state/app_controller.dart and gymrecords_onboarding_update/gymrecords/lib/state/app_controller.dart differ
+Only in gymrecords_onboarding_update/gymrecords/lib/widgets: adaptive_illustration.dart
+Only in gymrecords_onboarding_update/gymrecords/lib/widgets: illustration_style_card.dart
+Files gymrecords_original_v021/gymrecords/lib/widgets/machine_list_card.dart and gymrecords_onboarding_update/gymrecords/lib/widgets/machine_list_card.dart differ
+Files gymrecords_original_v021/gymrecords/lib/widgets/muscle_group_card.dart and gymrecords_onboarding_update/gymrecords/lib/widgets/muscle_group_card.dart differ
+Only in gymrecords_onboarding_update/gymrecords/lib/widgets: onboarding_progress.dart
+Files gymrecords_original_v021/gymrecords/pubspec.yaml and gymrecords_onboarding_update/gymrecords/pubspec.yaml differ
+Files gymrecords_original_v021/gymrecords/test/frontend_flow_test.dart and gymrecords_onboarding_update/gymrecords/test/frontend_flow_test.dart differ

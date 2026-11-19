@@ -1,0 +1,46 @@
+GymRecords 0.6.0 — principais arquivos criados/modificados
+
+Branding / Android
+- assets/branding/splash_intro.gif
+- assets/branding/app_icon_foreground.png
+- assets/branding/app_icon_legacy.png
+- android/app/src/main/AndroidManifest.xml
+- android/app/src/main/res/mipmap-*/ic_launcher*.png
+- android/app/src/main/res/mipmap-anydpi-v26/ic_launcher*.xml
+- android/app/src/main/res/values/colors.xml
+- android/app/src/main/res/values/styles.xml
+- android/app/src/main/res/drawable/launch_background.xml
+- android/app/src/debug/AndroidManifest.xml (Impeller desativado no emulator/debug)
+- android/app/src/profile/AndroidManifest.xml
+
+Core / catálogo / localização
+- lib/models/machine.dart
+- lib/models/cardio_activity.dart
+- lib/models/cardio_record.dart
+- lib/data/mock_data.dart
+- lib/l10n/app_strings.dart
+- lib/state/app_controller.dart
+- lib/utils/formatters.dart
+- lib/app.dart
+
+Telas
+- lib/screens/splash_screen.dart
+- lib/screens/home_screen.dart
+- lib/screens/group_screen.dart
+- lib/screens/add_machine_screen.dart
+- lib/screens/custom_machine_screen.dart
+- lib/screens/cardio_screen.dart
+- lib/screens/cardio_activity_screen.dart
+- lib/screens/settings_screen.dart
+- telas de onboarding e Pro receberam localização dos textos principais
+
+Assets / fallback
+- lib/services/illustration_assets.dart
+- lib/widgets/adaptive_illustration.dart
+
+Projeto / docs
+- pubspec.yaml
+- README.md
+- docs/FOUNDATION_0.6.0.md
+- docs/strength_catalog_0.6.csv
+- test/frontend_flow_test.dart

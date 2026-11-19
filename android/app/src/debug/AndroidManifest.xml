@@ -1,0 +1,17 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Internet is required for Flutter debug tooling / hot reload. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!--
+      Emulator rendering workaround:
+      Flutter enables Impeller by default on Android API 29+. On the Android
+      Emulator (especially Vulkan/x86_64) we observed a cyan/blue compositor
+      artifact while scrolling. Disable Impeller only for DEBUG builds.
+      Release builds keep the platform default.
+    -->
+    <application>
+        <meta-data
+            android:name="io.flutter.embedding.android.EnableImpeller"
+            android:value="false" />
+    </application>
+</manifest>
