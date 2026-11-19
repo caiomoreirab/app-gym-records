@@ -76,6 +76,30 @@ void main() {
     app.dispose();
   });
 
+  test('backup corrompido com valores negativos não modifica registros existentes', () async {
+    final store = MemoryLocalDataStore();
+    final app = AppController(persistenceEnabled: false, store: store);
+    final machine = app.ensureMachineAdded(
+      buildExerciseCatalog().firstWhere((m) => m.id == 'barbell_bench_press'),
+    );
+    app.addRecord(machine, weight: 70, repetitions: 8);
+    await app.flushPendingWrites();
+    final backup = jsonDecode(app.exportBackup()) as Map<String, dynamic>;
+    final machines = backup['machines'] as List;
+    final entry = machines.firstWhere((m) => m['id'] == 'barbell_bench_press') as Map;
+    final firstRecord = (entry['records'] as List).last as Map;
+    firstRecord['weight'] = -100;
+    await expectLater(app.importBackup(jsonEncode(backup)),
+        throwsA(isA<FormatException>()));
+    expect(app.machineById('barbell_bench_press').records.last.weight, 70);
+
+    final other = AppController(persistenceEnabled: false, store: store);
+    await other.loadPreferences();
+    expect(other.machineById('barbell_bench_press').records.last.weight, 70);
+    app.dispose();
+    other.dispose();
+  });
+
   test('permite retentar gravação após erro temporário', () async {
     final store = _FlakyDataStore();
     final controller = AppController(persistenceEnabled: false, store: store);
