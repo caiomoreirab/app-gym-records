@@ -16,7 +16,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: gymrecords-ios-unsigned-\${{ github.ref }}
+  group: gymrecords-ios-unsigned-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -107,7 +107,7 @@ jobs:
       - name: Disponibilizar IPA
         uses: actions/upload-artifact@v4
         with:
-          name: GymRecords-iOS-IPA-unsigned-\${{ github.run_number }}
+          name: GymRecords-iOS-IPA-unsigned-${{ github.run_number }}
           path: build/ios/sideloadly/GymRecords-unsigned.ipa
           retention-days: 14
           if-no-files-found: error
