@@ -1,45 +1,54 @@
-# GymRecords — v0.8.0+16 | Refatoração da base visual (entrega incremental)
+# GymRecords — Flutter (v0.9.0+18)
 
-Aplicativo Flutter de validação do GymRecords. Esta versão parte do build `0.7.0+15`, mantendo onboarding, registros, métricas de peso/repetições/tempo e as telas Pro existentes.
+Aplicativo de acompanhamento de recordes de musculação e Cardio. **A versão principal funciona offline**, com dados privados no dispositivo e sem necessidade de criar uma conta.
 
-## O que foi implementado nesta entrega
+## Recursos disponíveis
 
-- **Execução / Músculos:** os 32 arquivos de vista muscular de cada perfil foram substituídos por renders anatômicos exclusivos da vista de execução (96 arquivos no total). As vistas musculares agora mostram o corpo de frente e de costas com destaques por região e não uma foto de exercício com filtro azul.
-- **Cardio:** substituição dos 9 arquivos de ativação muscular de cada perfil (27 imagens) por vistas anatômicas independentes. O perfil neutro usa manequim sem rosto nessas vistas.
-- **Grupo Cardio:** novos cards com corredores de aparência masculina, feminina e neutra, sem moldura interna.
-- **Grupos musculares:** recorte do contorno/faixa superior embutidos nas 21 imagens de categoria, mantendo a borda real do Flutter.
-- **Confetes:** dispersão elevada para a parte superior do card de conquista nas modalidades de musculação e Cardio.
-- **Fallback Cardio:** se faltar uma imagem de músculos, mostra estado de revisão, jamais a própria imagem de execução disfarçada de ativação.
-- **Qualidade:** scripts de auditoria, CSV por exercício/perfil e testes adicionais de regressão visual.
+- Onboarding com nome e escolha de perfil visual.
+- Catálogo de 124 exercícios de musculação, nove atividades de Cardio e imagens por perfil.
+- Registro de peso, repetições e duração; recordes pessoais e relatórios Pro de prévia.
+- **Persistência de dados local:** SQLite no Android/iOS e preferências locais do navegador na prévia Web. Os dados são independentes por aparelho.
+- Criação, edição e notas de exercícios personalizados.
+- Central de **Dados e privacidade** nas configurações: backup JSON, restauração e consentimento para métricas.
+- Eventos anônimos instrumentados e adaptador de Firebase opcional, sem coleta remota até configurar um projeto e o usuário autorizar.
+- GitHub Actions: testes, APK Android, prévia Web e geração manual de AAB assinado com Secrets.
 
-### Pendências importantes (não confundir com bugs resolvidos)
+## Repositório e builds
 
-**Ilustrações específicas de execução ainda NÃO foram concluídas.** O catálogo possui 124 exercícios, mas apenas **31 imagens-base de execução realmente referenciadas por perfil** e **120 exercícios compartilham a imagem de execução com algum outro**. Os casos `goblet_squat`, `barbell_squat`, `front_squat` etc. ainda usam a arte da máquina `hack_squat`, portanto **ainda precisam de renders individuais da pose/equipamento correto**. Não inserimos desenhos provisórios de baixa qualidade como se fossem fotografias 3D finalizadas.
+- [Testes e APK Android](https://github.com/caiomoreirab/app-gym-records/actions/workflows/android-ci.yml)
+- [Prévia Web](https://caiomoreirab.github.io/app-gym-records/)
+- [Workflow de AAB assinado](https://github.com/caiomoreirab/app-gym-records/actions/workflows/android-release.yml)
+- [Política de privacidade](https://caiomoreirab.github.io/app-gym-records/privacy.html)
+- **[Checklist de publicação Android](docs/RELEASE_ANDROID.md)**
 
-A execução de algumas atividades de Cardio no perfil neutro ainda usa a arte do acervo antigo, enquanto a vista anatômica e o card de grupo foram adequados para manequim neutro. A auditoria não afirma validação biomecânica individual dos 124 exercícios. A ativação muscular é esquemática e não uma medição fisiológica.
+O fluxo de publicação não instala automaticamente o app na loja. Para o AAB, é necessário configurar uma **chave de upload própria** e validar os requisitos da Play Console.
 
-Não foi possível compilar `flutter analyze`, `flutter test` nem gerar APK nesta máquina de geração (Flutter SDK ausente). Os scripts de verificação de arquivos e o ZIP foram conferidos; **confirme o build no seu emulador**.
+## Arquitetura de dados
 
-## Como rodar no Windows
+- `lib/services/local_data_store.dart`: repositório offline; SQLite móvel e fallback de navegador.
+- `lib/services/workout_snapshot_codec.dart`: formato versionado para persistência e backup.
+- `lib/state/app_controller.dart`: estado de telas, filas de escrita sequenciais e restauração.
+- `lib/services/usage_events.dart` e `firebase_usage_sink.dart`: eventos de uso após consentimento.
 
-Dentro da pasta `gymrecords`, com o emulador `emulator-5554` aberto:
+Na versão de produção, novos usuários começam com histórico vazio. O catálogo de exercícios fica embutido no pacote, de modo que registrar treinos não dependa de servidor.
+
+## Limitações ainda abertas
+
+- **Imagens de execução:** apesar de 124 exercícios, apenas 31 artes-base de execução são referenciadas por perfil; muitas poses ainda precisam de ilustrações específicas.
+- **Firebase:** coleta remota somente se o projeto e seus identificadores forem configurados. O painel de métricas é o Firebase Console, não um painel próprio dentro do app.
+- **Backup:** JSON manual via área de transferência. Não há sincronização, conta ou recuperação automática após desinstalar.
+- **iOS:** a pasta iOS não está versionada. O foco de publicação inicial é Android.
+- **Assinatura:** APK debug não substitui AAB de loja assinado e não é apropriado para publicação.
+
+## Desenvolvimento
+
+Com Flutter 3.50.0 e Android SDK:
 
 ```powershell
-$androidSdkPath = "$env:LOCALAPPDATA\Android\Sdk"
-$env:ANDROID_SDK_ROOT = $androidSdkPath
-$env:ANDROID_HOME = $androidSdkPath
-& "$androidSdkPath\platform-tools\adb.exe" devices
-flutter clean
 flutter pub get
-flutter analyze
+flutter analyze --no-fatal-infos --no-fatal-warnings
 flutter test
 flutter run -d emulator-5554
 ```
 
-A versão em Configurações deve exibir `0.8.0 • Base visual`.
-
-## Auditoria reproduzível
-
-`python tools/audit_visuals.py` gera `tools/visual_audit.csv` (372 linhas, 124 exercícios × 3 perfis), e `tools/visual_audit_summary.json`. `python tools/build_anatomical_assets.py` regenera as 123 artes anatômicas a partir de `tools/anatomy_atlas_source.png` (usa Pillow, NumPy e OpenCV em computador de desenvolvimento; não é executado pelo app).
-
-Esta v0.8.0 é uma **etapa entregue da refatoração**, não uma declaração de conclusão do catálogo visual.
+O GitHub Actions usa Flutter 3.50.0. Veja os resultados atuais dos jobs para confirmar a versão.
