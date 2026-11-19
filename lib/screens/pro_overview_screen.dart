@@ -16,38 +16,44 @@ class ProOverviewScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
-    final features = <({IconData icon, String title, String subtitle, WidgetBuilder page})>[
+    final features = <({String eventKey, IconData icon, String title, String subtitle, WidgetBuilder page})>[
       (
+        eventKey: 'pr_radar',
         icon: Icons.radar_rounded,
         title: context.strings.t('PR Radar e próximo alvo', 'PR Radar & next target', 'PR Radar y próximo objetivo'),
         subtitle: context.strings.t('Sinal heurístico de proximidade e metas por exercício.', 'Heuristic proximity score and exercise targets.', 'Indicador heurístico y metas por ejercicio.'),
         page: (_) => const ProRadarScreen(),
       ),
       (
+        eventKey: 'gymrecords_iq',
         icon: Icons.auto_graph_rounded,
         title: 'GymRecords IQ',
         subtitle: context.strings.t('Relatórios a partir dos seus registros reais.', 'Reports calculated from your available logs.', 'Informes a partir de tus registros.'),
         page: (_) => const EvolutionScreen(),
       ),
       (
+        eventKey: 'muscle_map',
         icon: Icons.accessibility_new_rounded,
         title: context.strings.t('Mapa muscular', 'Muscle groups', 'Grupos musculares'),
         subtitle: context.strings.t('Compare grupos e abra seus relatórios individualmente.', 'Compare groups and open their individual reports.', 'Compara grupos y abre sus informes.'),
         page: (_) => const EvolutionScreen(),
       ),
       (
+        eventKey: 'records',
         icon: Icons.emoji_events_outlined,
         title: context.strings.t('Hall de recordes avançado', 'Advanced record hall', 'Salón de récords avanzado'),
         subtitle: context.strings.t('Recordes, repetições e atalhos por grupo.', 'Records, repetitions and shortcuts by group.', 'Récords, repeticiones y accesos por grupo.'),
         page: (_) => const ProRecordsScreen(),
       ),
       (
+        eventKey: 'charts',
         icon: Icons.show_chart_rounded,
         title: context.strings.t('Gráficos avançados', 'Advanced charts', 'Gráficos avanzados'),
         subtitle: context.strings.t('Filtre métricas por período e grupo muscular.', 'Filter metrics by date range and muscle group.', 'Filtra métricas por periodo y grupo.'),
         page: (_) => const EvolutionScreen(),
       ),
       (
+        eventKey: 'export',
         icon: Icons.file_download_outlined,
         title: context.strings.t('Exportação CSV/PDF', 'CSV/PDF export', 'Exportación CSV/PDF'),
         subtitle: context.strings.t('Copie seu CSV ou compartilhe um relatório PDF.', 'Copy CSV or share a PDF report.', 'Copia CSV o comparte un PDF.'),
@@ -85,6 +91,7 @@ class ProOverviewScreen extends StatelessWidget {
               clipBehavior: Clip.antiAlias,
               child: InkWell(
                 onTap: () {
+                  app.trackUsage('pro_feature_viewed', {'feature': feature.eventKey});
                   if (!app.isPro) {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.strings.t('Ative a prévia Pro para explorar os recursos.', 'Enable Pro preview to explore features.', 'Activa la vista Pro para explorar las funciones.'))));
                     return;

@@ -7,7 +7,7 @@ import '../theme/app_theme.dart';
 import '../widgets/page_body.dart';
 import '../widgets/section_card.dart';
 
-/// Offline-first controls for local data and anonymous analytics consent.
+/// Offline-first controls for local data and optional analytics consent.
 class DataPrivacyScreen extends StatefulWidget {
   const DataPrivacyScreen({super.key});
 
@@ -149,20 +149,21 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
                   const SizedBox(height: 8),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Autorizar métricas anônimas'),
+                    title: const Text('Autorizar métricas de uso'),
                     subtitle: Text(
                       FirebaseUsageSink.isConfigured
-                          ? 'Após sua autorização, podemos enviar somente eventos '
-                            'de uso sem nomes, pesos ou anotações.'
-                          : 'O Firebase ainda não foi configurado: nenhum '
-                            'evento será enviado nesta versão.',
+                          ? 'Ao autorizar, eventos de uso poderão ser enviados '
+                            'ao Firebase, que utiliza identificadores de instalação. '
+                            'Não enviamos nomes, pesos ou anotações.'
+                          : 'A coleta ainda não está disponível: o Firebase '
+                            'não está configurado nesta versão.',
                     ),
                     value: app.analyticsConsent,
-                    onChanged: app.setAnalyticsConsent,
+                    onChanged: FirebaseUsageSink.isConfigured ? app.setAnalyticsConsent : null,
                   ),
                   const Text(
                     'Nenhum nome, peso, anotação ou histórico pessoal '
-                    'será enviado em eventos. O app continuará offline.',
+                    'será enviado em eventos. Registrar treinos continuará offline.',
                     style: TextStyle(fontSize: 12, color: AppTheme.iceBlue),
                   ),
                 ],

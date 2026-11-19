@@ -35,7 +35,7 @@ class AppController extends ChangeNotifier {
   static const _incrementKey = 'weight_increment';
   static const _proPreviewKey = 'pro_preview_enabled';
   static const _languageKey = 'language_code';
-  static const _analyticsConsentKey = 'analytics_consent_v1';
+  static const _analyticsConsentKey = 'analytics_consent_v2';
 
   final bool persistenceEnabled;
   final SharedPreferencesAsync? _preferences;
@@ -84,11 +84,14 @@ class AppController extends ChangeNotifier {
   }
 
   Machine ensureMachineAdded(Machine machine) {
+    trackUsage('exercise_opened', {
+      'group': machine.group.name,
+      'exercise': machine.isCustom ? 'custom' : machine.id,
+    });
     if (hasMachine(machine.id)) return machineById(machine.id);
     _machines.add(machine);
     notifyListeners();
     _scheduleSave();
-    trackUsage('exercise_opened', {'group': machine.group.name});
     return machine;
   }
 
@@ -405,7 +408,10 @@ class AppController extends ChangeNotifier {
     );
     notifyListeners();
     _scheduleSave();
-    trackUsage('strength_record_created', {'group': machine.group.name});
+    trackUsage('strength_record_created', {
+      'group': machine.group.name,
+      'exercise': machine.isCustom ? 'custom' : machine.id,
+    });
   }
 
   @override

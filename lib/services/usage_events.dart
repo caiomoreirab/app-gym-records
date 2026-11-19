@@ -1,4 +1,4 @@
-/// Anonymous events used to understand feature adoption after explicit opt-in.
+/// Categorical events used to understand feature adoption after explicit opt-in.
 /// No network collection is enabled in the offline-first release. A Firebase
 /// adapter may be installed later without changing the domain/controller APIs.
 abstract class UsageEventSink {

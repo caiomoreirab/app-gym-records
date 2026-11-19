@@ -16,7 +16,7 @@
   <h2>1. Quais dados são armazenados</h2>
   <p>O aplicativo guarda localmente nome ou apelido escolhido, preferências de exibição, exercícios personalizados, anotações, histórico de treinos de musculação e Cardio, e recordes derivados desses dados. No Android e iOS, o histórico é armazenado em banco SQLite privado do aplicativo; na prévia Web, no armazenamento do navegador.</p>
   <h2>2. Transmissão de dados</h2>
-  <p>A versão offline não possui sincronização com servidores próprios e não envia histórico, pesos, nomes ou anotações para um backend do GymRecords. A arquitetura prevê métricas anônimas opcionais, mas o envio remoto está desativado enquanto não houver um provedor configurado e comunicação clara aos usuários. O aplicativo não exige conectividade para registrar ou consultar treinos.</p>
+  <p>A versão offline não possui sincronização com servidores próprios e não envia histórico, pesos, nomes ou anotações para um backend do GymRecords. A arquitetura prevê métricas opcionais de utilização via Firebase Analytics, mas o envio remoto permanece desativado enquanto não houver configuração do serviço e autorização explícita do usuário. Se ativadas, essas métricas podem incluir um identificador pseudônimo de instalação do Firebase, o nome do evento e parâmetros categóricos (por exemplo, categoria ou código do exercício); não enviamos pesos, anotações ou o histórico completo de treinos. O aplicativo não exige conectividade para registrar ou consultar treinos.</p>
   <h2>3. Backup e restauração</h2>
   <p>É possível copiar um backup em formato JSON e restaurá-lo manualmente. O conteúdo contém informações pessoais de treino; proteja esse arquivo e não o compartilhe publicamente. Copiar o backup para a área de transferência pode disponibilizá-lo a outros aplicativos conforme as regras do sistema operacional.</p>
   <h2>4. Exclusão e retenção</h2>
@@ -24,7 +24,7 @@
   <h2>5. Lojas de aplicativos</h2>
   <p>Google Play e App Store podem produzir estatísticas de instalação, avaliações e diagnósticos de acordo com as próprias políticas. Essas métricas das lojas não são o histórico pessoal de exercícios.</p>
   <h2>6. Atualizações</h2>
-  <p>Se adicionarmos sincronização, contas ou coleta remota de estatísticas, esta política será atualizada antes da ativação, com as informações aplicáveis sobre finalidades, consentimento, serviços e retenção.</p>
+  <p>Antes de habilitar a coleta remota de estatísticas, atualizaremos esta política com a identificação dos serviços, finalidades, prazo de retenção, direitos aplicáveis e controles de consentimento. A sincronização de contas e treinos exigirá comunicação específica adicional.</p>
   <h2>7. Contato</h2>
   <p>Para dúvidas sobre privacidade, utilize o canal de suporte do projeto: <a href="https://github.com/caiomoreirab/app-gym-records/issues">GymRecords — suporte público</a>. Um contato privativo deverá ser disponibilizado antes da publicação comercial nas lojas.</p>
 </body>

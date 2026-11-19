@@ -10,7 +10,7 @@ Aplicativo de acompanhamento de recordes de musculação e Cardio. **A versão p
 - **Persistência de dados local:** SQLite no Android/iOS e preferências locais do navegador na prévia Web. Os dados são independentes por aparelho.
 - Criação, edição e notas de exercícios personalizados.
 - Central de **Dados e privacidade** nas configurações: backup JSON, restauração e consentimento para métricas.
-- Eventos anônimos instrumentados e adaptador de Firebase opcional, sem coleta remota até configurar um projeto e o usuário autorizar.
+- Eventos de uso categóricos e adaptador de Firebase opcional, sem coleta remota até configurar um projeto e o usuário autorizar.
 - GitHub Actions: testes, APK Android, prévia Web e geração manual de AAB assinado com Secrets.
 
 ## Repositório e builds
