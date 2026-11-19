@@ -2,6 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../state/app_controller.dart';
+import '../services/firebase_usage_sink.dart';
 import '../theme/app_theme.dart';
 import '../widgets/page_body.dart';
 import '../widgets/section_card.dart';
@@ -149,9 +150,12 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Autorizar métricas anônimas'),
-                    subtitle: const Text(
-                      'As métricas estão preparadas, mas a coleta remota '
-                      'ainda não foi configurada nem ativada.',
+                    subtitle: Text(
+                      FirebaseUsageSink.isConfigured
+                          ? 'Após sua autorização, podemos enviar somente eventos '
+                            'de uso sem nomes, pesos ou anotações.'
+                          : 'O Firebase ainda não foi configurado: nenhum '
+                            'evento será enviado nesta versão.',
                     ),
                     value: app.analyticsConsent,
                     onChanged: app.setAnalyticsConsent,
