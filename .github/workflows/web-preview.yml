@@ -6,6 +6,7 @@ on:
     paths:
       - 'lib/**'
       - 'assets/**'
+      - 'docs/privacy.html'
       - 'web/**'
       - 'pubspec.yaml'
       - 'pubspec.lock'
@@ -53,6 +54,8 @@ jobs:
 
       - name: Preparar distribuição estática
         run: |
+          mkdir -p build/web
+          cp docs/privacy.html build/web/privacy.html
           touch build/web/.nojekyll
           cp build/web/index.html build/web/404.html
           test -s build/web/index.html
