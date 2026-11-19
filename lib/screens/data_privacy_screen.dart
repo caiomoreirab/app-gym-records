@@ -23,6 +23,11 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
   }
 
   Future<void> _copyBackup(AppController app) async {
+    if (app.storageRecoveryRequired) {
+      _message('Não é seguro gerar backup vazio: o banco local não pôde ser lido. '
+          'Restaure um backup válido ou procure suporte antes de limpar os dados.');
+      return;
+    }
     setState(() => _working = true);
     try {
       await app.flushPendingWrites();
@@ -77,6 +82,20 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
     }
   }
 
+  Future<void> _retrySave(AppController app) async {
+    setState(() => _working = true);
+    try {
+      final saved = await app.retrySave();
+      if (!mounted) return;
+      _message(saved ? 'Dados locais salvos com sucesso.' :
+          'O banco não pôde ser recuperado. Seus dados não foram sobrescritos.');
+    } catch (error) {
+      if (mounted) _message('Erro ao tentar salvar: $error');
+    } finally {
+      if (mounted) setState(() => _working = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
@@ -100,8 +119,27 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
             const SizedBox(height: 18),
             if (app.persistenceError != null) ...[
               SectionCard(
-                child: Text(app.persistenceError!,
-                    style: const TextStyle(color: Colors.orangeAccent)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(app.persistenceError!,
+                        style: const TextStyle(color: Colors.orangeAccent)),
+                    const SizedBox(height: 12),
+                    Text(app.storageRecoveryRequired
+                        ? 'Proteção ativada: não gravaremos dados sobre um banco '
+                          'que não conseguimos ler. Não limpe os dados do app.'
+                        : 'O armazenamento pode estar temporariamente indisponível. '
+                          'Se necessário, copie um backup e tente salvar novamente.'),
+                    if (!app.storageRecoveryRequired) ...[
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: _working ? null : () => _retrySave(app),
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('Tentar salvar novamente'),
+                      ),
+                    ],
+                  ],
+                ),
               ),
               const SizedBox(height: 12),
             ],
