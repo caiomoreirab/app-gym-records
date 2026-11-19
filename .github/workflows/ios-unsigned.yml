@@ -22,7 +22,8 @@ concurrency:
 jobs:
   ios-unsigned:
     name: Compilar IPA para assinatura no Sideloadly
-    runs-on: macos-15
+    # Firebase Apple SDK 13 requer Xcode 26.2+; macOS 26 traz o toolchain correto.
+    runs-on: macos-26
     timeout-minutes: 70
     steps:
       - name: Baixar codigo
