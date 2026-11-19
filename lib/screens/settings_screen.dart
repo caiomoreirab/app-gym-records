@@ -291,7 +291,7 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: 36),
             Center(
               child: Text(
-                context.strings.t('Versão de validação 0.8.0 • Base visual', 'Validation build 0.8.0 • Visual foundation', 'Versión de prueba 0.8.0 • Base visual'),
+                context.strings.t('Versão de validação 0.9.0 • Dados locais', 'Validation build 0.9.0 • Local data', 'Versión de prueba 0.9.0 • Datos locales'),
                 style: const TextStyle(color: AppTheme.iceBlue),
               ),
             ),
