@@ -87,7 +87,7 @@ void main() {
     controller.addRecord(exercise, weight: 65, repetitions: 10);
     await controller.flushPendingWrites();
     expect(controller.persistenceError, isNotNull);
-    expect(store.snapshot, isNotNull); // earlier ensureMachineAdded saved.
+    expect(store.writes, 0); // no snapshot was committed while storage was failing.
     store.rejectWrites = false;
     expect(await controller.retrySave(), isTrue);
     expect(controller.persistenceError, isNull);
