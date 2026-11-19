@@ -1,3 +1,12 @@
+import java.util.Properties
+import java.io.FileInputStream
+
+val uploadKeyProperties = Properties()
+val uploadKeyFile = rootProject.file("key.properties")
+if (uploadKeyFile.exists()) {
+    FileInputStream(uploadKeyFile).use { uploadKeyProperties.load(it) }
+}
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -29,11 +38,25 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("releaseUpload") {
+            if (uploadKeyFile.exists()) {
+                keyAlias = uploadKeyProperties.getProperty("keyAlias")
+                keyPassword = uploadKeyProperties.getProperty("keyPassword")
+                storeFile = file(uploadKeyProperties.getProperty("storeFile"))
+                storePassword = uploadKeyProperties.getProperty("storePassword")
+            }
+        }
+    }
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // An unsigned local release is allowed for analysis only.
+            // A store upload MUST use android/key.properties + private upload keystore.
+            if (uploadKeyFile.exists()) {
+                signingConfig = signingConfigs.getByName("releaseUpload")
+            } else {
+                signingConfig = null
+            }
         }
     }
 }
