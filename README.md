@@ -1,4 +1,4 @@
-# GymRecords — Flutter (v0.9.0+18)
+# GymRecords — Flutter (v0.9.1+19)
 
 Aplicativo de acompanhamento de recordes de musculação e Cardio. **A versão principal funciona offline**, com dados privados no dispositivo e sem necessidade de criar uma conta.
 
