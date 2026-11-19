@@ -1,4 +1,3 @@
-import 'package:flutter_localizations/flutter_localizations.dart' as fl;
 import 'package:material_ui/material_ui.dart';
 
 import 'screens/splash_screen.dart';
@@ -58,9 +57,7 @@ class _GymRecordsAppState extends State<GymRecordsApp> {
           themeMode: ThemeMode.dark,
           locale: _controller.appLocale,
           supportedLocales: const [Locale('pt', 'BR'), Locale('en', 'US'), Locale('es', 'ES')],
-          localizationsDelegates: const [
-            localizationsDelegates: GlobalMaterialLocalizations.delegates,
-          ],
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
           scrollBehavior: const GymRecordsScrollBehavior(),
           home: const SplashScreen(),
         ),
