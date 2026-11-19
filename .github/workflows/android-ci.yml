@@ -78,6 +78,26 @@ jobs:
       - name: Instalar dependencias
         run: flutter pub get
 
+      - name: Incluir Maven Central nos builds Gradle
+        run: |
+          mkdir -p "$HOME/.gradle/init.d"
+          cat > "$HOME/.gradle/init.d/gymrepositories.gradle" <<'GROOVY'
+          gradle.beforeSettings { settings ->
+            settings.pluginManagement.repositories {
+              mavenCentral()
+              google()
+              gradlePluginPortal()
+            }
+          }
+          gradle.beforeProject { project ->
+            project.buildscript.repositories {
+              mavenCentral()
+              google()
+              gradlePluginPortal()
+            }
+          }
+          GROOVY
+
       - name: Compilar APK debug
         run: flutter build apk --debug
 
