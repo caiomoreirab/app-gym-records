@@ -63,6 +63,26 @@ jobs:
       - name: Executar testes
         run: flutter test --reporter expanded
 
+      - name: Incluir Maven Central nos builds Gradle
+        run: |
+          mkdir -p "$HOME/.gradle/init.d"
+          cat > "$HOME/.gradle/init.d/gymrepositories.gradle" <<'GROOVY'
+          gradle.beforeSettings { settings ->
+            settings.pluginManagement.repositories {
+              mavenCentral()
+              google()
+              gradlePluginPortal()
+            }
+          }
+          gradle.beforeProject { project ->
+            project.buildscript.repositories {
+              mavenCentral()
+              google()
+              gradlePluginPortal()
+            }
+          }
+          GROOVY
+
       - name: Compilar AAB assinado
         run: flutter build appbundle --release
 
