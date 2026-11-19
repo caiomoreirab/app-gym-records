@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,12 +12,20 @@ import '../models/machine.dart';
 import '../models/muscle_group.dart';
 import '../models/user_profile.dart';
 import '../models/workout_record.dart';
+import '../services/local_data_store.dart';
+import '../services/workout_snapshot_codec.dart';
+import '../services/usage_events.dart';
 
 class AppController extends ChangeNotifier {
-  AppController({this.persistenceEnabled = true})
-      : _machines = buildInitialMachines(),
-        _cardioActivities = buildInitialCardioActivities(),
-        _preferences = persistenceEnabled ? SharedPreferencesAsync() : null;
+  AppController({
+    this.persistenceEnabled = true,
+    LocalDataStore? store,
+    UsageEventSink? analyticsSink,
+  })  : _machines = persistenceEnabled ? <Machine>[] : buildInitialMachines(),
+        _cardioActivities = persistenceEnabled ? buildCardioActivities() : buildInitialCardioActivities(),
+        _preferences = persistenceEnabled ? SharedPreferencesAsync() : null,
+        _store = store ?? (persistenceEnabled ? LocalDataStore.production() : null),
+        _analyticsSink = analyticsSink ?? const DisabledUsageEventSink();
 
   static const _nameKey = 'display_name';
   static const _illustrationStyleKey = 'illustration_style';
@@ -26,9 +35,15 @@ class AppController extends ChangeNotifier {
   static const _incrementKey = 'weight_increment';
   static const _proPreviewKey = 'pro_preview_enabled';
   static const _languageKey = 'language_code';
+  static const _analyticsConsentKey = 'analytics_consent_v1';
 
   final bool persistenceEnabled;
   final SharedPreferencesAsync? _preferences;
+  final LocalDataStore? _store;
+  final UsageEventSink _analyticsSink;
+  Future<void> _writeQueue = Future<void>.value();
+  bool analyticsConsent = false;
+  String? persistenceError;
   bool _onboardingCompleted = false;
 
   String displayName = '';
@@ -72,6 +87,8 @@ class AppController extends ChangeNotifier {
     if (hasMachine(machine.id)) return machineById(machine.id);
     _machines.add(machine);
     notifyListeners();
+    _scheduleSave();
+    trackUsage('exercise_opened', {'group': machine.group.name});
     return machine;
   }
 
@@ -87,19 +104,89 @@ class AppController extends ChangeNotifier {
 
   Future<void> loadPreferences() async {
     final preferences = _preferences;
-    if (!persistenceEnabled || preferences == null) return;
-    displayName = (await preferences.getString(_nameKey))?.trim() ?? '';
-    illustrationStyle = illustrationStyleFromStorage(
-      await preferences.getString(_illustrationStyleKey),
-    );
-    _onboardingCompleted =
-        await preferences.getBool(_onboardingCompleteKey) ?? false;
-    unit = await preferences.getString(_unitKey) ?? 'kg';
-    distanceUnit = await preferences.getString(_distanceUnitKey) ?? 'km';
-    increment = await preferences.getDouble(_incrementKey) ?? 2.5;
-    isPro = await preferences.getBool(_proPreviewKey) ?? true;
-    languageCode = await preferences.getString(_languageKey) ?? 'system';
+    if (persistenceEnabled && preferences != null) {
+      displayName = (await preferences.getString(_nameKey))?.trim() ?? '';
+      illustrationStyle = illustrationStyleFromStorage(
+        await preferences.getString(_illustrationStyleKey),
+      );
+      _onboardingCompleted =
+          await preferences.getBool(_onboardingCompleteKey) ?? false;
+      unit = await preferences.getString(_unitKey) ?? 'kg';
+      distanceUnit = await preferences.getString(_distanceUnitKey) ?? 'km';
+      increment = await preferences.getDouble(_incrementKey) ?? 2.5;
+      isPro = await preferences.getBool(_proPreviewKey) ?? true;
+      languageCode = await preferences.getString(_languageKey) ?? 'system';
+      analyticsConsent = await preferences.getBool(_analyticsConsentKey) ?? false;
+    }
+    final store = _store;
+    if (store != null) {
+      try {
+        final snapshot = await store.load();
+        if (snapshot != null) {
+          WorkoutSnapshotCodec.decode(snapshot).applyTo(_machines, _cardioActivities);
+        }
+        persistenceError = null;
+      } catch (error) {
+        // Do not replace a damaged database: the user can still export a
+        // backup for support, and a read error is visible in Settings.
+        persistenceError = 'Não foi possível ler os dados locais: $error';
+      }
+    }
     notifyListeners();
+    trackUsage('app_opened');
+  }
+
+  void _scheduleSave() {
+    final store = _store;
+    if (store == null || persistenceError != null) return;
+    final snapshot = WorkoutSnapshotCodec.encode(
+      machines: _machines,
+      cardioActivities: _cardioActivities,
+    );
+    // Serializing the writes prevents a slow older save from overwriting a
+    // newer record. Capture the snapshot before queuing it.
+    _writeQueue = _writeQueue
+        .then((_) => store.save(snapshot))
+        .then((_) { persistenceError = null; })
+        .catchError((Object error, StackTrace stack) {
+          persistenceError = 'Falha ao salvar os treinos: $error';
+          notifyListeners();
+        });
+  }
+
+  Future<void> flushPendingWrites() => _writeQueue;
+
+  String exportBackup() => const JsonEncoder.withIndent('  ').convert(
+        WorkoutSnapshotCodec.encode(
+          machines: _machines,
+          cardioActivities: _cardioActivities,
+        ),
+      );
+
+  Future<void> importBackup(String backup) async {
+    final decoded = jsonDecode(backup);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('Backup JSON inválido.');
+    }
+    final restored = WorkoutSnapshotCodec.decode(decoded);
+    await flushPendingWrites();
+    final store = _store;
+    if (store != null) await store.save(decoded);
+    restored.applyTo(_machines, _cardioActivities);
+    persistenceError = null;
+    notifyListeners();
+  }
+
+  void setAnalyticsConsent(bool value) {
+    analyticsConsent = value;
+    _saveBool(_analyticsConsentKey, value);
+    notifyListeners();
+  }
+
+  void trackUsage(String event, [Map<String, String> attributes = const {}]) {
+    if (!analyticsConsent) return;
+    // No name, weights, notes, medical or other personal content.
+    unawaited(_analyticsSink.track(event, attributes).catchError((Object _) {}));
   }
 
   void _saveString(String key, String value) {
@@ -152,6 +239,7 @@ class AppController extends ChangeNotifier {
     _onboardingCompleted = true;
     notifyListeners();
     _saveBool(_onboardingCompleteKey, true);
+    trackUsage('onboarding_completed');
   }
 
   void setUnit(String value) {
@@ -188,6 +276,7 @@ class AppController extends ChangeNotifier {
     if (hasMachine(machine.id)) return;
     _machines.add(machine);
     notifyListeners();
+    _scheduleSave();
   }
 
   void addCustomMachine({required String name, required MuscleGroup group, EquipmentType equipment = EquipmentType.other}) {
@@ -203,22 +292,27 @@ class AppController extends ChangeNotifier {
       ),
     );
     notifyListeners();
+    _scheduleSave();
+    trackUsage('custom_exercise_created', {'group': group.name});
   }
 
   void renameMachine(Machine machine, String name) {
     machine.name = name.trim();
     machine.nameEn = machine.name;
     notifyListeners();
+    _scheduleSave();
   }
 
   void deleteMachine(Machine machine) {
     _machines.remove(machine);
     notifyListeners();
+    _scheduleSave();
   }
 
   void updateMachineNote(Machine machine, String note) {
     machine.note = note.trim();
     notifyListeners();
+    _scheduleSave();
   }
 
   CardioAchievement? addCardioRecord(CardioActivity activity, CardioRecord record) {
@@ -230,6 +324,8 @@ class AppController extends ChangeNotifier {
 
     activity.records.add(record);
     notifyListeners();
+    _scheduleSave();
+    trackUsage('cardio_record_created', {'activity': activity.id});
 
     final metrics = <CardioAchievementMetric>[];
     final distance = record.distanceKm;
@@ -300,6 +396,17 @@ class AppController extends ChangeNotifier {
       ),
     );
     notifyListeners();
+    _scheduleSave();
+    trackUsage('strength_record_created', {'group': machine.group.name});
+  }
+
+  @override
+  void dispose() {
+    final store = _store;
+    if (store != null) {
+      unawaited(_writeQueue.then((_) => store.close()));
+    }
+    super.dispose();
   }
 }
 
