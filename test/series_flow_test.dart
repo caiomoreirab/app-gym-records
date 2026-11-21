@@ -96,6 +96,16 @@ void main() {
     expect(summary.totalVolume, 840);
   });
 
+  test('texto ampliado é opcional e não modifica o histórico', () {
+    final app = AppController(persistenceEnabled: false);
+    expect(app.largeText, isFalse);
+    app.setLargeText(true);
+    expect(app.largeText, isTrue);
+    app.setLargeText(false);
+    expect(app.largeText, isFalse);
+    app.dispose();
+  });
+
   test('CSV básico continua disponível sem assinatura Pro', () async {
     final app = AppController(persistenceEnabled: false);
     expect(app.isPro, isFalse);
