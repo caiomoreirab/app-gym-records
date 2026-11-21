@@ -15,6 +15,7 @@ import '../widgets/record_achievement_sheet.dart';
 import '../widgets/section_card.dart';
 import '../widgets/workout_series_panel.dart';
 import '../widgets/rest_timer_card.dart';
+import '../widgets/local_machine_photo_card.dart';
 import 'exercise_insights_screen.dart';
 import 'pro_overview_screen.dart';
 
@@ -192,6 +193,8 @@ class _MachineScreenState extends State<MachineScreen> {
               const SizedBox(height: 10),
               _AdjustmentsCard(machine: machine,
                   onEdit: () => _editAdjustments(machine)),
+              const SizedBox(height: 10),
+              LocalMachinePhotoCard(machine: machine),
               if (machine.records.isNotEmpty) ...[
                 const SizedBox(height: 10),
                 OutlinedButton.icon(
