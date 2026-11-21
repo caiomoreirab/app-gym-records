@@ -24,7 +24,6 @@ void main() {
 
   test('prancha e variações sem desenho exato estão sinalizadas', () {
     for (final id in [
-      'plank',
       'side_plank',
       'ab_wheel',
       'captain_chair_raise',
@@ -34,7 +33,7 @@ void main() {
       expect(IllustrationAssets.needsExecutionArtworkReview(catalog[id]!),
           isTrue, reason: id);
     }
-    for (final id in ['crunch', 'reverse_crunch', 'hanging_leg_raise']) {
+    for (final id in ['crunch', 'reverse_crunch', 'hanging_leg_raise', 'plank']) {
       expect(IllustrationAssets.needsExecutionArtworkReview(catalog[id]!),
           isFalse, reason: id);
     }
