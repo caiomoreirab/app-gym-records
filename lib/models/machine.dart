@@ -43,9 +43,11 @@ class Machine {
     this.subgroupEn = '',
     this.aliases = const <String>[],
     this.note = '',
+    Map<String, String>? adjustments,
     List<WorkoutRecord>? records,
     this.isCustom = false,
-  }) : records = records ?? <WorkoutRecord>[];
+  }) : adjustments = adjustments ?? <String, String>{},
+       records = records ?? <WorkoutRecord>[];
 
   final String id;
   String name;
@@ -58,6 +60,8 @@ class Machine {
   final String subgroupEn;
   final List<String> aliases;
   String note;
+  /// Local structured equipment adjustments, independent of workout sets.
+  final Map<String, String> adjustments;
   final List<WorkoutRecord> records;
   final bool isCustom;
 
