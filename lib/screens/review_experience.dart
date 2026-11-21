@@ -9,6 +9,7 @@ import 'home_screen.dart';
 import 'machine_screen.dart';
 import 'settings_screen.dart';
 import 'training_goals_screen.dart';
+import 'gym_profiles_screen.dart';
 
 /// Mobile validation experience, visually based on the approved cyan mockups.
 /// Uses the real AppController/SQLite data, not the standalone HTML prototype.
@@ -76,7 +77,17 @@ class ReviewHomeScreen extends StatelessWidget {
                   ]),
                 ),
               ),
-              const SizedBox(height: 19),
+              const SizedBox(height: 11),
+              Row(children: [
+                const Icon(Icons.location_city_rounded,
+                  color: AppTheme.electricLime, size: 17),
+                const SizedBox(width: 6),
+                Expanded(child: Text(app.selectedGymName,
+                  style: const TextStyle(color: AppTheme.iceBlue))),
+                TextButton(onPressed: () => _open(context, const GymProfilesScreen()),
+                  child: const Text('Alterar')),
+              ]),
+              const SizedBox(height: 11),
               _CyanCard(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Row(children: [
