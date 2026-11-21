@@ -83,7 +83,7 @@ void main() {
     app.addRecord(machine, weight: 95, repetitions: 8,
       at: date.add(const Duration(minutes: 1)));
     final entries = ReportExportService.entries(
-      machines: [machine], cardioActivities: app.cardioActivities,
+      machines: [machine], cardioActivities: const [],
       period: AnalyticsPeriod.all, now: DateTime(2026, 11, 21));
     expect(entries.length, 2);
     expect(entries.any((e) => e.weight == 100 && e.repetitions == 3), isTrue);
