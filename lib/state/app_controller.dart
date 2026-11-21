@@ -29,6 +29,10 @@ class AppController extends ChangeNotifier {
         _store = store ?? (persistenceEnabled ? LocalDataStore.production() : null),
         _analyticsSink = analyticsSink ?? const DisabledUsageEventSink();
 
+  static const _phase1Preview = bool.fromEnvironment('GYM_PHASE1_PREVIEW');
+  static String _preferenceKey(String key) =>
+      _phase1Preview ? 'gymrecords_phase1_$key' : key;
+
   static const _nameKey = 'display_name';
   static const _illustrationStyleKey = 'illustration_style';
   static const _onboardingCompleteKey = 'onboarding_complete';
@@ -233,19 +237,19 @@ class AppController extends ChangeNotifier {
   Future<void> loadPreferences() async {
     final preferences = _preferences;
     if (persistenceEnabled && preferences != null) {
-      displayName = (await preferences.getString(_nameKey))?.trim() ?? '';
+      displayName = (await preferences.getString(_preferenceKey(_nameKey)))?.trim() ?? '';
       illustrationStyle = illustrationStyleFromStorage(
-        await preferences.getString(_illustrationStyleKey),
+        await preferences.getString(_preferenceKey(_illustrationStyleKey)),
       );
       _onboardingCompleted =
-          await preferences.getBool(_onboardingCompleteKey) ?? false;
-      unit = await preferences.getString(_unitKey) ?? 'kg';
-      distanceUnit = await preferences.getString(_distanceUnitKey) ?? 'km';
-      increment = await preferences.getDouble(_incrementKey) ?? 2.5;
-      isPro = await preferences.getBool(_proPreviewKey) ?? true;
-      languageCode = await preferences.getString(_languageKey) ?? 'system';
-      largeText = await preferences.getBool(_largeTextKey) ?? false;
-      analyticsConsent = await preferences.getBool(_analyticsConsentKey) ?? false;
+          await preferences.getBool(_preferenceKey(_onboardingCompleteKey)) ?? false;
+      unit = await preferences.getString(_preferenceKey(_unitKey)) ?? 'kg';
+      distanceUnit = await preferences.getString(_preferenceKey(_distanceUnitKey)) ?? 'km';
+      increment = await preferences.getDouble(_preferenceKey(_incrementKey)) ?? 2.5;
+      isPro = await preferences.getBool(_preferenceKey(_proPreviewKey)) ?? true;
+      languageCode = await preferences.getString(_preferenceKey(_languageKey)) ?? 'system';
+      largeText = await preferences.getBool(_preferenceKey(_largeTextKey)) ?? false;
+      analyticsConsent = await preferences.getBool(_preferenceKey(_analyticsConsentKey)) ?? false;
     }
     final store = _store;
     if (store != null) {
@@ -367,19 +371,19 @@ class AppController extends ChangeNotifier {
   void _saveString(String key, String value) {
     final preferences = _preferences;
     if (!persistenceEnabled || preferences == null) return;
-    unawaited(preferences.setString(key, value));
+    unawaited(preferences.setString(_preferenceKey(key), value));
   }
 
   void _saveBool(String key, bool value) {
     final preferences = _preferences;
     if (!persistenceEnabled || preferences == null) return;
-    unawaited(preferences.setBool(key, value));
+    unawaited(preferences.setBool(_preferenceKey(key), value));
   }
 
   void _saveDouble(String key, double value) {
     final preferences = _preferences;
     if (!persistenceEnabled || preferences == null) return;
-    unawaited(preferences.setDouble(key, value));
+    unawaited(preferences.setDouble(_preferenceKey(key), value));
   }
 
   List<Machine> machinesFor(MuscleGroup group) {
