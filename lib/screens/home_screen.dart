@@ -253,11 +253,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       Row(children: [
                         const Icon(Icons.today_rounded, color: AppTheme.electricLime),
                         const SizedBox(width: 10),
-                        Text('Treino de hoje',
-                          style: Theme.of(context).textTheme.titleLarge),
-                        const Spacer(),
+                        Expanded(
+                          child: Text('Treino de hoje',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleLarge),
+                        ),
                         Text('${todaysMachines.length} exercícios',
-                          style: const TextStyle(color: AppTheme.iceBlue)),
+                          style: const TextStyle(
+                              color: AppTheme.iceBlue, fontSize: 12)),
                       ]),
                       const SizedBox(height: 10),
                       if (todaysMachines.isEmpty)
