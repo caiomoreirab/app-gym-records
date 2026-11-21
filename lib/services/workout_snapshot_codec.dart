@@ -20,6 +20,7 @@ class WorkoutSnapshotCodec {
     String? activeSessionId,
     Map<String, String> sessionNames = const {},
     Map<String, List<String>> sessionExercises = const {},
+    Map<String, double> targetWeights = const {},
   }) =>
       {
         'schemaVersion': schemaVersion,
@@ -27,6 +28,7 @@ class WorkoutSnapshotCodec {
         'activeSessionId': activeSessionId,
         'sessionNames': sessionNames,
         'sessionExercises': sessionExercises,
+        'targetWeights': targetWeights,
         'machines': [
           for (final machine in machines)
             {
@@ -263,9 +265,25 @@ class WorkoutSnapshotCodec {
         plans[entry.key as String] = (entry.value as List).cast<String>();
       }
     }
+    final goals = <String, double>{};
+    final rawGoals = input['targetWeights'];
+    if (rawGoals != null) {
+      if (rawGoals is! Map || rawGoals.length > 2000) {
+        throw const FormatException('Metas inválidas.');
+      }
+      for (final entry in rawGoals.entries) {
+        if (entry.key is! String || entry.value is! num ||
+            !(entry.value as num).isFinite ||
+            (entry.value as num) <= 0 || (entry.value as num) > 10000 ||
+            (entry.key as String).length > 120) {
+          throw const FormatException('Meta de carga inválida.');
+        }
+        goals[entry.key as String] = (entry.value as num).toDouble();
+      }
+    }
     return WorkoutRestoredState(newMachines, newCardio, favorites,
         activeSessionId: rawActiveId as String?, sessionNames: names,
-        sessionExercises: plans);
+        sessionExercises: plans, targetWeights: goals);
   }
 
   static T _byName<T extends Enum>(List<T> values, Object? name) {
@@ -308,7 +326,8 @@ class WorkoutSnapshotCodec {
 class WorkoutRestoredState {
   WorkoutRestoredState(this.machines, this.cardio, this.favorites,
       {this.activeSessionId, this.sessionNames = const {},
-       this.sessionExercises = const {}});
+       this.sessionExercises = const {}, this.targetWeights = const {}});
+  final Map<String, double> targetWeights;
   final String? activeSessionId;
   final Map<String, String> sessionNames;
   final Map<String, List<String>> sessionExercises;
