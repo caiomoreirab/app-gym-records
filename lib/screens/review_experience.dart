@@ -19,6 +19,10 @@ class ReviewHomeScreen extends StatelessWidget {
   void _open(BuildContext context, Widget page) {
     Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => page));
   }
+  void _openMachine(BuildContext context, Machine machine) {
+    final added = AppScope.of(context).ensureMachineAdded(machine);
+    _open(context, MachineScreen(machineId: added.id));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -107,7 +111,7 @@ class ReviewHomeScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     for (final m in app.activeSessionMachines.take(3))
                       _MachineRow(machine: m, onTap: () =>
-                        _open(context, MachineScreen(machineId: m.id))),
+                        _openMachine(context, m)),
                   ],
                   const SizedBox(height: 13),
                   FilledButton.icon(
@@ -144,7 +148,7 @@ class ReviewHomeScreen extends StatelessWidget {
               for (final machine in [...favorites, ...recent].fold<List<Machine>>(
                   [], (items, m) { if (!items.any((v) => v.id == m.id)) items.add(m); return items; }))
                 _MachineRow(machine: machine, onTap: () =>
-                  _open(context, MachineScreen(machineId: machine.id))),
+                  _openMachine(context, machine)),
               if (favorites.isEmpty && recent.isEmpty)
                 const _CyanCard(child: Text(
                   'Toque na estrela dos exercícios para encontrá-los rapidamente aqui.',
