@@ -15,6 +15,7 @@ class TwoViewImagePager extends StatefulWidget {
     this.width,
     this.executionFallback,
     this.muscleFallback,
+    this.executionUnderReview = false,
     this.compact = false,
     this.showLabel = false,
     this.fit = BoxFit.contain,
@@ -26,6 +27,7 @@ class TwoViewImagePager extends StatefulWidget {
   final String musclePath;
   final String? executionFallback;
   final String? muscleFallback;
+  final bool executionUnderReview;
   final double height;
   final double? width;
   final bool compact;
@@ -96,11 +98,13 @@ class _TwoViewImagePagerState extends State<TwoViewImagePager> {
                 transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
                 child: SizedBox.expand(
                   key: ValueKey('${widget.visualSetKey}|${_muscles ? 'muscles' : 'execution'}'),
-                  child: _StrictProfileImage(
-                    path: path,
-                    fallback: fallback,
-                    fit: widget.fit,
-                  ),
+                  child: !_muscles && widget.executionUnderReview
+                    ? const _ExecutionUnderReview()
+                    : _StrictProfileImage(
+                        path: path,
+                        fallback: fallback,
+                        fit: widget.fit,
+                      ),
                 ),
               ),
               if (widget.showLabel)
@@ -196,4 +200,35 @@ class _StrictProfileImage extends StatelessWidget {
       },
     );
   }
+}
+
+/// Safe visual state: never attribute a machine photo to an unrelated movement.
+class _ExecutionUnderReview extends StatelessWidget {
+  const _ExecutionUnderReview();
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: 'Execução ainda sem imagem específica validada',
+    image: true,
+    child: ColoredBox(
+      color: AppTheme.accentBlueSoft,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.fitness_center_rounded,
+              color: AppTheme.electricLime, size: 34),
+            const SizedBox(height: 9),
+            Text(
+              Localizations.localeOf(context).languageCode == 'en'
+                ? 'Exercise artwork under review'
+                : 'Ilustração específica em revisão',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppTheme.iceBlue, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
