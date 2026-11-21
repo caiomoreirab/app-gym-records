@@ -17,13 +17,37 @@ class AdaptiveExerciseImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = AppScope.of(context).effectiveIllustrationStyle;
+    if (IllustrationAssets.needsExecutionArtworkReview(machine)) {
+      return Tooltip(
+        message: 'Ilustração de execução em revisão: ${machine.name}',
+        child: Semantics(
+          label: 'Ilustração de execução ainda não validada',
+          image: true,
+          child: SizedBox(
+            width: width,
+            height: height,
+            child: ColoredBox(
+              color: AppTheme.accentBlueSoft,
+              child: const Center(
+                child: Icon(Icons.fitness_center_rounded,
+                  color: AppTheme.iceBlue, size: 27),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     return Image.asset(
       IllustrationAssets.exercise(machine, style),
       width: width,
       height: height,
       fit: fit,
       alignment: Alignment.center,
-      errorBuilder: (_, __, ___) => const ColoredBox(color: AppTheme.surfaceNavy, child: Center(child: Icon(Icons.image_not_supported_outlined))),
+      semanticLabel: 'Execução ilustrativa: ${machine.name}',
+      errorBuilder: (_, __, ___) => const ColoredBox(
+        color: AppTheme.surfaceNavy,
+        child: Center(child: Icon(Icons.image_not_supported_outlined)),
+      ),
     );
   }
 }
@@ -69,6 +93,7 @@ class ExerciseVisualPager extends StatelessWidget {
       musclePath: IllustrationAssets.muscle(machine, style),
       // Same-profile anatomical fallback, never a different person's assets.
       muscleFallback: IllustrationAssets.group(machine.group, style),
+      executionUnderReview: IllustrationAssets.needsExecutionArtworkReview(machine),
       height: height,
       width: width,
       fit: fit,
