@@ -737,25 +737,21 @@ class _SetExtras extends StatelessWidget {
 }
 
 class _TimeStepper extends StatelessWidget {
-  const _TimeStepper({required this.label, required this.value, required this.onDecrement, required this.onIncrement});
+  const _TimeStepper({
+    required this.label, required this.value,
+    required this.onDecrement, required this.onIncrement,
+  });
   final String label;
   final int value;
-  final VoidCallback onDecrement;
-  final VoidCallback onIncrement;
+  final VoidCallback onDecrement, onIncrement;
+
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: AppTheme.deepNavy, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppTheme.deepBlue)),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: const TextStyle(color: AppTheme.iceBlue)),
-          const SizedBox(height: 10),
-          Row(children: [
-            _RoundControl(icon: Icons.remove_rounded, onTap: onDecrement),
-            Expanded(child: Text(value.toString().padLeft(2, '0'), textAlign: TextAlign.center, style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w600))),
-            _RoundControl(icon: Icons.add_rounded, onTap: onIncrement),
-          ]),
-        ]),
-      );
+  Widget build(BuildContext context) => _SetMetricCard(
+    title: label,
+    value: value.toString().padLeft(2, '0'),
+    onMinus: onDecrement,
+    onPlus: onIncrement,
+  );
 }
 
 String _machinePrimaryDisplay(Machine machine, String unit, Locale locale) {
