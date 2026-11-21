@@ -36,6 +36,7 @@ class AppController extends ChangeNotifier {
   static const _proPreviewKey = 'pro_preview_enabled';
   static const _languageKey = 'language_code';
   static const _analyticsConsentKey = 'analytics_consent_v2';
+  static const _largeTextKey = 'large_text_enabled';
 
   final bool persistenceEnabled;
   final SharedPreferencesAsync? _preferences;
@@ -56,12 +57,15 @@ class AppController extends ChangeNotifier {
   String unit = 'kg';
   String distanceUnit = 'km';
   double increment = 2.5;
-  bool isPro = true; // front-end preview; billing will replace this flag later
+  bool isPro = false; // Only a preview, never a real subscription.
   String languageCode = 'system';
+  bool largeText = false;
 
   final List<Machine> _machines;
   final List<CardioActivity> _cardioActivities;
   final Map<String, List<CardioRecord>> _preservedCardio = {};
+  final Set<String> _favoriteIds = <String>{};
+  int _sequence = 0;
 
   bool get onboardingComplete =>
       _onboardingCompleted &&
@@ -76,6 +80,27 @@ class AppController extends ChangeNotifier {
   List<CardioActivity> get cardioActivities => List<CardioActivity>.unmodifiable(_cardioActivities);
 
   List<Machine> get machines => List<Machine>.unmodifiable(_machines);
+
+  bool isFavorite(String id) => _favoriteIds.contains(id);
+  Set<String> get favoriteIds => Set<String>.unmodifiable(_favoriteIds);
+  List<Machine> get favoriteMachines => availableMachines
+      .where((machine) => _favoriteIds.contains(machine.id)).toList();
+
+  void toggleFavorite(String id) {
+    if (!_favoriteIds.add(id)) _favoriteIds.remove(id);
+    notifyListeners();
+    _scheduleSave();
+  }
+
+  List<WorkoutRecord> todaysSets(Machine machine, {DateTime? today}) {
+    final current = today ?? DateTime.now();
+    final key = WorkoutRecord.sessionForDay(current);
+    return machine.records.where((r) => r.effectiveSessionId == key).toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
+  }
+
+  List<Machine> get todaysMachines => _machines
+      .where((m) => todaysSets(m).isNotEmpty).toList(growable: false);
 
   List<Machine> get availableMachines {
     final byId = <String, Machine>{
@@ -123,8 +148,9 @@ class AppController extends ChangeNotifier {
       unit = await preferences.getString(_unitKey) ?? 'kg';
       distanceUnit = await preferences.getString(_distanceUnitKey) ?? 'km';
       increment = await preferences.getDouble(_incrementKey) ?? 2.5;
-      isPro = await preferences.getBool(_proPreviewKey) ?? true;
+      isPro = await preferences.getBool(_proPreviewKey) ?? false;
       languageCode = await preferences.getString(_languageKey) ?? 'system';
+      largeText = await preferences.getBool(_largeTextKey) ?? false;
       analyticsConsent = await preferences.getBool(_analyticsConsentKey) ?? false;
     }
     final store = _store;
@@ -136,6 +162,9 @@ class AppController extends ChangeNotifier {
           _preservedCardio
             ..clear()
             ..addAll(restored.applyTo(_machines, _cardioActivities));
+          _favoriteIds
+            ..clear()
+            ..addAll(restored.favorites);
         }
         _failedToReadStorage = false;
         persistenceError = null;
@@ -160,6 +189,7 @@ class AppController extends ChangeNotifier {
       machines: _machines,
       cardioActivities: _cardioActivities,
       preservedCardio: _preservedCardio,
+      favorites: _favoriteIds,
     );
     // Serializing the writes prevents a slow older save from overwriting a
     // newer record. Capture the snapshot before queuing it.
@@ -188,6 +218,7 @@ class AppController extends ChangeNotifier {
           machines: _machines,
           cardioActivities: _cardioActivities,
           preservedCardio: _preservedCardio,
+          favorites: _favoriteIds,
         ),
       );
 
@@ -203,6 +234,9 @@ class AppController extends ChangeNotifier {
     _preservedCardio
       ..clear()
       ..addAll(restored.applyTo(_machines, _cardioActivities));
+    _favoriteIds
+      ..clear()
+      ..addAll(restored.favorites);
     _failedToReadStorage = false;
     persistenceError = null;
     notifyListeners();
@@ -293,6 +327,12 @@ class AppController extends ChangeNotifier {
     increment = value;
     notifyListeners();
     _saveDouble(_incrementKey, value);
+  }
+
+  void setLargeText(bool enabled) {
+    largeText = enabled;
+    notifyListeners();
+    _saveBool(_largeTextKey, enabled);
   }
 
   void setLanguageCode(String value) {
@@ -421,22 +461,70 @@ class AppController extends ChangeNotifier {
     return metrics.isEmpty ? null : CardioAchievement(metrics);
   }
 
-  void addRecord(Machine machine, {double weight = 0, int? repetitions, int? durationSeconds}) {
-    machine.records.add(
-      WorkoutRecord(
-        date: DateTime.now(),
-        weight: weight,
-        repetitions: repetitions,
-        durationSeconds: durationSeconds,
-      ),
+  WorkoutRecord addRecord(
+    Machine machine, {
+    double weight = 0,
+    int? repetitions,
+    int? durationSeconds,
+    bool isWarmup = false,
+    int? rpe,
+    String note = '',
+    DateTime? at,
+  }) {
+    if (!weight.isFinite || weight < 0 || (repetitions != null && repetitions < 0) ||
+        (durationSeconds != null && durationSeconds < 0) ||
+        (rpe != null && (rpe < 1 || rpe > 10))) {
+      throw ArgumentError('Valores de série inválidos.');
+    }
+    final now = at ?? DateTime.now();
+    final record = WorkoutRecord(
+      id: 'set-${now.microsecondsSinceEpoch}-${_sequence++}',
+      sessionId: WorkoutRecord.sessionForDay(now),
+      date: now,
+      weight: weight,
+      repetitions: repetitions,
+      durationSeconds: durationSeconds,
+      isWarmup: isWarmup,
+      rpe: rpe,
+      note: note,
     );
+    machine.records.add(record);
     notifyListeners();
     _scheduleSave();
     trackUsage('strength_record_created', {
       'group': machine.group.name,
       'exercise': machine.isCustom ? 'custom' : machine.id,
     });
+    return record;
   }
+
+  /// All modifications use the same queue and snapshot-based local storage.
+  /// A legacy record may lack an ID, so in-memory identity is used too.
+  void editRecord(Machine machine, WorkoutRecord original, WorkoutRecord updated) {
+    final index = machine.records.indexOf(original);
+    if (index < 0) throw StateError('Série não encontrada.');
+    machine.records[index] = updated;
+    notifyListeners();
+    _scheduleSave();
+  }
+
+  int deleteRecord(Machine machine, WorkoutRecord record) {
+    final index = machine.records.indexOf(record);
+    if (index < 0) throw StateError('Série não encontrada.');
+    machine.records.removeAt(index);
+    notifyListeners();
+    _scheduleSave();
+    return index;
+  }
+
+  void restoreRecord(Machine machine, WorkoutRecord record, int index) {
+    if (machine.records.any((r) => identical(r, record) ||
+        (r.id != null && r.id == record.id))) return;
+    machine.records.insert(index.clamp(0, machine.records.length), record);
+    notifyListeners();
+    _scheduleSave();
+  }
+
 
   @override
   void dispose() {
