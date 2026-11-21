@@ -168,9 +168,9 @@ void main() {
 
   test('CSV com aspas e nomes conhecidos importa sem duplicar', () async {
     final rows = CsvHistoryImportService.parse(
-      'date,exercise,weight,repetitions\\n'
-      '2026-11-20,"Supino reto com barra",80,10\\n'
-      '2026-11-20,"Exercício inexistente",20,12\\n',
+      'date,exercise,weight,repetitions\n'
+      '2026-11-20,"Supino reto com barra",80,10\n'
+      '2026-11-20,"Exercício inexistente",20,12\n',
     );
     expect(rows.length, 2);
     final store = MemoryLocalDataStore();
