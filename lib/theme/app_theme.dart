@@ -4,19 +4,19 @@ import 'package:flutter/services.dart';
 abstract final class AppTheme {
   // Visual refresh inspired by the approved blue/charcoal GymRecords prototype.
   static const electricLime = Color(0xFF00D9E8); // mockup cyan accent
-  static const deepNavy = Color(0xFF04101B);
-  static const splashNavy = Color(0xFF00112B); // almost-black background
-  static const surfaceNavy = Color(0xFF0B2031); // navy cards from approved mockups
+  static const deepNavy = Color(0xFF030507); // restored stable background
+  static const splashNavy = Color(0xFF00112B); // keep original intro
+  static const surfaceNavy = Color(0xFF101417); // original GymRecords charcoal
   static const royalBlue = Color(0xFF087D9F); // selected states
-  static const iceBlue = Color(0xFFB7C4D0); // secondary copy
+  static const iceBlue = Color(0xFFD0D9E1); // clearer secondary text // secondary copy
   static const polarWhite = Color(0xFFF7F9FB);
   static const limeLight = Color(0xFF63D5FF);
   static const limeDark = Color(0xFF0876A8);
-  static const deepBlue = Color(0xFF254357); // cyan-tinted borders
+  static const deepBlue = Color(0xFF34444E); // readable dividers on charcoal
 
   static const accentBlue = electricLime;
-  static const accentBlueSoft = Color(0xFF0B2735);
-  static const cardElevated = Color(0xFF122A3E);
+  static const accentBlueSoft = Color(0xFF102B34);
+  static const cardElevated = Color(0xFF191F24);
   static const mutedSurface = Color(0xFF0B0F12);
   static const success = Color(0xFF32D583);
   static const warning = Color(0xFFFFA928);
