@@ -13,6 +13,7 @@ import '../widgets/page_body.dart';
 import '../widgets/primary_bottom_bar.dart';
 import '../widgets/record_achievement_sheet.dart';
 import '../widgets/section_card.dart';
+import '../widgets/workout_series_panel.dart';
 import 'exercise_insights_screen.dart';
 import 'pro_overview_screen.dart';
 
@@ -28,6 +29,7 @@ class MachineScreen extends StatefulWidget {
 class _MachineScreenState extends State<MachineScreen> {
   bool _initialized = false;
   bool _saving = false;
+  bool _isWarmup = false;
   double _weight = 0;
   int? _repetitions;
   bool _showAdditionalWeight = false;
@@ -41,7 +43,7 @@ class _MachineScreenState extends State<MachineScreen> {
     final machine = AppScope.of(context).machineById(widget.machineId);
     final latest = machine.latestRecord;
     _weight = latest?.weight ?? 0;
-    _repetitions = latest?.repetitions ?? (machine.prefersBodyMetrics ? null : machine.supportsRepetitions ? 10 : null);
+    _repetitions = latest?.repetitions ?? (machine.prefersBodyMetrics ? null : 10);
     _showAdditionalWeight = latest?.hasWeight ?? false;
     final duration = latest?.duration;
     _minutes = duration?.inMinutes ?? 0;
@@ -61,6 +63,13 @@ class _MachineScreenState extends State<MachineScreen> {
         leading: const BackButton(),
         title: Text(machine.localizedName(Localizations.localeOf(context))),
         actions: [
+          IconButton(
+            tooltip: app.isFavorite(machine.id)
+                ? 'Remover dos favoritos' : 'Adicionar aos favoritos',
+            icon: Icon(app.isFavorite(machine.id) ? Icons.star_rounded : Icons.star_border_rounded,
+                color: AppTheme.electricLime),
+            onPressed: () => app.toggleFavorite(machine.id),
+          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert_rounded),
             onSelected: (value) {
@@ -75,7 +84,7 @@ class _MachineScreenState extends State<MachineScreen> {
         ],
       ),
       bottomNavigationBar: PrimaryBottomBar(
-        label: context.strings.saveRecord,
+        label: 'Salvar série',
         onPressed: !_saving && _canSave(machine) ? () => _saveRecord(machine) : null,
       ),
       body: PageBody(
@@ -110,7 +119,23 @@ class _MachineScreenState extends State<MachineScreen> {
               onMinutesChanged: (value) => setState(() => _minutes = value.clamp(0, 999)),
               onSecondsChanged: (value) => setState(() => _seconds = value.clamp(0, 59)),
             ),
-            const SizedBox(height: 26),
+            const SizedBox(height: 10),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Série de aquecimento'),
+              subtitle: const Text('Não entra no cálculo de recordes.'),
+              value: _isWarmup,
+              onChanged: (value) => setState(() => _isWarmup = value ?? false),
+            ),
+            const SizedBox(height: 14),
+            WorkoutSeriesPanel(
+              records: machine.records,
+              unit: app.unit,
+              onRepeat: _saving ? null : () => _repeatLastSet(machine),
+              onEdit: (record) => _editSeries(machine, record),
+              onDelete: (record) => _deleteSeries(machine, record),
+            ),
+            const SizedBox(height: 16),
             Text(context.strings.t('Histórico', 'History', 'Historial'), style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 14),
             if (records.isEmpty)
@@ -159,7 +184,7 @@ class _MachineScreenState extends State<MachineScreen> {
     if (machine.prefersBodyMetrics) {
       return _weight > 0 || (_repetitions ?? 0) > 0 || durationSeconds > 0;
     }
-    return _weight > 0;
+    return _weight > 0 && (_repetitions ?? 0) > 0;
   }
 
   bool _isHighlightRecord(Machine machine, WorkoutRecord record) {
@@ -184,6 +209,7 @@ class _MachineScreenState extends State<MachineScreen> {
       weight: _weight,
       repetitions: (_repetitions ?? 0) > 0 ? _repetitions : null,
       durationSeconds: durationSeconds > 0 ? durationSeconds : null,
+      isWarmup: _isWarmup,
     );
     // Do not announce a successful save or PR until the local database
     // acknowledges the write. Retain the in-memory record for recovery.
@@ -198,8 +224,9 @@ class _MachineScreenState extends State<MachineScreen> {
     }
     HapticFeedback.lightImpact();
 
-    final isNewWeight = _weight > 0 && _weight > previousWeight;
-    final isNewReps = (_repetitions ?? 0) > 0 && _repetitions! > previousRepetitions;
+    final isNewWeight = !_isWarmup && _weight > 0 && _weight > previousWeight;
+    final isNewReps = !_isWarmup && (_repetitions ?? 0) > 0 &&
+        _repetitions! > previousRepetitions;
     final isNewDuration = durationSeconds > 0 && durationSeconds > previousDurationSeconds;
 
     if (isNewWeight || isNewReps || isNewDuration) {
@@ -222,6 +249,137 @@ class _MachineScreenState extends State<MachineScreen> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+
+  Future<void> _repeatLastSet(Machine machine) async {
+    if (_saving || machine.records.isEmpty) return;
+    final now = DateTime.now();
+    final todays = machine.records.where(
+      (r) => WorkoutRecord.dayKey(r.date) == WorkoutRecord.dayKey(now),
+    ).toList()..sort((a, b) => b.date.compareTo(a.date));
+    final last = todays.isNotEmpty ? todays.first : machine.latestRecord!;
+    setState(() => _saving = true);
+    try {
+      final app = AppScope.of(context);
+      app.addRecord(machine,
+        weight: last.weight,
+        repetitions: last.repetitions,
+        durationSeconds: last.durationSeconds,
+        isWarmup: last.isWarmup,
+        rpe: last.rpe,
+        note: last.note,
+      );
+      await app.flushPendingWrites();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(app.persistenceError == null
+            ? 'Série repetida e salva.' : 'Erro de armazenamento. Verifique seus dados.'),
+      ));
+      setState(() {
+        _weight = last.weight;
+        _repetitions = last.repetitions;
+        _isWarmup = last.isWarmup;
+      });
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _editSeries(Machine machine, WorkoutRecord record) async {
+    final weightController = TextEditingController(text: record.weight.toString());
+    final repsController = TextEditingController(text: record.repetitions?.toString() ?? '');
+    var warmup = record.isWarmup;
+    final updated = await showDialog<WorkoutRecord>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: AppTheme.surfaceNavy,
+          title: const Text('Editar série'),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(
+              controller: weightController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(labelText: 'Carga (kg)'),
+            ),
+            TextField(
+              controller: repsController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Repetições'),
+            ),
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Aquecimento'),
+              value: warmup,
+              onChanged: (v) => setDialogState(() => warmup = v ?? false),
+            ),
+          ]),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final weight = double.tryParse(
+                  weightController.text.replaceAll(',', '.'));
+                final reps = int.tryParse(repsController.text);
+                if (weight == null || weight < 0 || weight > 250 ||
+                    (reps != null && (reps <= 0 || reps > 500))) return;
+                if (weight == 0 && reps == null) return;
+                Navigator.pop(dialogContext, record.copyWith(
+                  weight: weight,
+                  repetitions: reps,
+                  isWarmup: warmup,
+                ));
+              },
+              child: const Text('Salvar alterações'),
+            ),
+          ],
+        ),
+      ),
+    );
+    weightController.dispose();
+    repsController.dispose();
+    if (updated == null || !mounted) return;
+    final app = AppScope.of(context);
+    app.updateRecord(machine, record, updated);
+    await app.flushPendingWrites();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
+        app.persistenceError == null ? 'Série atualizada.' : 'Não foi possível salvar no dispositivo.',
+      )));
+    }
+  }
+
+  Future<void> _deleteSeries(Machine machine, WorkoutRecord record) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppTheme.surfaceNavy,
+        title: const Text('Excluir esta série?'),
+        content: const Text('Você poderá desfazer a exclusão logo em seguida.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Excluir')),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+    final app = AppScope.of(context);
+    app.removeRecord(machine, record);
+    await app.flushPendingWrites();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(app.persistenceError == null
+          ? 'Série excluída.' : 'Falha ao persistir exclusão.'),
+      action: SnackBarAction(
+        label: 'Desfazer',
+        onPressed: () => app.restoreRecord(machine, record),
+      ),
+    ));
   }
 
   Future<void> _editWeight() async {
@@ -538,7 +696,7 @@ class _WeightCard extends StatelessWidget {
               Row(children: [Text(context.strings.t('Incremento', 'Increment', 'Incremento'), style: const TextStyle(color: AppTheme.iceBlue)), const Spacer(), _IncrementChip(label: '1', selected: increment == 1), const SizedBox(width: 8), _IncrementChip(label: '2,5', selected: increment == 2.5), const SizedBox(width: 8), _IncrementChip(label: '5', selected: increment == 5)]),
             ],
           ],
-          if (machine.supportsRepetitions) ...[
+          if (true) ...[
             if (!machine.prefersBodyMetrics || showAdditionalWeight) const SizedBox(height: 18),
             if (!machine.prefersBodyMetrics || showAdditionalWeight) const Divider(),
             if (!machine.prefersBodyMetrics || showAdditionalWeight) const SizedBox(height: 16),
