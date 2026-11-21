@@ -8,6 +8,7 @@ import '../widgets/adaptive_illustration.dart';
 import 'home_screen.dart';
 import 'machine_screen.dart';
 import 'settings_screen.dart';
+import 'training_goals_screen.dart';
 
 /// Mobile validation experience, visually based on the approved cyan mockups.
 /// Uses the real AppController/SQLite data, not the standalone HTML prototype.
@@ -119,6 +120,12 @@ class ReviewHomeScreen extends StatelessWidget {
                   title: 'Favoritos', subtitle: '${app.favoriteMachines.length} exercícios',
                   onTap: () => _open(context, const ReviewExerciseList(favoritesOnly: true)))),
               ]),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () => _open(context, const TrainingGoalsScreen()),
+                icon: const Icon(Icons.emoji_events_outlined),
+                label: const Text('Minhas metas e conquistas'),
+              ),
               const SizedBox(height: 22),
               const Text('Seu acesso rápido',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
