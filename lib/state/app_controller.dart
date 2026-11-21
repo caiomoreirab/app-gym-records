@@ -35,6 +35,7 @@ class AppController extends ChangeNotifier {
   static const _distanceUnitKey = 'distance_unit';
   static const _incrementKey = 'weight_increment';
   static const _proPreviewKey = 'pro_preview_enabled';
+  static const _largeTextKey = 'accessibility_large_text';
   static const _languageKey = 'language_code';
   static const _analyticsConsentKey = 'analytics_consent_v2';
 
@@ -59,6 +60,7 @@ class AppController extends ChangeNotifier {
   double increment = 2.5;
   bool isPro = true; // front-end preview; billing will replace this flag later
   String languageCode = 'system';
+  bool largeText = false;
 
   final List<Machine> _machines;
   final List<CardioActivity> _cardioActivities;
@@ -219,6 +221,7 @@ class AppController extends ChangeNotifier {
       increment = await preferences.getDouble(_incrementKey) ?? 2.5;
       isPro = await preferences.getBool(_proPreviewKey) ?? true;
       languageCode = await preferences.getString(_languageKey) ?? 'system';
+      largeText = await preferences.getBool(_largeTextKey) ?? false;
       analyticsConsent = await preferences.getBool(_analyticsConsentKey) ?? false;
     }
     final store = _store;
@@ -408,6 +411,12 @@ class AppController extends ChangeNotifier {
     languageCode = value;
     notifyListeners();
     _saveString(_languageKey, value);
+  }
+
+  void setLargeText(bool value) {
+    largeText = value;
+    _saveBool(_largeTextKey, value);
+    notifyListeners();
   }
 
   void setProPreview(bool value) {
