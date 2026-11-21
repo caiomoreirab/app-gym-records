@@ -36,6 +36,9 @@ class AppController extends ChangeNotifier {
   static const _proPreviewKey = 'pro_preview_enabled';
   static const _languageKey = 'language_code';
   static const _analyticsConsentKey = 'analytics_consent_v2';
+  static const _reviewBuild = bool.fromEnvironment('GYM_IS_REVIEW',
+      defaultValue: false);
+  static String _prefKey(String key) => _reviewBuild ? 'review_$key' : key;
 
   final bool persistenceEnabled;
   final SharedPreferencesAsync? _preferences;
@@ -135,18 +138,18 @@ class AppController extends ChangeNotifier {
   Future<void> loadPreferences() async {
     final preferences = _preferences;
     if (persistenceEnabled && preferences != null) {
-      displayName = (await preferences.getString(_nameKey))?.trim() ?? '';
+      displayName = (await preferences.getString(_prefKey(_nameKey)))?.trim() ?? '';
       illustrationStyle = illustrationStyleFromStorage(
-        await preferences.getString(_illustrationStyleKey),
+        await preferences.getString(_prefKey(_illustrationStyleKey)),
       );
       _onboardingCompleted =
-          await preferences.getBool(_onboardingCompleteKey) ?? false;
-      unit = await preferences.getString(_unitKey) ?? 'kg';
-      distanceUnit = await preferences.getString(_distanceUnitKey) ?? 'km';
-      increment = await preferences.getDouble(_incrementKey) ?? 2.5;
-      isPro = await preferences.getBool(_proPreviewKey) ?? true;
-      languageCode = await preferences.getString(_languageKey) ?? 'system';
-      analyticsConsent = await preferences.getBool(_analyticsConsentKey) ?? false;
+          await preferences.getBool(_prefKey(_onboardingCompleteKey)) ?? false;
+      unit = await preferences.getString(_prefKey(_unitKey)) ?? 'kg';
+      distanceUnit = await preferences.getString(_prefKey(_distanceUnitKey)) ?? 'km';
+      increment = await preferences.getDouble(_prefKey(_incrementKey)) ?? 2.5;
+      isPro = await preferences.getBool(_prefKey(_proPreviewKey)) ?? true;
+      languageCode = await preferences.getString(_prefKey(_languageKey)) ?? 'system';
+      analyticsConsent = await preferences.getBool(_prefKey(_analyticsConsentKey)) ?? false;
     }
     final store = _store;
     if (store != null) {
@@ -256,19 +259,19 @@ class AppController extends ChangeNotifier {
   void _saveString(String key, String value) {
     final preferences = _preferences;
     if (!persistenceEnabled || preferences == null) return;
-    unawaited(preferences.setString(key, value));
+    unawaited(preferences.setString(_prefKey(key), value));
   }
 
   void _saveBool(String key, bool value) {
     final preferences = _preferences;
     if (!persistenceEnabled || preferences == null) return;
-    unawaited(preferences.setBool(key, value));
+    unawaited(preferences.setBool(_prefKey(key), value));
   }
 
   void _saveDouble(String key, double value) {
     final preferences = _preferences;
     if (!persistenceEnabled || preferences == null) return;
-    unawaited(preferences.setDouble(key, value));
+    unawaited(preferences.setDouble(_prefKey(key), value));
   }
 
   List<Machine> machinesFor(MuscleGroup group) {
