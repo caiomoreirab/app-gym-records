@@ -523,7 +523,10 @@ class _AdjustmentsCard extends StatelessWidget {
         subtitle: Text(values.isEmpty
             ? 'Anote banco, encosto e pegada para a próxima vez.'
             : machine.adjustments.entries.where((e) => e.value.isNotEmpty)
-                .map((e) => '${e.key}: ${e.value}').join(' · '),
+                .map((e) => '${const <String, String>{
+                  'seat': 'Banco', 'backrest': 'Encosto',
+                  'grip': 'Pegada', 'other': 'Outro',
+                }[e.key] ?? e.key}: ${e.value}').join(' · '),
             maxLines: 3, overflow: TextOverflow.ellipsis),
         trailing: const Icon(Icons.edit_outlined),
         onTap: onEdit,
