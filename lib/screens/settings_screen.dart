@@ -12,6 +12,7 @@ import '../widgets/section_card.dart';
 import 'evolution_screen.dart';
 import 'data_privacy_screen.dart';
 import 'pro_overview_screen.dart';
+import 'feature_lab_screen.dart';
 import 'pro_export_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -95,6 +96,17 @@ class SettingsScreen extends StatelessWidget {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(builder: (_) => const ProExportScreen()),
+              ),
+            )),
+            const SizedBox(height: 16),
+            SectionCard(child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.science_outlined, color: AppTheme.warning),
+              title: const Text('Laboratório de novas funções'),
+              subtitle: const Text('Academias, descanso, importação, conquistas e mais'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const FeatureLabScreen()),
               ),
             )),
             const SizedBox(height: 16),
