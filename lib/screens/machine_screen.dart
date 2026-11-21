@@ -359,7 +359,7 @@ class _MachineScreenState extends State<MachineScreen> {
       builder: (dialogContext) => AlertDialog(
         backgroundColor: AppTheme.surfaceNavy,
         title: Text(context.strings.t('Apagar exercício?', 'Delete exercise?', '¿Eliminar ejercicio?')),
-        content: Text(context.strings.t('Nesta prévia os dados são mockados, mas o fluxo de confirmação já está pronto.', 'In this preview the data is mocked, but the confirmation flow is ready.', 'En esta vista previa los datos son simulados, pero el flujo de confirmación ya está listo.')),
+        content: const Text('Isso excluirá o exercício e seu histórico local. Faça um backup antes de continuar.'),
         actions: [
           TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: Text(context.strings.t('Cancelar', 'Cancel', 'Cancelar'))),
           FilledButton(onPressed: () => Navigator.of(dialogContext).pop(true), child: Text(context.strings.t('Apagar', 'Delete', 'Eliminar'))),
@@ -410,7 +410,7 @@ class _MachineProCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Text('GymRecords IQ', style: Theme.of(context).textTheme.titleMedium),
+                        Flexible(child: Text('Relatórios', maxLines: 1, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleMedium)),
                         const SizedBox(width: 7),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
@@ -423,11 +423,11 @@ class _MachineProCard extends StatelessWidget {
                     Text(
                       enabled
                           ? context.strings.t(
-                              'PR Radar ${insight.probabilityLabelFor(Localizations.localeOf(context)).toLowerCase()} • próximo alvo ${formatWeight(insight.nextTarget, Localizations.localeOf(context))} $unit × ${insight.targetRepetitions}',
-                              'PR Radar ${insight.probabilityLabelFor(Localizations.localeOf(context)).toLowerCase()} • next target ${formatWeight(insight.nextTarget, Localizations.localeOf(context))} $unit × ${insight.targetRepetitions}',
-                              'PR Radar ${insight.probabilityLabelFor(Localizations.localeOf(context)).toLowerCase()} • próximo objetivo ${formatWeight(insight.nextTarget, Localizations.localeOf(context))} $unit × ${insight.targetRepetitions}',
+                              'Próximo objetivo • alvo ${formatWeight(insight.nextTarget, Localizations.localeOf(context))} $unit × ${insight.targetRepetitions}',
+                              'Next goal • target ${formatWeight(insight.nextTarget, Localizations.localeOf(context))} $unit × ${insight.targetRepetitions}',
+                              'Próximo objetivo • alvo ${formatWeight(insight.nextTarget, Localizations.localeOf(context))} $unit × ${insight.targetRepetitions}',
                             )
-                          : context.strings.t('PR Radar, próximo alvo e análise de recordes.', 'PR Radar, next target and record analysis.', 'PR Radar, próximo objetivo y análisis de récords.'),
+                          : context.strings.t('Próximo objetivo e análise de recordes.', 'Next goal and record analysis.', 'Próximo objetivo y análisis de récords.'),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(height: 1.25),
@@ -452,13 +452,18 @@ class _RecordCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bestDate = machine.records.isEmpty
-        ? null
-        : machine.records.where((record) {
-            if (machine.recordWeight > 0) return record.weight == machine.recordWeight;
-            if (machine.bestRepetitions > 0) return record.repetitions == machine.bestRepetitions;
-            return record.durationSeconds == machine.bestDurationSeconds;
-          }).map((record) => record.date).reduce((a, b) => a.isAfter(b) ? a : b);
+    final matching = machine.records.where((record) {
+      if (record.isWarmup) return false;
+      if (machine.recordWeight > 0) return record.weight == machine.recordWeight;
+      if (machine.bestRepetitions > 0) {
+        return record.repetitions == machine.bestRepetitions;
+      }
+      return machine.bestDurationSeconds > 0 &&
+          record.durationSeconds == machine.bestDurationSeconds;
+    }).toList();
+    final bestDate = matching.isEmpty ? null : matching
+      .map((record) => record.date)
+      .reduce((a, b) => a.isAfter(b) ? a : b);
 
     return SectionCard(
       child: Row(
@@ -472,11 +477,14 @@ class _RecordCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(context.strings.t('Recorde', 'Record', 'Récord'), style: const TextStyle(color: AppTheme.iceBlue, fontSize: 15)),
+                Text(context.strings.t('Seu maior peso até hoje (PR)', 'Your top weight (PR)', 'Tu peso máximo (PR)'), maxLines: 2, style: const TextStyle(color: AppTheme.iceBlue, fontSize: 13)),
                 const SizedBox(height: 2),
-                Text(
-                  _machinePrimaryDisplay(machine, unit, Localizations.localeOf(context)),
-                  style: const TextStyle(color: AppTheme.electricLime, fontSize: 40, fontWeight: FontWeight.w600, height: 1),
+                FittedBox(
+                  alignment: Alignment.centerLeft, fit: BoxFit.scaleDown,
+                  child: Text(
+                    _machinePrimaryDisplay(machine, unit, Localizations.localeOf(context)),
+                    style: const TextStyle(color: AppTheme.electricLime, fontSize: 40, fontWeight: FontWeight.w600, height: 1),
+                  ),
                 ),
                 if (bestDate != null) ...[
                   const SizedBox(height: 7),
