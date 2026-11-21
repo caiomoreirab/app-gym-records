@@ -101,6 +101,8 @@ class _MachineScreenState extends State<MachineScreen> {
             _RecordCard(machine: machine, unit: app.unit),
             const SizedBox(height: 16),
             _NoteCard(note: machine.note, onEdit: () => _editNote(machine)),
+            const SizedBox(height: 10),
+            _AdjustmentsCard(machine: machine, onEdit: () => _editAdjustments(machine)),
             const SizedBox(height: 16),
             _WeightCard(
               machine: machine,
@@ -386,6 +388,60 @@ class _MachineScreenState extends State<MachineScreen> {
     if (value != null && mounted) setState(() => _weight = value.clamp(0, 250).toDouble());
   }
 
+  Future<void> _editAdjustments(Machine machine) async {
+    const labels = <String, String>{
+      'seat': 'Altura do banco/assento',
+      'backrest': 'Posição do encosto',
+      'grip': 'Pegada',
+      'other': 'Outra regulagem',
+    };
+    final controllers = {
+      for (final entry in labels.entries)
+        entry.key: TextEditingController(text: machine.adjustments[entry.key] ?? ''),
+    };
+    try {
+      final result = await showDialog<Map<String, String>>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          backgroundColor: AppTheme.surfaceNavy,
+          title: const Text('Ficha de regulagem'),
+          content: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              const Text('Guarde como você deixou o aparelho para repetir na próxima visita.'),
+              const SizedBox(height: 12),
+              for (final entry in labels.entries)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: TextField(
+                    controller: controllers[entry.key],
+                    maxLength: 120,
+                    decoration: InputDecoration(labelText: entry.value),
+                  ),
+                ),
+            ]),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Cancelar')),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop({
+                for (final entry in controllers.entries) entry.key: entry.value.text.trim(),
+              }),
+              child: const Text('Salvar regulagens'),
+            ),
+          ],
+        ),
+      );
+      if (result != null && mounted) {
+        AppScope.of(context).updateMachineAdjustments(machine, result);
+      }
+    } finally {
+      for (final controller in controllers.values) {
+        controller.dispose();
+      }
+    }
+  }
+
   Future<void> _editNote(Machine machine) async {
     final controller = TextEditingController(text: machine.note);
     final result = await showDialog<String>(
@@ -445,6 +501,31 @@ class _MachineScreenState extends State<MachineScreen> {
       AppScope.of(context).deleteMachine(machine);
       Navigator.of(context).pop();
     }
+  }
+}
+
+class _AdjustmentsCard extends StatelessWidget {
+  const _AdjustmentsCard({required this.machine, required this.onEdit});
+  final Machine machine;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final values = machine.adjustments.values.where((v) => v.trim().isNotEmpty);
+    return SectionCard(
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: const Icon(Icons.tune_rounded, color: AppTheme.electricLime),
+        title: const Text('Minha regulagem do aparelho'),
+        subtitle: Text(values.isEmpty
+            ? 'Anote banco, encosto e pegada para a próxima vez.'
+            : machine.adjustments.entries.where((e) => e.value.isNotEmpty)
+                .map((e) => '${e.key}: ${e.value}').join(' · '),
+            maxLines: 3, overflow: TextOverflow.ellipsis),
+        trailing: const Icon(Icons.edit_outlined),
+        onTap: onEdit,
+      ),
+    );
   }
 }
 
