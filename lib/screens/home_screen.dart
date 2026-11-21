@@ -11,6 +11,7 @@ import '../widgets/brand_header.dart';
 import '../widgets/cardio_group_card.dart';
 import '../widgets/machine_list_card.dart';
 import '../widgets/muscle_group_card.dart';
+import '../widgets/section_card.dart';
 import '../widgets/page_body.dart';
 import 'group_screen.dart';
 import 'machine_screen.dart';
@@ -235,11 +236,44 @@ class _HomeScreenState extends State<HomeScreen> {
                 machines: searchResults,
                 unit: controller.unit,
                 onOpenGroup: (group) => _openGroup(context, group),
-                onOpenMachine: (machine) => _openMachine(context, machine),
+                onOpenMachine: (machine) {
+                  if (controller.activeSession != null) {
+                    final ready = controller.ensureMachineAdded(machine);
+                    controller.addExerciseToSession(ready);
+                  }
+                  _openMachine(context, machine);
+                },
                 showCardio: showCardioSearch,
                 onOpenCardio: () => _openCardio(context),
               )
             else ...[
+              _TodayWorkoutCard(
+                app: controller,
+                onOpenMachine: (machine) => _openMachine(context, machine),
+              ),
+              const SizedBox(height: 22),
+              if (controller.favoriteMachines.isNotEmpty) ...[
+                _SectionHeading(
+                  title: 'Favoritos',
+                  subtitle: 'Seus exercícios marcados',
+                ),
+                const SizedBox(height: 12),
+                SizedBox(height: 194,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: controller.favoriteMachines.take(8).length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    itemBuilder: (context, index) {
+                      final machine = controller.favoriteMachines[index];
+                      return _QuickMachineCard(
+                        machine: machine,
+                        unit: controller.unit,
+                        onTap: () => _openMachine(context, machine));
+                    },
+                  ),
+                ),
+                const SizedBox(height: 18),
+              ],
               if (recentMachines.isNotEmpty) ...[
                 _SectionHeading(
                   title: context.strings.quickAccess,
@@ -562,6 +596,67 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+
+/// Compact workout section using the pre-existing home theme and spacing.
+class _TodayWorkoutCard extends StatelessWidget {
+  const _TodayWorkoutCard({required this.app, required this.onOpenMachine});
+  final AppController app;
+  final ValueChanged<Machine> onOpenMachine;
+
+  @override
+  Widget build(BuildContext context) {
+    final session = app.activeSession;
+    final available = {for (final m in app.availableMachines) m.id: m};
+    final selected = session == null ? <Machine>[] :
+      [for (final id in session.exerciseIds)
+        if (available[id] case final Machine m) m];
+    final records = session == null
+      ? const <dynamic>[] : app.recordsForSession(session.id);
+    return SectionCard(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(children: [
+          const Icon(Icons.fitness_center_rounded,
+            color: AppTheme.electricLime),
+          const SizedBox(width: 10),
+          Expanded(child: Text('Treino de hoje',
+            style: Theme.of(context).textTheme.titleLarge)),
+          if (session != null) TextButton(
+            onPressed: app.completeSession,
+            child: const Text('Concluir')),
+        ]),
+        const SizedBox(height: 8),
+        if (session == null) ...[
+          const Text('Organize suas séries sem perder o histórico.',
+            style: TextStyle(color: AppTheme.iceBlue)),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            key: const Key('start_workout_session'),
+            onPressed: () => app.startSession(),
+            icon: const Icon(Icons.play_arrow_rounded),
+            label: const Text('Iniciar treino'),
+          ),
+        ] else ...[
+          Text('${selected.length} exercícios · ${records.length} séries',
+            style: const TextStyle(color: AppTheme.iceBlue)),
+          for (final machine in selected.take(5))
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              title: Text(machine.name, maxLines: 1,
+                overflow: TextOverflow.ellipsis),
+              subtitle: Text(
+                '${machine.records.where((r) => r.effectiveSessionId == session.id).length} séries'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => onOpenMachine(machine),
+            ),
+          const SizedBox(height: 6),
+          const Text('Busque um exercício acima para adicioná-lo ao treino.',
+            style: TextStyle(color: AppTheme.iceBlue, fontSize: 12)),
+        ],
+      ]),
+    );
+  }
+}
 
 class _HomeProCard extends StatelessWidget {
   const _HomeProCard({required this.enabled, required this.onTap});
