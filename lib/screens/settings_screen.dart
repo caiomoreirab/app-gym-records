@@ -273,7 +273,7 @@ class SettingsScreen extends StatelessWidget {
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
                       const Spacer(),
-                      const ProPill(),
+                      const Text('GRÁTIS + PRO', style: TextStyle(color: AppTheme.iceBlue, fontSize: 11)),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -286,7 +286,6 @@ class SettingsScreen extends StatelessWidget {
                     icon: Icons.table_chart_outlined,
                     title: context.strings.t('Exportar CSV', 'Export CSV'),
                     subtitle: context.strings.t('Planilha com seu histórico de registros', 'Spreadsheet with your workout history'),
-                    locked: !app.isPro,
                     onTap: () => _handleExport(context, app, 'CSV'),
                   ),
                   const Divider(height: 1),
@@ -354,7 +353,7 @@ class SettingsScreen extends StatelessWidget {
 
   static void _handleExport(BuildContext context, AppController app, String format) {
     Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => app.isPro ? const ProExportScreen() : const ProOverviewScreen(),
+      builder: (_) => const ProExportScreen(),
     ));
   }
 
