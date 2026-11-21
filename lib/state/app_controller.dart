@@ -15,6 +15,7 @@ import '../models/user_profile.dart';
 import '../models/workout_record.dart';
 import '../services/local_data_store.dart';
 import '../services/workout_snapshot_codec.dart';
+import '../services/csv_history_import_service.dart';
 import '../services/usage_events.dart';
 
 class AppController extends ChangeNotifier {
@@ -630,6 +631,56 @@ class AppController extends ChangeNotifier {
     }
 
     return metrics.isEmpty ? null : CardioAchievement(metrics);
+  }
+
+  ({int imported, int skipped, int unmatched}) importCsvEntries(
+      List<CsvWorkoutEntry> entries) {
+    if (_failedToReadStorage) {
+      throw StateError('Banco indisponível. Não é seguro importar agora.');
+    }
+    var imported = 0;
+    var skipped = 0;
+    var unmatched = 0;
+    final catalog = availableMachines;
+    String normalize(String value) =>
+        value.toLowerCase().trim().replaceAll(RegExp(r'\\s+'), ' ');
+    for (final entry in entries) {
+      final name = normalize(entry.exercise);
+      Machine? machine;
+      for (final item in catalog) {
+        if (normalize(item.name) == name ||
+            (item.nameEn != null && normalize(item.nameEn!) == name)) {
+          machine = item;
+          break;
+        }
+      }
+      if (machine == null) {
+        unmatched++;
+        continue;
+      }
+      final current = hasMachine(machine.id) ? machineById(machine.id)
+          : ensureMachineAdded(machine);
+      final importedId = 'csv_${machine.id}_${entry.date.microsecondsSinceEpoch}_'
+          '${entry.rowNumber}_${entry.weight}_${entry.repetitions}';
+      if (current.records.any((r) => r.id == importedId)) {
+        skipped++;
+        continue;
+      }
+      current.records.add(WorkoutRecord(
+        id: importedId,
+        sessionId: WorkoutRecord.dayKey(entry.date),
+        gymId: selectedGymId,
+        date: entry.date,
+        weight: entry.weight,
+        repetitions: entry.repetitions,
+      ));
+      imported++;
+    }
+    if (imported > 0) {
+      notifyListeners();
+      _scheduleSave();
+    }
+    return (imported: imported, skipped: skipped, unmatched: unmatched);
   }
 
   static int _recordSequence = 0;
