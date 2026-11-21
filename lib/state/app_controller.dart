@@ -12,6 +12,7 @@ import '../models/machine.dart';
 import '../models/muscle_group.dart';
 import '../models/user_profile.dart';
 import '../models/workout_record.dart';
+import '../models/workout_session.dart';
 import '../services/local_data_store.dart';
 import '../services/workout_snapshot_codec.dart';
 import '../services/usage_events.dart';
@@ -62,6 +63,88 @@ class AppController extends ChangeNotifier {
   final List<Machine> _machines;
   final List<CardioActivity> _cardioActivities;
   final Map<String, List<CardioRecord>> _preservedCardio = {};
+  final List<WorkoutSession> _sessions = [];
+  final Set<String> _favorites = {};
+  final Map<String, dynamic> _rootSnapshotExtras = {};
+  String? activeSessionId;
+  int _recordSerial = 0;
+
+  List<WorkoutSession> get sessions =>
+      List<WorkoutSession>.unmodifiable(_sessions);
+  Set<String> get favorites => Set<String>.unmodifiable(_favorites);
+  bool isFavorite(String id) => _favorites.contains(id);
+  WorkoutSession? get activeSession {
+    for (final session in _sessions) {
+      if (session.id == activeSessionId) return session;
+    }
+    return null;
+  }
+  List<WorkoutRecord> recordsForSession(String sessionId) =>
+      [for (final machine in _machines)
+        for (final record in machine.records)
+          if (record.effectiveSessionId == sessionId) record]
+        ..sort((a, b) => a.date.compareTo(b.date));
+
+  List<Machine> get favoriteMachines =>
+      availableMachines.where((m) => _favorites.contains(m.id)).toList();
+
+  void toggleFavorite(String id) {
+    if (!_favorites.add(id)) _favorites.remove(id);
+    notifyListeners();
+    _scheduleSave();
+  }
+
+  WorkoutSession startSession({String name = 'Treino de hoje'}) {
+    final now = DateTime.now();
+    final id = 'session_${now.microsecondsSinceEpoch}_${_recordSerial++}';
+    final session = WorkoutSession(
+      id: id, startedAt: now, name: name.trim().isEmpty ? 'Treino' : name.trim());
+    _sessions.add(session);
+    activeSessionId = id;
+    notifyListeners();
+    _scheduleSave();
+    return session;
+  }
+
+  void completeSession() {
+    final id = activeSessionId;
+    if (id == null) return;
+    final index = _sessions.indexWhere((s) => s.id == id);
+    if (index >= 0) {
+      _sessions[index] = _sessions[index].copyWith(completedAt: DateTime.now());
+    }
+    activeSessionId = null;
+    notifyListeners();
+    _scheduleSave();
+  }
+
+  WorkoutSession _ensureSession() =>
+      activeSession ?? startSession();
+
+  void replaceRecord(Machine machine, WorkoutRecord updated) {
+    final index = machine.records.indexWhere((r) => r.id == updated.id);
+    if (index < 0) throw StateError('Série não encontrada.');
+    machine.records[index] = updated;
+    notifyListeners();
+    _scheduleSave();
+  }
+
+  WorkoutRecord removeRecord(Machine machine, String recordId) {
+    final index = machine.records.indexWhere((r) => r.id == recordId);
+    if (index < 0) throw StateError('Série não encontrada.');
+    final removed = machine.records.removeAt(index);
+    notifyListeners();
+    _scheduleSave();
+    return removed;
+  }
+
+  void restoreRecord(Machine machine, WorkoutRecord record) {
+    if (machine.records.any((r) => r.id == record.id)) return;
+    machine.records.add(record);
+    notifyListeners();
+    _scheduleSave();
+  }
+
 
   bool get onboardingComplete =>
       _onboardingCompleted &&
@@ -136,6 +219,7 @@ class AppController extends ChangeNotifier {
           _preservedCardio
             ..clear()
             ..addAll(restored.applyTo(_machines, _cardioActivities));
+          _applyRestoredSessions(restored);
         }
         _failedToReadStorage = false;
         persistenceError = null;
@@ -153,14 +237,33 @@ class AppController extends ChangeNotifier {
     trackUsage('app_opened');
   }
 
+  void _applyRestoredSessions(WorkoutRestoredState restored) {
+    _sessions
+      ..clear()
+      ..addAll(restored.sessions);
+    _favorites
+      ..clear()
+      ..addAll(restored.favorites);
+    _rootSnapshotExtras
+      ..clear()
+      ..addAll(restored.rootExtras);
+    activeSessionId = restored.activeSessionId;
+  }
+
+  Map<String, dynamic> _snapshot() => WorkoutSnapshotCodec.encode(
+    machines: _machines,
+    cardioActivities: _cardioActivities,
+    preservedCardio: _preservedCardio,
+    sessions: _sessions,
+    favorites: _favorites,
+    activeSessionId: activeSessionId,
+    rootExtras: _rootSnapshotExtras,
+  );
+
   void _scheduleSave() {
     final store = _store;
     if (store == null || _failedToReadStorage) return;
-    final snapshot = WorkoutSnapshotCodec.encode(
-      machines: _machines,
-      cardioActivities: _cardioActivities,
-      preservedCardio: _preservedCardio,
-    );
+    final snapshot = _snapshot();
     // Serializing the writes prevents a slow older save from overwriting a
     // newer record. Capture the snapshot before queuing it.
     _writeQueue = _writeQueue
@@ -183,13 +286,7 @@ class AppController extends ChangeNotifier {
     return persistenceError == null;
   }
 
-  String exportBackup() => const JsonEncoder.withIndent('  ').convert(
-        WorkoutSnapshotCodec.encode(
-          machines: _machines,
-          cardioActivities: _cardioActivities,
-          preservedCardio: _preservedCardio,
-        ),
-      );
+  String exportBackup() => const JsonEncoder.withIndent('  ').convert(_snapshot());
 
   Future<void> importBackup(String backup) async {
     final decoded = jsonDecode(backup);
@@ -203,6 +300,7 @@ class AppController extends ChangeNotifier {
     _preservedCardio
       ..clear()
       ..addAll(restored.applyTo(_machines, _cardioActivities));
+    _applyRestoredSessions(restored);
     _failedToReadStorage = false;
     persistenceError = null;
     notifyListeners();
@@ -421,21 +519,49 @@ class AppController extends ChangeNotifier {
     return metrics.isEmpty ? null : CardioAchievement(metrics);
   }
 
-  void addRecord(Machine machine, {double weight = 0, int? repetitions, int? durationSeconds}) {
-    machine.records.add(
-      WorkoutRecord(
-        date: DateTime.now(),
-        weight: weight,
-        repetitions: repetitions,
-        durationSeconds: durationSeconds,
-      ),
+  WorkoutRecord addRecord(Machine machine, {
+    double weight = 0,
+    int? repetitions,
+    int? durationSeconds,
+    double? rpe,
+    int? rir,
+    int? restSeconds,
+    String note = '',
+    bool isWarmup = false,
+    DateTime? when,
+  }) {
+    if (weight < 0 || !weight.isFinite ||
+        (repetitions != null && (repetitions < 0 || repetitions > 1000)) ||
+        (durationSeconds != null && durationSeconds < 0) ||
+        (rpe != null && (!rpe.isFinite || rpe < 1 || rpe > 10)) ||
+        (rir != null && (rir < 0 || rir > 10)) ||
+        (restSeconds != null && (restSeconds < 0 || restSeconds > 36000)) ||
+        note.length > 3000) {
+      throw const FormatException('Valores de série inválidos.');
+    }
+    final session = _ensureSession();
+    final now = when ?? DateTime.now();
+    final record = WorkoutRecord(
+      id: 'set_${now.microsecondsSinceEpoch}_${_recordSerial++}',
+      sessionId: session.id,
+      date: now,
+      weight: weight,
+      repetitions: repetitions,
+      durationSeconds: durationSeconds,
+      rpe: rpe,
+      rir: rir,
+      restSeconds: restSeconds,
+      note: note.trim(),
+      isWarmup: isWarmup,
     );
+    machine.records.add(record);
     notifyListeners();
     _scheduleSave();
     trackUsage('strength_record_created', {
       'group': machine.group.name,
       'exercise': machine.isCustom ? 'custom' : machine.id,
     });
+    return record;
   }
 
   @override
