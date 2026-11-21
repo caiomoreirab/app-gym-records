@@ -4,7 +4,6 @@ import '../models/machine.dart';
 import '../models/workout_record.dart';
 import '../state/app_controller.dart';
 import '../theme/app_theme.dart';
-import '../widgets/adaptive_illustration.dart';
 import 'home_screen.dart';
 import 'machine_screen.dart';
 import 'settings_screen.dart';
