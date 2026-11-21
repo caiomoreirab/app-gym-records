@@ -21,6 +21,7 @@ import 'data_privacy_screen.dart';
 import 'cardio_screen.dart';
 import 'pro_overview_screen.dart';
 import 'workout_completed_screen.dart';
+import 'exercise_catalog_screen.dart';
 
 enum _RecordFilter { all, recorded, unrecorded }
 
@@ -253,6 +254,7 @@ class _HomeScreenState extends State<HomeScreen> {
               _TodayWorkoutCard(
                 app: controller,
                 onComplete: () => _finishWorkout(controller),
+                onAddExercise: _addExerciseToWorkout,
                 onOpenMachine: (machine) => _openMachine(context, machine),
               ),
               const SizedBox(height: 22),
@@ -371,6 +373,24 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _addExerciseToWorkout() async {
+    final controller = AppScope.of(context);
+    if (controller.activeSession == null) return;
+    final chosen = await Navigator.of(context).push<Machine>(
+      MaterialPageRoute<Machine>(
+        builder: (_) => const ExerciseCatalogScreen(pickForWorkout: true),
+      ),
+    );
+    if (!mounted || chosen == null) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('${chosen.name} adicionado ao treino.'),
+      action: SnackBarAction(
+        label: 'Registrar',
+        onPressed: () => _openMachine(context, chosen),
+      ),
+    ));
   }
 
   Future<void> _finishWorkout(AppController app) async {
@@ -613,10 +633,15 @@ class _HomeScreenState extends State<HomeScreen> {
 /// Compact workout section using the pre-existing home theme and spacing.
 class _TodayWorkoutCard extends StatelessWidget {
   const _TodayWorkoutCard({
-    required this.app, required this.onOpenMachine, required this.onComplete});
+    required this.app,
+    required this.onOpenMachine,
+    required this.onComplete,
+    required this.onAddExercise,
+  });
   final AppController app;
   final ValueChanged<Machine> onOpenMachine;
   final VoidCallback onComplete;
+  final VoidCallback onAddExercise;
 
   @override
   Widget build(BuildContext context) {
@@ -654,20 +679,34 @@ class _TodayWorkoutCard extends StatelessWidget {
         ] else ...[
           Text('${selected.length} exercícios · ${records.length} séries',
             style: const TextStyle(color: AppTheme.iceBlue)),
-          for (final machine in selected.take(5))
-            ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              title: Text(machine.name, maxLines: 1,
-                overflow: TextOverflow.ellipsis),
-              subtitle: Text(
-                '${machine.records.where((r) => r.effectiveSessionId == session.id).length} séries'),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => onOpenMachine(machine),
-            ),
-          const SizedBox(height: 6),
-          const Text('Busque um exercício acima para adicioná-lo ao treino.',
-            style: TextStyle(color: AppTheme.iceBlue, fontSize: 12)),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            key: const Key('add_exercise_to_session'),
+            onPressed: onAddExercise,
+            icon: const Icon(Icons.add_circle_outline_rounded),
+            label: const Text('Adicionar exercício'),
+          ),
+          if (selected.isEmpty) ...[
+            const SizedBox(height: 12),
+            const Text('Seu treino ainda está vazio. Adicione um exercício '
+              'para começar a registrar as séries.',
+              style: TextStyle(color: AppTheme.iceBlue, fontSize: 13)),
+          ] else ...[
+            const SizedBox(height: 10),
+            for (final machine in selected)
+              ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.fitness_center_outlined,
+                  size: 20, color: AppTheme.electricLime),
+                title: Text(machine.name, maxLines: 1,
+                  overflow: TextOverflow.ellipsis),
+                subtitle: Text(
+                  '${machine.records.where((r) => r.effectiveSessionId == session.id).length} séries'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => onOpenMachine(machine),
+              ),
+          ],
         ],
       ]),
     );
