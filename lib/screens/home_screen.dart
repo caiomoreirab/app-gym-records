@@ -724,13 +724,15 @@ class _HomeProCard extends StatelessWidget {
                       children: [
                         const Icon(Icons.workspace_premium_outlined, color: AppTheme.electricLime, size: 20),
                         const SizedBox(width: 7),
-                        Text(
+                        Expanded(child: Text(
                           'GymRecords Pro',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                 color: AppTheme.polarWhite,
                                 fontWeight: FontWeight.w600,
                               ),
-                        ),
+                        )),
                         const SizedBox(width: 7),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
