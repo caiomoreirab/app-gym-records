@@ -249,7 +249,8 @@ class ReviewSessionScreen extends StatelessWidget {
       .fold<double>(0, (sum, r) => sum + r.weight * (r.repetitions ?? 0));
     return Scaffold(
       backgroundColor: AppTheme.deepNavy,
-      appBar: AppBar(title: Text(app.currentSessionName)),
+      appBar: AppBar(title: Text(app.currentSessionName, maxLines: 1,
+        overflow: TextOverflow.ellipsis)), 
       bottomNavigationBar: const ReviewBottomNav(index: 2),
       body: SafeArea(child: Center(child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
@@ -521,6 +522,7 @@ class ReviewHistoryScreen extends StatelessWidget {
         for (final entry in sorted) ...[
           _CyanCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(app.sessionNames[entry.key] ?? 'Treino registrado',
+              maxLines: 2, overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 5),
             Text('${entry.value.first.record.date.day}/${entry.value.first.record.date.month}/'
@@ -670,10 +672,12 @@ class _Metric extends StatelessWidget {
   final String label,value;
   @override
   Widget build(BuildContext context) => _CyanCard(child: Column(children: [
-    Text(value, style: const TextStyle(fontSize: 23,
-        fontWeight: FontWeight.bold, color: AppTheme.electricLime)),
+    FittedBox(fit: BoxFit.scaleDown,
+      child: Text(value, maxLines: 1, style: const TextStyle(fontSize: 23,
+        fontWeight: FontWeight.bold, color: AppTheme.electricLime))),
     Text(label, textAlign: TextAlign.center,
-      style: const TextStyle(fontSize: 11,color: AppTheme.iceBlue)),
+      maxLines: 2, overflow: TextOverflow.ellipsis,
+      style: const TextStyle(fontSize: 12, color: AppTheme.iceBlue)), 
   ]));
 }
 
@@ -691,8 +695,10 @@ class _ShortcutCard extends StatelessWidget {
       children: [
         Icon(icon, color: AppTheme.electricLime),
         const SizedBox(height: 9),
-        Text(title, style: const TextStyle(fontSize: 16,fontWeight: FontWeight.bold)),
-        Text(subtitle, style: const TextStyle(fontSize: 12,color: AppTheme.iceBlue)),
+        Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 16,fontWeight: FontWeight.bold)), 
+        Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 12,color: AppTheme.iceBlue)), 
       ])),
   );
 }
