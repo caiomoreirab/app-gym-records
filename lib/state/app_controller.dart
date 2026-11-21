@@ -62,6 +62,27 @@ class AppController extends ChangeNotifier {
   final List<Machine> _machines;
   final List<CardioActivity> _cardioActivities;
   final Map<String, List<CardioRecord>> _preservedCardio = {};
+  final Set<String> _favoriteMachineIds = {};
+  Set<String> get favoriteMachineIds => Set<String>.unmodifiable(_favoriteMachineIds);
+
+  bool isFavorite(String id) => _favoriteMachineIds.contains(id);
+
+  void toggleFavorite(String id) {
+    if (!_favoriteMachineIds.add(id)) _favoriteMachineIds.remove(id);
+    notifyListeners();
+    _scheduleSave();
+  }
+
+  List<Machine> get favoriteMachines =>
+      availableMachines.where((m) => isFavorite(m.id)).toList(growable: false);
+
+  List<Machine> get todaysMachines {
+    final day = WorkoutRecord.dayKey(DateTime.now());
+    return _machines.where((machine) => machine.records.any(
+      (record) => WorkoutRecord.dayKey(record.date) == day,
+    )).toList(growable: false);
+  }
+
 
   bool get onboardingComplete =>
       _onboardingCompleted &&
@@ -133,6 +154,9 @@ class AppController extends ChangeNotifier {
         final snapshot = await store.load();
         if (snapshot != null) {
           final restored = WorkoutSnapshotCodec.decode(snapshot);
+          _favoriteMachineIds
+            ..clear()
+            ..addAll(restored.favorites);
           _preservedCardio
             ..clear()
             ..addAll(restored.applyTo(_machines, _cardioActivities));
@@ -160,6 +184,7 @@ class AppController extends ChangeNotifier {
       machines: _machines,
       cardioActivities: _cardioActivities,
       preservedCardio: _preservedCardio,
+      favorites: _favoriteMachineIds,
     );
     // Serializing the writes prevents a slow older save from overwriting a
     // newer record. Capture the snapshot before queuing it.
@@ -188,6 +213,7 @@ class AppController extends ChangeNotifier {
           machines: _machines,
           cardioActivities: _cardioActivities,
           preservedCardio: _preservedCardio,
+          favorites: _favoriteMachineIds,
         ),
       );
 
@@ -203,6 +229,9 @@ class AppController extends ChangeNotifier {
     _preservedCardio
       ..clear()
       ..addAll(restored.applyTo(_machines, _cardioActivities));
+    _favoriteMachineIds
+      ..clear()
+      ..addAll(restored.favorites);
     _failedToReadStorage = false;
     persistenceError = null;
     notifyListeners();
@@ -339,6 +368,7 @@ class AppController extends ChangeNotifier {
   }
 
   void deleteMachine(Machine machine) {
+    _favoriteMachineIds.remove(machine.id);
     _machines.remove(machine);
     notifyListeners();
     _scheduleSave();
@@ -421,21 +451,58 @@ class AppController extends ChangeNotifier {
     return metrics.isEmpty ? null : CardioAchievement(metrics);
   }
 
-  void addRecord(Machine machine, {double weight = 0, int? repetitions, int? durationSeconds}) {
-    machine.records.add(
-      WorkoutRecord(
-        date: DateTime.now(),
-        weight: weight,
-        repetitions: repetitions,
-        durationSeconds: durationSeconds,
-      ),
+  static int _recordSequence = 0;
+
+  WorkoutRecord addRecord(Machine machine, {
+    double weight = 0, int? repetitions, int? durationSeconds,
+    bool isWarmup = false, double? rpe, String note = '',
+  }) {
+    final now = DateTime.now();
+    final record = WorkoutRecord(
+      id: 'set_${now.microsecondsSinceEpoch}_${_recordSequence++}',
+      sessionId: WorkoutRecord.dayKey(now),
+      date: now,
+      weight: weight,
+      repetitions: repetitions,
+      durationSeconds: durationSeconds,
+      isWarmup: isWarmup,
+      rpe: rpe,
+      note: note,
     );
+    machine.records.add(record);
     notifyListeners();
     _scheduleSave();
     trackUsage('strength_record_created', {
       'group': machine.group.name,
       'exercise': machine.isCustom ? 'custom' : machine.id,
     });
+    return record;
+  }
+
+  bool updateRecord(Machine machine, WorkoutRecord original, WorkoutRecord updated) {
+    final index = machine.records.indexOf(original);
+    if (index < 0) return false;
+    machine.records[index] = updated;
+    notifyListeners();
+    _scheduleSave();
+    return true;
+  }
+
+  bool removeRecord(Machine machine, WorkoutRecord record) {
+    final removed = machine.records.remove(record);
+    if (removed) {
+      notifyListeners();
+      _scheduleSave();
+    }
+    return removed;
+  }
+
+  void restoreRecord(Machine machine, WorkoutRecord record) {
+    if (machine.records.any((r) => identical(r, record) ||
+        (r.id.isNotEmpty && r.id == record.id))) return;
+    machine.records.add(record);
+    notifyListeners();
+    _scheduleSave();
   }
 
   @override
