@@ -696,7 +696,7 @@ class _WeightCard extends StatelessWidget {
               Row(children: [Text(context.strings.t('Incremento', 'Increment', 'Incremento'), style: const TextStyle(color: AppTheme.iceBlue)), const Spacer(), _IncrementChip(label: '1', selected: increment == 1), const SizedBox(width: 8), _IncrementChip(label: '2,5', selected: increment == 2.5), const SizedBox(width: 8), _IncrementChip(label: '5', selected: increment == 5)]),
             ],
           ],
-          if (true) ...[
+          if (machine.supportsRepetitions) ...[
             if (!machine.prefersBodyMetrics || showAdditionalWeight) const SizedBox(height: 18),
             if (!machine.prefersBodyMetrics || showAdditionalWeight) const Divider(),
             if (!machine.prefersBodyMetrics || showAdditionalWeight) const SizedBox(height: 16),
