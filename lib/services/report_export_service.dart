@@ -113,9 +113,12 @@ abstract final class ReportExportService {
     final fontData = await rootBundle.load('assets/fonts/Barlow-Regular.ttf');
     final font = pw.Font.ttf(fontData);
     final document = pw.Document();
+    final sessionNumbers = <String, int>{};
     final data = entries.map((r) => [
       '${r.date.day}/${r.date.month}/${r.date.year}',
-      r.sessionId.isEmpty ? '—' : r.sessionId,
+      r.sessionId.isEmpty ? '—' :
+        'Treino ${sessionNumbers.putIfAbsent(
+          r.sessionId, () => sessionNumbers.length + 1)}',
       r.exercise,
       r.setNumber?.toString() ?? '—',
       [
