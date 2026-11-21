@@ -3,6 +3,7 @@ class WorkoutRecord {
     required this.date,
     this.id = '',
     this.sessionId = '',
+    this.gymId = 'default',
     this.weight = 0,
     this.repetitions,
     this.durationSeconds,
@@ -17,6 +18,7 @@ class WorkoutRecord {
 
   /// A training session groups sets. Existing backups fall back to their day.
   final String sessionId;
+  final String gymId;
   final DateTime date;
   final double weight;
   final int? repetitions;
@@ -34,6 +36,7 @@ class WorkoutRecord {
   WorkoutRecord copyWith({
     String? id,
     String? sessionId,
+    String? gymId,
     DateTime? date,
     double? weight,
     int? repetitions,
@@ -44,6 +47,7 @@ class WorkoutRecord {
   }) => WorkoutRecord(
         id: id ?? this.id,
         sessionId: sessionId ?? this.sessionId,
+        gymId: gymId ?? this.gymId,
         date: date ?? this.date,
         weight: weight ?? this.weight,
         repetitions: repetitions ?? this.repetitions,
