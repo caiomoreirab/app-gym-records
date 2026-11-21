@@ -10,6 +10,7 @@ Branch: `feat/registro-sessoes-validacao`. **Não mesclar na main antes dos test
 - Ficha estruturada do aparelho: banco, encosto, pegada e outra regulagem, salva no backup local.
 - Resumo semanal offline: dias ativos, exercícios e séries de trabalho.
 - Temporizador de descanso na tela (60, 90, 120 s), sem notificação em segundo plano.
+- Opção de texto ampliado nas configurações, persistida localmente.
 
 ## Roteiro de validação manual
 1. Com perfil novo, registrar supino 80 kg × 3; fechar e reabrir; confirmar histórico e CSV.
@@ -22,7 +23,7 @@ Branch: `feat/registro-sessoes-validacao`. **Não mesclar na main antes dos test
 8. Confirmar resumo semanal de dias distintos e séries sem aquecimento.
 9. Iniciar temporizador de 60s, parar e iniciar 90s; verificar comportamento ao navegar.
 10. Desativar a prévia Pro; conferir que copiar CSV segue disponível, e PDF completo aparece bloqueado.
-11. Testar com texto ampliado do sistema, leitor de tela e toque com uma mão no celular.
+11. Ativar 'Texto ampliado' nas configurações e testar o fluxo; verificar também o leitor de tela e o toque com uma mão no celular.
 12. Testar dados antigos v1 e verificar que nenhuma entrada histórica desapareceu.
 
 ## Pendências antes de considerar o briefing inteiro implementado
