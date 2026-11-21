@@ -5,6 +5,7 @@ import '../l10n/app_strings.dart';
 import '../models/machine.dart';
 import '../models/workout_record.dart';
 import '../services/pro_insights.dart';
+import '../services/strength_records.dart';
 import '../state/app_controller.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
@@ -104,6 +105,8 @@ class _MachineScreenState extends State<MachineScreen> {
             ),
             const SizedBox(height: 16),
             _RecordCard(machine: machine, unit: app.unit),
+            const SizedBox(height: 8),
+            _RecordTypesCard(machine: machine, unit: app.unit),
             if (app.activeSession != null &&
                 !app.activeSession!.exerciseIds.contains(machine.id)) ...[
               const SizedBox(height: 10),
@@ -497,6 +500,58 @@ class _RecordCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _RecordTypesCard extends StatelessWidget {
+  const _RecordTypesCard({required this.machine, required this.unit});
+  final Machine machine;
+  final String unit;
+
+  @override
+  Widget build(BuildContext context) {
+    final best = StrengthRecords.maxWeight(machine.records);
+    final range = StrengthRecords.maxWeightForRepRange(machine.records);
+    final estimated = StrengthRecords.maxEstimatedOneRepMax(machine.records);
+    return SectionCard(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 10),
+        title: const Text('Tipos de recorde'),
+        subtitle: const Text('Sem contar séries de aquecimento',
+          style: TextStyle(color: AppTheme.iceBlue)),
+        children: [
+          _recordRow('Seu maior peso até hoje',
+            best <= 0 ? '—' : '${best.toStringAsFixed(1)} $unit'),
+          _recordRow('Maior carga entre 8 e 12 repetições',
+            range <= 0 ? '—' : '${range.toStringAsFixed(1)} $unit'),
+          _recordRow('Carga máxima estimada (1RM)',
+            estimated == null ? '—' :
+            '${estimated.toStringAsFixed(1)} $unit'),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(10, 4, 10, 12),
+            child: Text(
+              'Estimativa pela fórmula de Epley (1–12 repetições); '
+              'não substitui um teste orientado. Se não houver dados '
+              'suficientes, mostramos —.',
+              style: TextStyle(color: AppTheme.iceBlue, fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _recordRow(String label, String value) => Padding(
+    padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+    child: Row(children: [
+      Expanded(child: Text(label, maxLines: 2,
+        overflow: TextOverflow.ellipsis)),
+      const SizedBox(width: 12),
+      Text(value, style: const TextStyle(
+        color: AppTheme.electricLime,
+        fontWeight: FontWeight.w600)),
+    ]),
+  );
 }
 
 class _NoteCard extends StatelessWidget {
