@@ -107,25 +107,27 @@ class Machine {
       };
 
   bool get supportsWeight => !prefersBodyMetrics || records.any((record) => record.hasWeight);
-  bool get supportsRepetitions => prefersBodyMetrics || equipment != EquipmentType.machine;
+  // All strength machines benefit from complete set tracking. Repetitions
+  // must not disappear just because the equipment is classified as 'machine'.
+  bool get supportsRepetitions => true;
   bool get supportsDuration => prefersBodyMetrics;
 
 
   double get recordWeight {
-    final values = records.where((record) => record.hasWeight).map((record) => record.weight).toList();
+    final values = records.where((record) => record.hasWeight && !record.isWarmup).map((record) => record.weight).toList();
     if (values.isEmpty) return 0;
     return values.reduce((current, next) => next > current ? next : current);
   }
 
   int get bestRepetitions {
-    final values = records.where((record) => record.hasRepetitions).map((record) => record.repetitions!).toList();
+    final values = records.where((record) => record.hasRepetitions && !record.isWarmup).map((record) => record.repetitions!).toList();
     if (values.isEmpty) return 0;
     values.sort();
     return values.last;
   }
 
   int get bestDurationSeconds {
-    final values = records.where((record) => record.hasDuration).map((record) => record.durationSeconds!).toList();
+    final values = records.where((record) => record.hasDuration && !record.isWarmup).map((record) => record.durationSeconds!).toList();
     if (values.isEmpty) return 0;
     values.sort();
     return values.last;
