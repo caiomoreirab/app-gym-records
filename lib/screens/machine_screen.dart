@@ -32,6 +32,8 @@ class _MachineScreenState extends State<MachineScreen> {
   bool _saving = false;
   bool _isWarmup = false;
   int _detailTab = 0;
+  double? _rpe;
+  String _setNote = '';
   double _weight = 0;
   int? _repetitions;
   bool _showAdditionalWeight = false;
@@ -47,6 +49,8 @@ class _MachineScreenState extends State<MachineScreen> {
     _weight = latest?.weight ?? 0;
     _repetitions = latest?.repetitions ?? (machine.prefersBodyMetrics ? null : 10);
     _showAdditionalWeight = latest?.hasWeight ?? false;
+    _rpe = latest?.rpe;
+    _setNote = latest?.note ?? '';
     final duration = latest?.duration;
     _minutes = duration?.inMinutes ?? 0;
     _seconds = duration?.inSeconds.remainder(60) ?? 0;
@@ -153,6 +157,35 @@ class _MachineScreenState extends State<MachineScreen> {
                 onChanged: (value) =>
                     setState(() => _isWarmup = value ?? false),
               ),
+              const SizedBox(height: 8),
+              Text('Esforço percebido (RPE) · opcional',
+                style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 6),
+              SingleChildScrollView(scrollDirection: Axis.horizontal,
+                child: Row(children: [
+                  for (final level in <double>[6, 7, 8, 9, 10]) ...[
+                    ChoiceChip(
+                      label: Text('${level.toInt()}'),
+                      selected: _rpe == level,
+                      onSelected: (selected) =>
+                        setState(() => _rpe = selected ? level : null),
+                    ),
+                    const SizedBox(width: 7),
+                  ],
+                ]),
+              ),
+              const SizedBox(height: 10),
+              TextFormField(
+                initialValue: _setNote,
+                maxLength: 160,
+                maxLines: 2,
+                onChanged: (value) => _setNote = value,
+                decoration: const InputDecoration(
+                  labelText: 'Observação desta série (opcional)',
+                  hintText: 'Ex.: execução controlada',
+                  prefixIcon: Icon(Icons.edit_note_outlined),
+                ),
+              ),
               const RestTimerCard(),
               const SizedBox(height: 10),
               _NoteCard(note: machine.note, onEdit: () => _editNote(machine)),
@@ -243,6 +276,8 @@ class _MachineScreenState extends State<MachineScreen> {
       repetitions: (_repetitions ?? 0) > 0 ? _repetitions : null,
       durationSeconds: durationSeconds > 0 ? durationSeconds : null,
       isWarmup: _isWarmup,
+      rpe: _rpe,
+      note: _setNote,
     );
     // Do not announce a successful save or PR until the local database
     // acknowledges the write. Retain the in-memory record for recovery.
@@ -816,7 +851,6 @@ class _WeightCard extends StatelessWidget {
     required this.onMinutesChanged,
     required this.onSecondsChanged,
   });
-
   final Machine machine;
   final bool showAdditionalWeight;
   final VoidCallback onToggleAdditionalWeight;
@@ -824,8 +858,7 @@ class _WeightCard extends StatelessWidget {
   final String unit;
   final double increment;
   final int? repetitions;
-  final int minutes;
-  final int seconds;
+  final int minutes, seconds;
   final ValueChanged<double> onWeightChanged;
   final VoidCallback onTapWeight;
   final ValueChanged<int?> onRepetitionsChanged;
@@ -834,90 +867,93 @@ class _WeightCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (machine.prefersBodyMetrics) ...[
-            OutlinedButton.icon(
-              onPressed: onToggleAdditionalWeight,
-              icon: Icon(showAdditionalWeight ? Icons.remove_circle_outline_rounded : Icons.add_circle_outline_rounded),
-              label: Text(showAdditionalWeight ? context.strings.t('Remover carga adicional', 'Remove extra load', 'Quitar carga adicional') : context.strings.t('Adicionar carga extra (opcional)', 'Add extra load (optional)', 'Añadir carga extra (opcional)')),
-            ),
-            if (showAdditionalWeight) const SizedBox(height: 12),
-          ],
-          if (!machine.prefersBodyMetrics || showAdditionalWeight) ...[
-            Text(machine.prefersBodyMetrics ? context.strings.t('Carga adicional', 'Additional load', 'Carga adicional') : context.strings.t('Peso', 'Weight', 'Peso'), style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                _RoundControl(icon: Icons.remove_rounded, onTap: () => onWeightChanged((weight - increment).clamp(0, 250).toDouble())),
-                Expanded(
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    onTap: onTapWeight,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: Text.rich(
-                        TextSpan(children: [
-                          TextSpan(text: formatWeight(weight, Localizations.localeOf(context)), style: const TextStyle(color: AppTheme.polarWhite, fontSize: 66, fontWeight: FontWeight.w600, height: 1)),
-                          TextSpan(text: ' $unit', style: const TextStyle(color: AppTheme.iceBlue, fontSize: 20)),
-                        ]),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-                ),
-                _RoundControl(icon: Icons.add_rounded, onTap: () => onWeightChanged((weight + increment).clamp(0, 250).toDouble())),
-              ],
-            ),
-            Slider(value: weight.clamp(0, 250).toDouble(), min: 0, max: 250, divisions: 100, onChanged: onWeightChanged),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 4),
-              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('0', style: TextStyle(color: AppTheme.iceBlue)), Text('250', style: TextStyle(color: AppTheme.iceBlue))]),
-            ),
-            if (!machine.prefersBodyMetrics) ...[
-              const SizedBox(height: 12),
-              Row(children: [Text(context.strings.t('Incremento', 'Increment', 'Incremento'), style: const TextStyle(color: AppTheme.iceBlue)), const Spacer(), _IncrementChip(label: '1', selected: increment == 1), const SizedBox(width: 8), _IncrementChip(label: '2,5', selected: increment == 2.5), const SizedBox(width: 8), _IncrementChip(label: '5', selected: increment == 5)]),
-            ],
-          ],
-          if (machine.supportsRepetitions) ...[
-            if (!machine.prefersBodyMetrics || showAdditionalWeight) const SizedBox(height: 18),
-            if (!machine.prefersBodyMetrics || showAdditionalWeight) const Divider(),
-            if (!machine.prefersBodyMetrics || showAdditionalWeight) const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: Text.rich(
-                    TextSpan(children: [TextSpan(text: context.strings.t('Repetições ', 'Repetitions ', 'Repeticiones ')), TextSpan(text: '(${context.strings.optional})', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.iceBlue))]),
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-                _RoundControl(icon: Icons.remove_rounded, onTap: () { final value = repetitions ?? 0; onRepetitionsChanged(value <= 1 ? null : value - 1); }),
-                SizedBox(width: 62, child: Text(repetitions?.toString() ?? '—', textAlign: TextAlign.center, style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w600))),
-                _RoundControl(icon: Icons.add_rounded, onTap: () => onRepetitionsChanged((repetitions ?? 0) + 1)),
-              ],
-            ),
-          ],
-          if (machine.supportsDuration) ...[
-            const SizedBox(height: 18),
-            const Divider(),
-            const SizedBox(height: 16),
-            Text.rich(
-              TextSpan(children: [TextSpan(text: context.strings.t('Tempo ', 'Duration ', 'Tiempo ')), TextSpan(text: '(${context.strings.optional})', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.iceBlue))]),
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(child: _TimeStepper(label: context.strings.t('Minutos', 'Minutes', 'Minutos'), value: minutes, onDecrement: () => onMinutesChanged(minutes - 1), onIncrement: () => onMinutesChanged(minutes + 1))),
-                const SizedBox(width: 12),
-                Expanded(child: _TimeStepper(label: context.strings.t('Segundos', 'Seconds', 'Segundos'), value: seconds, onDecrement: () => onSecondsChanged(seconds - 1), onIncrement: () => onSecondsChanged(seconds + 1))),
-              ],
-            ),
-          ],
+    final weightVisible = !machine.prefersBodyMetrics || showAdditionalWeight;
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      if (machine.prefersBodyMetrics) ...[
+        OutlinedButton.icon(
+          onPressed: onToggleAdditionalWeight,
+          icon: Icon(showAdditionalWeight
+            ? Icons.remove_circle_outline_rounded : Icons.add_circle_outline_rounded),
+          label: Text(showAdditionalWeight
+            ? 'Remover carga adicional' : 'Adicionar carga extra (opcional)'),
+        ),
+        const SizedBox(height: 10),
+      ],
+      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (weightVisible) ...[
+          Expanded(child: _NeonValuePanel(
+            label: 'Carga ($unit)',
+            value: formatWeight(weight, Localizations.localeOf(context)),
+            onMinus: () => onWeightChanged((weight - increment).clamp(0, 250).toDouble()),
+            onPlus: () => onWeightChanged((weight + increment).clamp(0, 250).toDouble()),
+            onValueTap: onTapWeight,
+          )),
+          if (machine.supportsRepetitions) const SizedBox(width: 10),
         ],
-      ),
+        if (machine.supportsRepetitions)
+          Expanded(child: _NeonValuePanel(
+            label: 'Repetições',
+            value: repetitions?.toString() ?? '—',
+            onMinus: () {
+              final value = repetitions ?? 0;
+              onRepetitionsChanged(value <= 1 ? null : value - 1);
+            },
+            onPlus: () => onRepetitionsChanged((repetitions ?? 0) + 1),
+          )),
+      ]),
+      if (machine.supportsDuration) ...[
+        const SizedBox(height: 14),
+        SectionCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Duração (opcional)',
+              style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 10),
+            Row(children: [
+              Expanded(child: _TimeStepper(label: 'Minutos', value: minutes,
+                onDecrement: () => onMinutesChanged(minutes - 1),
+                onIncrement: () => onMinutesChanged(minutes + 1))),
+              const SizedBox(width: 10),
+              Expanded(child: _TimeStepper(label: 'Segundos', value: seconds,
+                onDecrement: () => onSecondsChanged(seconds - 1),
+                onIncrement: () => onSecondsChanged(seconds + 1))),
+            ]),
+          ])),
+      ],
+    ]);
+  }
+}
+
+class _NeonValuePanel extends StatelessWidget {
+  const _NeonValuePanel({required this.label, required this.value,
+    required this.onMinus,required this.onPlus,this.onValueTap});
+  final String label, value;
+  final VoidCallback onMinus, onPlus;
+  final VoidCallback? onValueTap;
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+      decoration: BoxDecoration(color: AppTheme.surfaceNavy,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppTheme.electricLime, width: 1.25)),
+      child: Column(children: [
+        Text(label, style: const TextStyle(color: AppTheme.iceBlue,
+          fontSize: 13, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 12),
+        InkWell(
+          onTap: onValueTap,
+          child: Text(value, maxLines: 1,
+            style: const TextStyle(fontSize: 38,
+              color: AppTheme.polarWhite, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center),
+        ),
+        const SizedBox(height: 10),
+        Row(children: [
+          Expanded(child: _RoundControl(icon: Icons.remove_rounded, onTap: onMinus)),
+          const SizedBox(width: 12),
+          Expanded(child: _RoundControl(icon: Icons.add_rounded, onTap: onPlus)),
+        ]),
+      ]),
     );
   }
 }
