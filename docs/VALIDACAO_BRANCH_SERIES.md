@@ -1,41 +1,60 @@
-# GymRecords — validação da branch de funcionalidades
+# GymRecords — roteiro de validação da branch Neon
 
-Branch: `feat/registro-sessoes-validacao`. **Não mesclar na main antes dos testes.**
+**Branch:** `feat/registro-sessoes-validacao`. **A `main` permanece intocada.**
+**Referência visual:** as quatro pranchas PNG aprovadas no chat, especialmente
+`Mockup GymRecords em Quatro Telas`. O HTML anterior serve apenas de referência funcional.
 
-## O que está implementado nesta candidata
-- Registro por série, agrupamento por dia, repetição da última série, edição, exclusão/desfazer.
-- Aquecimento separado dos recordes, maior peso, faixa 8–12 e 1RM estimado.
-- Favoritos e lista de exercícios registrados hoje.
-- CSV básico acessível sem ativar a prévia Pro; PDF completo continua demonstrativo Pro.
-- Ficha estruturada do aparelho: banco, encosto, pegada e outra regulagem, salva no backup local.
-- Resumo semanal offline: dias ativos, exercícios e séries de trabalho.
-- Temporizador de descanso na tela (60, 90, 120 s), sem notificação em segundo plano.
-- Opção de texto ampliado nas configurações, persistida localmente.
+## Implementado no código (ainda sujeito à compilação e teste visual)
+- Home nova com mascote, azul-ciano, treino ativo, favoritos, recentes e grupos via catálogo.
+- Sessões com IDs únicos, início, plano de exercícios e conclusão, com suporte a dois
+  treinos no mesmo dia; dados antigos mantidos pelo formato de backup v1.
+- Registro de séries com carga e repetições lado a lado, RPE, observação,
+  aquecimento, repetição da última série, edição, exclusão e desfazer do salvamento.
+- Abas Registrar, Séries, Histórico e Recordes no detalhe do exercício.
+- Recordes por maior carga, faixa 8–12 e 1RM estimado pela fórmula Epley.
+- Metas locais por exercício, resumo semanal e descanso opcional de 60/90/120 s.
+- Perfis de academia, ID de academia em cada série e fotografia de equipamento
+  selecionada da galeria, armazenada no backup local com limite de tamanho.
+- CSV e PDF básicos gratuitos. Importação CSV por texto/área de transferência,
+  com prévia, reconhecimento de cabeçalhos e prevenção de reimportação do mesmo CSV.
+- Preferências de texto ampliado e alto contraste; visual escuro/ciano.
+- Sem login, sem sincronização obrigatória. SQLite em Android/iOS.
 
-## Roteiro de validação manual
-1. Com perfil novo, registrar supino 80 kg × 3; fechar e reabrir; confirmar histórico e CSV.
-2. Registrar 80 kg × 10; verificar duas séries distintas e cálculo de recorde por faixa.
-3. Marcar 120 kg × 5 como aquecimento; verificar que não altera o recorde de trabalho.
-4. Editar a primeira série, excluir a segunda e usar Desfazer; reabrir e verificar persistência.
-5. Favoritar o exercício, conferir atalho na Home; registrar e conferir 'Treino de hoje'.
-6. Anotar banco posição 4, encosto 2 e pegada; reabrir e conferir ficha.
-7. Gerar backup JSON, restaurar e verificar séries, favoritos e regulagens.
-8. Confirmar resumo semanal de dias distintos e séries sem aquecimento.
-9. Iniciar temporizador de 60s, parar e iniciar 90s; verificar comportamento ao navegar.
-10. Desativar a prévia Pro; conferir que copiar CSV segue disponível, e PDF completo aparece bloqueado.
-11. Ativar 'Texto ampliado' nas configurações e testar o fluxo; verificar também o leitor de tela e o toque com uma mão no celular.
-12. Testar dados antigos v1 e verificar que nenhuma entrada histórica desapareceu.
+## Roteiro manual de aceite
+1. Onboarding com nome e visual, Home Neon e catálogo de exercícios.
+2. Iniciar Treino A, adicionar supino, registrar 80 kg × 3 e 80 kg × 10.
+3. Editar, excluir e desfazer; conferir que o reinício não perde as séries.
+4. Concluir treino e iniciar Treino B no mesmo dia; conferir sessões distintas.
+5. Marcar 120 kg × 5 como aquecimento e conferir que não vira PR.
+6. Conferir carga mais alta, 8–12 reps e 1RM estimado.
+7. Criar meta de supino, verificar progresso e o resumo da semana.
+8. Criar academia B, selecioná-la, registrar uma série e conferir o campo gym_id no CSV.
+9. Salvar uma foto do aparelho e reabrir; confirmar persistência sem internet.
+10. Fazer backup, restaurar e conferir sessões, metas, academia e foto.
+11. Copiar CSV, gerar PDF e tentar importar o mesmo CSV duas vezes; não duplicar.
+12. Ligar texto ampliado e alto contraste; testar dispositivo pequeno e leitor de tela.
+13. Validar com as cinco personas e comparar prints com as quatro pranchas.
 
-## Pendências antes de considerar o briefing inteiro implementado
-- Sessões de treino iniciadas/encerradas explicitamente (hoje são agrupadas por dia).
-- Fotos de aparelho; múltiplas academias; importação CSV/Hevy/Strong.
-- Gamificação completa, compartilhamento de imagem, detecção de platô, acessibilidade auditada.
-- Política de assinatura real, sincronização e contas (fora do lançamento offline acordado).
-- Revisão visual de TODAS as ilustrações e testes em Android/iOS reais.
-- Confirmar resultado da compilação Flutter, testes automatizados e deploy GitHub Pages.
+## O que ainda NÃO está validado / não foi entregue integralmente
+- Compatibilidade integral com todos os CSVs Hevy/Strong: depende de arquivos reais
+  e correspondência de exercícios entre catálogos.
+- Compartilhamento de recorde como **imagem** e integração com redes sociais.
+- Detecção de platô de 4 semanas, gamificação completa, sequência semanal e conquistas
+  por níveis além das metas e celebrações de PR.
+- Modelo Pro real (cobrança, lojas, assinatura), nuvem, contas, multi-aluno e smartwatch.
+- Mapeamento visual correto de todas as ilustrações por exercício; QA de acessibilidade.
+- Verificação em iPhone/Android reais, compilação final e resultado do GitHub Pages.
 
-## Deploy esperado
+## Observações de segurança e integridade
+- Fotos são inseridas como cópias comprimidas no JSON local; há limites de tamanho.
+- Antes de uma importação CSV real, exporte um backup JSON.
+- O importador ignora exercícios sem correspondência, explicitando quantas linhas
+  não foram importadas; formatos externos podem ter colunas diferentes.
+- Dados da prévia web permanecem no armazenamento local do navegador e podem ser
+  perdidos ao apagar os dados do site. Não usar como armazenamento definitivo.
+
+## Link da prévia, sujeito ao sucesso do workflow
+https://caiomoreirab.github.io/app-gym-records/review/
+
 Workflow: `.github/workflows/feature-web-preview.yml`.
-Endereço pretendido: https://caiomoreirab.github.io/app-gym-records/review/
-
-**A existência desta configuração não confirma deploy bem-sucedido.**
+A presença deste endereço **não comprova** que o último deploy foi concluído.
