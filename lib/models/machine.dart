@@ -110,7 +110,7 @@ class Machine {
       };
 
   bool get supportsWeight => !prefersBodyMetrics || records.any((record) => record.hasWeight);
-  bool get supportsRepetitions => prefersBodyMetrics || equipment != EquipmentType.machine;
+  bool get supportsRepetitions => id != 'plank' && id != 'side_plank';
   bool get supportsDuration => prefersBodyMetrics;
 
 
