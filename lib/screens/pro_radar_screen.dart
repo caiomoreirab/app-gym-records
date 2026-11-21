@@ -33,13 +33,36 @@ class _ProRadarScreenState extends State<ProRadarScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.deepNavy,
-      appBar: AppBar(title: const Text('PR Radar')),
+      appBar: AppBar(title: const Text('Próximo objetivo')),
       body: PageBody(
         child: ListView(padding: const EdgeInsets.only(bottom: 30), children: [
           const SizedBox(height: 10),
           Text(context.strings.t('Próximos alvos', 'Next targets', 'Próximos objetivos'), style: Theme.of(context).textTheme.headlineMedium),
           const SizedBox(height: 8),
           Text(context.strings.t('Índice exploratório de proximidade, não uma probabilidade estatística validada.', 'Exploratory proximity score, not a validated statistical probability.', 'Índice exploratorio de proximidad, no una probabilidad validada.'), style: Theme.of(context).textTheme.bodySmall),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (d) => AlertDialog(
+                  title: const Text('Como calculamos?'),
+                  content: const Text(
+                    'O próximo alvo parte do seu maior peso registrado '
+                    'mais o incremento configurado. O índice de proximidade '
+                    'combina a relação da última carga com o recorde e a '
+                    'quantidade recente de registros (até cinco). É apenas '
+                    'uma regra exploratória, não uma probabilidade estatística.'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(d),
+                      child: const Text('Entendi')),
+                  ],
+                ),
+              ),
+              icon: const Icon(Icons.help_outline_rounded),
+              label: const Text('Como calculamos?'),
+            ),
+          ),
           const SizedBox(height: 16),
           AnalyticsFilters(
             group: _group,
