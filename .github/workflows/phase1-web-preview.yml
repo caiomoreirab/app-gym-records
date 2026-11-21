@@ -1,0 +1,116 @@
+name: GymRecords - Validação Web /phase1/
+
+on:
+  push:
+    branches: ['feat/fase1-registro-confiavel-classico']
+    paths:
+      - 'lib/**'
+      - 'test/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - '.github/workflows/phase1-web-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: gymrecords-phase1-web-preview
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Compilar main e fase 1 em rotas separadas
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout versao publica (main)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: stable
+
+      - name: Checkout versao candidata
+        uses: actions/checkout@v4
+        with:
+          ref: feat/fase1-registro-confiavel-classico
+          path: candidate
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.50.0'
+          cache: true
+
+      - name: Compilar versao main
+        working-directory: stable
+        run: |
+          if [ ! -f web/index.html ]; then
+            flutter create --platforms=web --project-name=gymrecords --no-pub .
+          fi
+          flutter pub get
+          flutter build web --release --base-href "/app-gym-records/" --web-content-hash
+
+      - name: Compilar versao candidata
+        working-directory: candidate
+        run: |
+          if [ ! -f web/index.html ]; then
+            flutter create --platforms=web --project-name=gymrecords --no-pub .
+          fi
+          flutter pub get
+          # Flutter create may add a template test referring to MyApp.
+          # Never execute that generated scaffold test against GymRecords.
+          if grep -q 'MyApp' test/widget_test.dart 2>/dev/null; then
+            rm test/widget_test.dart
+          fi
+          flutter analyze --no-fatal-infos --no-fatal-warnings
+          flutter test --reporter expanded
+          flutter build web --release --base-href "/app-gym-records/phase1/" --web-content-hash --dart-define=GYM_PHASE1_PREVIEW=true
+
+      - name: Preparar um unico site sem alterar codigo main
+        run: |
+          mkdir -p site/phase1
+          cp -a stable/build/web/. site/
+          cp -a candidate/build/web/. site/phase1/
+          cp stable/docs/privacy.html site/privacy.html
+          touch site/.nojekyll
+          cp site/index.html site/404.html
+          test -s site/index.html
+          test -s site/phase1/index.html
+
+      - name: Publicar copia do build candidato para download
+        uses: actions/upload-artifact@v4
+        with:
+          name: GymRecords-Web-Phase1
+          path: candidate/build/web
+          retention-days: 7
+
+      - name: Criar artefato GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    name: Publicar fase 1 para validacao
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: gymrecords-validation
+      url: https://caiomoreirab.github.io/app-gym-records/phase1/
+    steps:
+      - name: Preparar Pages
+        uses: actions/configure-pages@v5
+
+      - name: Publicar site
+        uses: actions/deploy-pages@v4
+
+      - name: Links para validacao
+        run: |
+          echo "### GymRecords: duas versoes independentes" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Main atual: https://caiomoreirab.github.io/app-gym-records/" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Fase 1 em validação: https://caiomoreirab.github.io/app-gym-records/phase1/" >> "$GITHUB_STEP_SUMMARY"
+          echo "A versao candidata usa chave isolada no navegador e nao modifica a main." >> "$GITHUB_STEP_SUMMARY"
