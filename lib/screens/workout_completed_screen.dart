@@ -79,10 +79,6 @@ class _WorkoutCompletedScreenState extends State<WorkoutCompletedScreen> {
       '${date.hour.toString().padLeft(2, '0')}:'
       '${date.minute.toString().padLeft(2, '0')}';
 
-  String _clock(DateTime date) =>
-      '${date.hour.toString().padLeft(2, '0')}:'
-      '${date.minute.toString().padLeft(2, '0')}';
-
   String _duration(Duration duration) {
     final total = duration.inMinutes;
     if (total < 1) return 'menos de 1 min';
