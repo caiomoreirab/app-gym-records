@@ -92,7 +92,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment:
-      name: github-pages
+      name: gymrecords-validation
       url: https://caiomoreirab.github.io/app-gym-records/preview/treinos-v1/
     steps:
       - name: Preparar Pages
