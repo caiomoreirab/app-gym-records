@@ -63,7 +63,7 @@ jobs:
           flutter pub get
           flutter analyze --no-fatal-infos --no-fatal-warnings
           flutter test --reporter expanded
-          flutter build web --release --base-href "/app-gym-records/review/" --web-content-hash
+          flutter build web --release --base-href "/app-gym-records/review/" --web-content-hash --dart-define=GYM_IS_REVIEW=true
 
       - name: Preparar um unico site sem alterar codigo main
         run: |
