@@ -3,6 +3,7 @@ import 'dart:ui';
 import '../models/machine.dart';
 import '../models/muscle_group.dart';
 import '../models/workout_record.dart';
+import 'strength_records.dart';
 
 class ProExerciseInsights {
   const ProExerciseInsights({
@@ -37,10 +38,11 @@ class ProExerciseInsights {
 
 abstract final class ProInsights {
   static ProExerciseInsights forMachine(Machine machine, double increment) {
-    final sorted = [...machine.records]
+    final sets = StrengthRecords.workingSets(machine.records).toList();
+    final sorted = [...sets]
       ..sort((a, b) => b.date.compareTo(a.date));
     final record = machine.recordWeight;
-    final latest = machine.latestRecord;
+    final latest = sorted.isEmpty ? null : sorted.first;
     final target = record <= 0 ? (increment > 2.5 ? increment : 2.5) : record + increment;
     final latestReps = latest?.repetitions ?? 8;
     final targetReps = latestReps < 6 ? 6 : (latestReps > 12 ? 12 : latestReps);
@@ -48,9 +50,9 @@ abstract final class ProInsights {
     var oneRepMax = record;
     var maxVolume = 0.0;
     WorkoutRecord? mostReps;
-    for (final item in machine.records) {
-      final itemReps = item.repetitions ?? 1;
-      final estimate = item.weight * (1 + itemReps / 30);
+    for (final item in sets) {
+      final itemReps = item.repetitions ?? 0;
+      final estimate = StrengthRecords.estimatedOneRepMax(item) ?? 0;
       if (estimate > oneRepMax) oneRepMax = estimate;
       final volume = item.weight * itemReps;
       if (volume > maxVolume) maxVolume = volume;
@@ -62,7 +64,7 @@ abstract final class ProInsights {
       }
     }
 
-    final chronological = [...machine.records]
+    final chronological = [...sets]
       ..sort((a, b) => a.date.compareTo(b.date));
     final firstWeight = chronological.isEmpty ? 0.0 : chronological.first.weight;
     final progress = firstWeight <= 0
@@ -82,7 +84,7 @@ abstract final class ProInsights {
     }
 
     final latestRatio = record <= 0 || latest == null ? 0.5 : latest.weight / record;
-    final historyCount = machine.records.length > 5 ? 5 : machine.records.length;
+    final historyCount = sets.length > 5 ? 5 : sets.length;
     final historyBonus = historyCount * .025;
     final probability = (0.64 + latestRatio * .20 + historyBonus)
         .clamp(.45, .94)
