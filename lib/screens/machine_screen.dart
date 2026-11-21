@@ -58,7 +58,6 @@ class _MachineScreenState extends State<MachineScreen> {
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
     final machine = app.machineById(widget.machineId);
-    final records = [...machine.records]..sort((a, b) => b.date.compareTo(a.date));
 
     return Scaffold(
       backgroundColor: AppTheme.deepNavy,
@@ -522,8 +521,7 @@ class _WeightCard extends StatelessWidget {
   final String unit;
   final double increment;
   final int? repetitions;
-  final int minutes;
-  final int seconds;
+  final int minutes, seconds;
   final ValueChanged<double> onWeightChanged;
   final VoidCallback onTapWeight;
   final ValueChanged<int?> onRepetitionsChanged;
@@ -532,124 +530,210 @@ class _WeightCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (machine.prefersBodyMetrics) ...[
-            OutlinedButton.icon(
-              onPressed: onToggleAdditionalWeight,
-              icon: Icon(showAdditionalWeight ? Icons.remove_circle_outline_rounded : Icons.add_circle_outline_rounded),
-              label: Text(showAdditionalWeight ? context.strings.t('Remover carga adicional', 'Remove extra load', 'Quitar carga adicional') : context.strings.t('Adicionar carga extra (opcional)', 'Add extra load (optional)', 'Añadir carga extra (opcional)')),
-            ),
-            if (showAdditionalWeight) const SizedBox(height: 12),
-          ],
-          if (!machine.prefersBodyMetrics || showAdditionalWeight) ...[
-            Text(machine.prefersBodyMetrics ? context.strings.t('Carga adicional', 'Additional load', 'Carga adicional') : context.strings.t('Peso', 'Weight', 'Peso'), style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                _RoundControl(icon: Icons.remove_rounded, onTap: () => onWeightChanged((weight - increment).clamp(0, 250).toDouble())),
-                Expanded(
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    onTap: onTapWeight,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: Text.rich(
-                        TextSpan(children: [
-                          TextSpan(text: formatWeight(weight, Localizations.localeOf(context)), style: const TextStyle(color: AppTheme.polarWhite, fontSize: 66, fontWeight: FontWeight.w600, height: 1)),
-                          TextSpan(text: ' $unit', style: const TextStyle(color: AppTheme.iceBlue, fontSize: 20)),
-                        ]),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
-                ),
-                _RoundControl(icon: Icons.add_rounded, onTap: () => onWeightChanged((weight + increment).clamp(0, 250).toDouble())),
-              ],
-            ),
-            Slider(value: weight.clamp(0, 250).toDouble(), min: 0, max: 250, divisions: 100, onChanged: onWeightChanged),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 4),
-              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('0', style: TextStyle(color: AppTheme.iceBlue)), Text('250', style: TextStyle(color: AppTheme.iceBlue))]),
-            ),
-            if (!machine.prefersBodyMetrics) ...[
-              const SizedBox(height: 12),
-              Row(children: [Text(context.strings.t('Incremento', 'Increment', 'Incremento'), style: const TextStyle(color: AppTheme.iceBlue)), const Spacer(), _IncrementChip(label: '1', selected: increment == 1), const SizedBox(width: 8), _IncrementChip(label: '2,5', selected: increment == 2.5), const SizedBox(width: 8), _IncrementChip(label: '5', selected: increment == 5)]),
-            ],
-          ],
-          if (machine.supportsRepetitions) ...[
-            if (!machine.prefersBodyMetrics || showAdditionalWeight) const SizedBox(height: 18),
-            if (!machine.prefersBodyMetrics || showAdditionalWeight) const Divider(),
-            if (!machine.prefersBodyMetrics || showAdditionalWeight) const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: Text.rich(
-                    TextSpan(children: [TextSpan(text: context.strings.t('Repetições ', 'Repetitions ', 'Repeticiones ')), TextSpan(text: '(${context.strings.optional})', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.iceBlue))]),
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-                _RoundControl(icon: Icons.remove_rounded, onTap: () { final value = repetitions ?? 0; onRepetitionsChanged(value <= 1 ? null : value - 1); }),
-                SizedBox(width: 62, child: Text(repetitions?.toString() ?? '—', textAlign: TextAlign.center, style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w600))),
-                _RoundControl(icon: Icons.add_rounded, onTap: () => onRepetitionsChanged((repetitions ?? 0) + 1)),
-              ],
-            ),
-          ],
-          if (machine.supportsDuration) ...[
-            const SizedBox(height: 18),
-            const Divider(),
-            const SizedBox(height: 16),
-            Text.rich(
-              TextSpan(children: [TextSpan(text: context.strings.t('Tempo ', 'Duration ', 'Tiempo ')), TextSpan(text: '(${context.strings.optional})', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.iceBlue))]),
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(child: _TimeStepper(label: context.strings.t('Minutos', 'Minutes', 'Minutos'), value: minutes, onDecrement: () => onMinutesChanged(minutes - 1), onIncrement: () => onMinutesChanged(minutes + 1))),
-                const SizedBox(width: 12),
-                Expanded(child: _TimeStepper(label: context.strings.t('Segundos', 'Seconds', 'Segundos'), value: seconds, onDecrement: () => onSecondsChanged(seconds - 1), onIncrement: () => onSecondsChanged(seconds + 1))),
-              ],
-            ),
-          ],
+    final showWeight = !machine.prefersBodyMetrics || showAdditionalWeight;
+    return SectionCard(child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (machine.prefersBodyMetrics) ...[
+          OutlinedButton.icon(
+            onPressed: onToggleAdditionalWeight,
+            icon: Icon(showAdditionalWeight
+              ? Icons.remove_circle_outline_rounded
+              : Icons.add_circle_outline_rounded),
+            label: Text(showAdditionalWeight
+              ? 'Remover carga adicional'
+              : 'Adicionar carga extra (opcional)'),
+          ),
+          const SizedBox(height: 10),
         ],
-      ),
-    );
+        if (showWeight || machine.supportsRepetitions)
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            if (showWeight) ...[
+              Expanded(child: _SetMetricCard(
+                title: 'Carga ($unit)',
+                value: formatWeight(weight, Localizations.localeOf(context)),
+                onValueTap: onTapWeight,
+                onMinus: () => onWeightChanged(
+                  (weight - increment).clamp(0.0, 250.0).toDouble()),
+                onPlus: () => onWeightChanged(
+                  (weight + increment).clamp(0.0, 250.0).toDouble()),
+              )),
+              if (machine.supportsRepetitions)
+                const SizedBox(width: 10),
+            ],
+            if (machine.supportsRepetitions)
+              Expanded(child: _SetMetricCard(
+                title: 'Repetições',
+                value: repetitions?.toString() ?? '—',
+                onMinus: () {
+                  final n = repetitions ?? 0;
+                  onRepetitionsChanged(n <= 1 ? null : n - 1);
+                },
+                onPlus: () => onRepetitionsChanged(
+                  ((repetitions ?? 0) + 1).clamp(1, 1000)),
+              )),
+          ]),
+        if (showWeight) ...[
+          const SizedBox(height: 10),
+          Slider(
+            value: weight.clamp(0, 250).toDouble(),
+            min: 0, max: 250, divisions: 100,
+            label: '${weight.toStringAsFixed(1)} $unit',
+            onChanged: onWeightChanged,
+          ),
+        ],
+        if (machine.supportsDuration) ...[
+          const SizedBox(height: 8),
+          const Divider(),
+          const SizedBox(height: 8),
+          Text('Duração (opcional)',
+            style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 10),
+          Row(children: [
+            Expanded(child: _TimeStepper(label: 'Minutos',
+              value: minutes,
+              onDecrement: () => onMinutesChanged(minutes - 1),
+              onIncrement: () => onMinutesChanged(minutes + 1))),
+            const SizedBox(width: 10),
+            Expanded(child: _TimeStepper(label: 'Segundos',
+              value: seconds,
+              onDecrement: () => onSecondsChanged(seconds - 1),
+              onIncrement: () => onSecondsChanged(seconds + 1))),
+          ]),
+        ],
+      ],
+    ));
   }
 }
 
-class _RoundControl extends StatelessWidget {
-  const _RoundControl({required this.icon, required this.onTap});
-  final IconData icon;
-  final VoidCallback onTap;
+class _SetMetricCard extends StatelessWidget {
+  const _SetMetricCard({
+    required this.title,
+    required this.value,
+    required this.onMinus,
+    required this.onPlus,
+    this.onValueTap,
+  });
+
+  final String title, value;
+  final VoidCallback onMinus, onPlus;
+  final VoidCallback? onValueTap;
+
   @override
-  Widget build(BuildContext context) => InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: Container(
-          width: 54,
-          height: 54,
-          decoration: BoxDecoration(color: AppTheme.deepNavy, shape: BoxShape.circle, border: Border.all(color: AppTheme.deepBlue, width: 1.5)),
-          child: Icon(icon, color: AppTheme.polarWhite, size: 28),
+  Widget build(BuildContext context) => Semantics(
+    label: '$title: $value',
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.deepNavy,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.deepBlue),
+      ),
+      child: Column(children: [
+        Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
+          style: const TextStyle(color: AppTheme.iceBlue, fontSize: 13,
+            fontWeight: FontWeight.w600)),
+        const SizedBox(height: 10),
+        InkWell(
+          onTap: onValueTap,
+          child: SizedBox(height: 47,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(value, textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 38,
+                  color: AppTheme.polarWhite,
+                  fontWeight: FontWeight.w700)),
+            ),
+          ),
         ),
-      );
+        const SizedBox(height: 10),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+          IconButton(
+            constraints: const BoxConstraints(minWidth: 44, minHeight: 48),
+            tooltip: 'Diminuir $title',
+            onPressed: onMinus,
+            icon: const Icon(Icons.remove_rounded)),
+          IconButton(
+            constraints: const BoxConstraints(minWidth: 44, minHeight: 48),
+            tooltip: 'Aumentar $title',
+            onPressed: onPlus,
+            icon: const Icon(Icons.add_rounded)),
+        ]),
+      ]),
+    ),
+  );
 }
 
-class _IncrementChip extends StatelessWidget {
-  const _IncrementChip({required this.label, required this.selected});
-  final String label;
-  final bool selected;
+class _SetExtras extends StatelessWidget {
+  const _SetExtras({
+    required this.isWarmup, required this.onWarmupChanged,
+    required this.rpe, required this.onRpeChanged,
+    required this.restSeconds, required this.onRestChanged,
+    required this.onNoteChanged,
+  });
+
+  final bool isWarmup;
+  final ValueChanged<bool> onWarmupChanged;
+  final int? rpe, restSeconds;
+  final ValueChanged<int?> onRpeChanged, onRestChanged;
+  final ValueChanged<String> onNoteChanged;
+
   @override
-  Widget build(BuildContext context) => Container(
-        height: 38,
-        constraints: const BoxConstraints(minWidth: 58),
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(color: selected ? AppTheme.royalBlue : Colors.transparent, borderRadius: BorderRadius.circular(12), border: Border.all(color: selected ? AppTheme.royalBlue : AppTheme.deepBlue)),
-        child: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
-      );
+  Widget build(BuildContext context) => SectionCard(
+    padding: const EdgeInsets.symmetric(horizontal: 8),
+    child: ExpansionTile(
+      tilePadding: const EdgeInsets.symmetric(horizontal: 10),
+      title: const Text('Detalhes da série (opcional)'),
+      children: [
+        SwitchListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 6),
+          title: const Text('Série de aquecimento'),
+          subtitle: const Text('Não participa dos recordes pessoais.'),
+          value: isWarmup,
+          onChanged: onWarmupChanged),
+        ListTile(
+          title: const Text('Esforço percebido (RPE)'),
+          trailing: DropdownButton<int>(
+            value: rpe,
+            hint: const Text('—'),
+            items: [
+              const DropdownMenuItem<int>(value: null, child: Text('—')),
+              for (var value = 1; value <= 10; value++)
+                DropdownMenuItem<int>(
+                  value: value, child: Text(value.toString())),
+            ],
+            onChanged: onRpeChanged,
+          ),
+        ),
+        ListTile(
+          title: const Text('Descanso'),
+          trailing: DropdownButton<int>(
+            value: restSeconds,
+            hint: const Text('—'),
+            items: [
+              const DropdownMenuItem<int>(value: null, child: Text('—')),
+              for (final value in [60, 90, 120, 180])
+                DropdownMenuItem<int>(
+                  value: value, child: Text('${value}s')),
+            ],
+            onChanged: onRestChanged,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 14),
+          child: TextField(
+            maxLength: 160,
+            maxLines: 2,
+            onChanged: onNoteChanged,
+            decoration: const InputDecoration(
+              labelText: 'Observação desta série',
+              hintText: 'Ex.: execução controlada',
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _TimeStepper extends StatelessWidget {
