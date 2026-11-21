@@ -39,7 +39,7 @@ jobs:
         run: flutter pub get
 
       - name: Exportar mapeamentos exatos do Flutter
-        run: dart run tools/export_visual_manifest.dart
+        run: flutter test test/exact_asset_manifest_test.dart
 
       - name: Disponibilizar auditoria por exercício e perfil
         if: always()
