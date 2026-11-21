@@ -35,12 +35,26 @@ void main() {
     ));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
-    // The classic detail screen has a tall illustration and record section.
-    // Scroll to the set controls before asserting visible content.
-    await tester.drag(find.byType(ListView).first, const Offset(0, -470));
-    await tester.pumpAndSettle();
+    // In the classic UI these controls are intentionally below the cover
+    // image. Verify each while scrolling the primary exercise list.
+    final scrollable = find.descendant(
+      of: find.byType(ListView).first,
+      matching: find.byType(Scrollable),
+    ).first;
+    await tester.scrollUntilVisible(
+      find.text('Repetições'), 180,
+      scrollable: scrollable, maxScrolls: 20,
+    );
     expect(find.text('Repetições'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('repeat_last_set')), 180,
+      scrollable: scrollable, maxScrolls: 20,
+    );
     expect(find.byKey(const Key('repeat_last_set')), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Séries e histórico por sessão'), 180,
+      scrollable: scrollable, maxScrolls: 20,
+    );
     expect(find.text('Séries e histórico por sessão'), findsOneWidget);
     await tester.tap(find.byKey(const Key('favorite_exercise')));
     await tester.pumpAndSettle();
