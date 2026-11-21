@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -76,6 +77,27 @@ class AppController extends ChangeNotifier {
   final Map<String, double> targetWeights = {};
   final Map<String, String> gyms = {'default': 'Minha academia'};
   String selectedGymId = 'default';
+  final Map<String, String> photoData = {};
+  String _photoKey(String machineId) => '${selectedGymId}_$machineId';
+  Uint8List? localPhoto(String machineId) {
+    final raw = photoData[_photoKey(machineId)];
+    if (raw == null) return null;
+    try { return base64Decode(raw); } catch (_) { return null; }
+  }
+  void setLocalPhoto(String machineId, Uint8List? bytes) {
+    final key = _photoKey(machineId);
+    if (bytes == null) {
+      photoData.remove(key);
+    } else {
+      if (bytes.length > 400000 ||
+          (!photoData.containsKey(key) && photoData.length >= 25)) {
+        throw const FormatException('Foto muito grande ou limite de fotos atingido.');
+      }
+      photoData[key] = base64Encode(bytes);
+    }
+    notifyListeners();
+    _scheduleSave();
+  }
   String get selectedGymName => gyms[selectedGymId] ?? 'Minha academia';
 
   void selectGym(String id) {
@@ -261,6 +283,9 @@ class AppController extends ChangeNotifier {
             ..clear()
             ..addAll(restored.gyms);
           selectedGymId = restored.selectedGymId;
+          photoData
+            ..clear()
+            ..addAll(restored.photoData);
           _preservedCardio
             ..clear()
             ..addAll(restored.applyTo(_machines, _cardioActivities));
@@ -295,6 +320,7 @@ class AppController extends ChangeNotifier {
       targetWeights: targetWeights,
       gyms: gyms,
       selectedGymId: selectedGymId,
+      photoData: photoData,
     );
     // Serializing the writes prevents a slow older save from overwriting a
     // newer record. Capture the snapshot before queuing it.
@@ -330,6 +356,7 @@ class AppController extends ChangeNotifier {
           targetWeights: targetWeights,
           gyms: gyms,
           selectedGymId: selectedGymId,
+          photoData: photoData,
         ),
       );
 
@@ -362,6 +389,9 @@ class AppController extends ChangeNotifier {
       ..clear()
       ..addAll(restored.gyms);
     selectedGymId = restored.selectedGymId;
+    photoData
+      ..clear()
+      ..addAll(restored.photoData);
     _failedToReadStorage = false;
     persistenceError = null;
     notifyListeners();
