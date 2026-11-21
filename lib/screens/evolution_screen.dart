@@ -105,7 +105,11 @@ class _EvolutionScreenState extends State<EvolutionScreen> {
             const SizedBox(height: 20),
             Text(context.strings.t('Evolução por período', 'Period trend', 'Evolución por período'), style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 10),
-            TrendBarChart(values: trend, metric: _metric),
+            summary.trainingDays < 3
+                ? const SectionCard(child: Text(
+                    'Registre treinos em pelo menos 3 dias para ver seu primeiro gráfico.',
+                    style: TextStyle(color: AppTheme.iceBlue)))
+                : TrendBarChart(values: trend, metric: _metric),
             const SizedBox(height: 14),
             OutlinedButton.icon(
               onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const ProCardioAnalyticsScreen())),
