@@ -58,6 +58,15 @@ class _GymRecordsAppState extends State<GymRecordsApp> {
           locale: _controller.appLocale,
           supportedLocales: const [Locale('pt', 'BR'), Locale('en', 'US'), Locale('es', 'ES')],
           localizationsDelegates: GlobalMaterialLocalizations.delegates,
+          builder: (context, child) {
+            final media = MediaQuery.of(context);
+            return MediaQuery(
+              data: media.copyWith(
+                textScaler: TextScaler.linear(_controller.largeText ? 1.2 : 1.0),
+              ),
+              child: child ?? const SizedBox.shrink(),
+            );
+          },
           scrollBehavior: const GymRecordsScrollBehavior(),
           home: const SplashScreen(),
         ),

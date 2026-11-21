@@ -12,6 +12,7 @@ import '../widgets/section_card.dart';
 import 'evolution_screen.dart';
 import 'data_privacy_screen.dart';
 import 'pro_overview_screen.dart';
+import 'feature_lab_screen.dart';
 import 'pro_export_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -86,6 +87,37 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(height: 16),
+            SectionCard(child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.file_download_outlined, color: AppTheme.electricLime),
+              title: const Text('Exportar meus dados (Grátis)'),
+              subtitle: const Text('CSV e PDF com carga, repetições e séries'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const ProExportScreen()),
+              ),
+            )),
+            const SizedBox(height: 16),
+            SectionCard(child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.science_outlined, color: AppTheme.warning),
+              title: const Text('Laboratório de novas funções'),
+              subtitle: const Text('Academias, descanso, importação, conquistas e mais'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const FeatureLabScreen()),
+              ),
+            )),
+            const SizedBox(height: 16),
+            SectionCard(child: SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.text_increase, color: AppTheme.electricLime),
+              title: const Text('Texto ampliado'),
+              subtitle: const Text('Aumentar o tamanho de todas as letras em 20%'),
+              value: app.largeText,
+              onChanged: app.setLargeText,
+            )),
             const SizedBox(height: 16),
             SectionCard(
               child: Column(

@@ -18,7 +18,8 @@ class SectionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppTheme.radius),
         border: Border.all(color: AppTheme.deepBlue),
       ),
-      child: child,
+      // ListTile and InkWell require a Material surface above the decoration.
+      child: Material(type: MaterialType.transparency, child: child),
     );
   }
 }

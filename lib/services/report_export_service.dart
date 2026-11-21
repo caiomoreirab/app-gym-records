@@ -10,7 +10,7 @@ import '../models/workout_record.dart';
 import 'analytics_service.dart';
 
 class ReportEntry {
-  const ReportEntry({required this.date, required this.group, required this.exercise, required this.type, this.weight = 0, this.repetitions, this.durationSeconds, this.distanceKm});
+  const ReportEntry({required this.date, required this.group, required this.exercise, required this.type, this.weight = 0, this.repetitions, this.durationSeconds, this.distanceKm, this.sessionId = '', this.setNumber, this.isWarmup = false, this.rpe, this.note = ''});
   final DateTime date;
   final String group;
   final String exercise;
@@ -19,6 +19,11 @@ class ReportEntry {
   final int? repetitions;
   final int? durationSeconds;
   final double? distanceKm;
+  final String sessionId;
+  final int? setNumber;
+  final bool isWarmup;
+  final int? rpe;
+  final String note;
 }
 
 abstract final class ReportExportService {
@@ -34,9 +39,17 @@ abstract final class ReportExportService {
     final lower = period.lowerBound(now, records);
     for (final machine in machines) {
       if (group != null && machine.group != group) continue;
-      for (final record in machine.records) {
+      final ordered = [...machine.records]..sort((a,b)=>a.date.compareTo(b.date));
+      final counts = <String,int>{};
+      for (final record in ordered) {
+        final session = record.effectiveSessionId;
+        counts[session] = (counts[session] ?? 0) + 1;
         if (record.date.isBefore(lower) || record.date.isAfter(now)) continue;
-        all.add(ReportEntry(date: record.date, group: machine.group.label, exercise: machine.name, type: 'strength', weight: record.weight, repetitions: record.repetitions, durationSeconds: record.durationSeconds));
+        all.add(ReportEntry(date: record.date, group: machine.group.label,
+          exercise: machine.name, type: 'strength', weight: record.weight,
+          repetitions: record.repetitions, durationSeconds: record.durationSeconds,
+          sessionId: session, setNumber: counts[session],
+          isWarmup: record.isWarmup, rpe: record.rpe, note: record.note));
       }
     }
     if (group == null) {
@@ -53,7 +66,7 @@ abstract final class ReportExportService {
 
   static String toCsv(List<ReportEntry> entries) {
     final rows = <List<String>>[
-      ['date', 'group', 'exercise', 'type', 'weight', 'repetitions', 'duration_seconds', 'distance_km'],
+      ['date', 'group', 'exercise', 'type', 'weight', 'repetitions', 'duration_seconds', 'distance_km', 'session_id', 'set_number', 'warmup', 'rpe', 'notes'],
       for (final entry in entries)
         [
           '${entry.date.year}-${entry.date.month.toString().padLeft(2, '0')}-${entry.date.day.toString().padLeft(2, '0')}',
@@ -64,6 +77,11 @@ abstract final class ReportExportService {
           entry.repetitions?.toString() ?? '',
           entry.durationSeconds?.toString() ?? '',
           entry.distanceKm?.toStringAsFixed(3) ?? '',
+          entry.sessionId,
+          entry.setNumber?.toString() ?? '',
+          entry.isWarmup ? 'yes' : 'no',
+          entry.rpe?.toString() ?? '',
+          entry.note,
         ],
     ];
     return rows.map((row) => row.map(_escapeCsv).join(',')).join('\r\n');
@@ -83,8 +101,10 @@ abstract final class ReportExportService {
       '${r.date.day}/${r.date.month}/${r.date.year}',
       r.group,
       r.exercise,
-      r.weight > 0 ? '${r.weight.toStringAsFixed(1)} kg' : r.repetitions != null ? '${r.repetitions} reps' : r.distanceKm != null ? '${r.distanceKm!.toStringAsFixed(2)} km' : '—',
-      r.durationSeconds != null ? '${(r.durationSeconds! / 60).toStringAsFixed(1)} min' : '—',
+      r.setNumber?.toString() ?? '—',
+      r.weight > 0 ? r.weight.toStringAsFixed(1) + ' kg' : r.distanceKm != null ? r.distanceKm!.toStringAsFixed(2) + ' km' : '—',
+      r.repetitions?.toString() ?? '—',
+      r.isWarmup ? 'Aquec.' : (r.rpe != null ? 'RPE ' + r.rpe.toString() : '—'),
     ]).toList();
 
     document.addPage(pw.MultiPage(
@@ -102,12 +122,12 @@ abstract final class ReportExportService {
           pw.Text('Nenhum registro para este periodo.')
         else
           pw.Table.fromTextArray(
-            headers: ['Data', 'Grupo', 'Exercicio', 'Resultado', 'Duracao'],
+            headers: ['Data', 'Grupo', 'Exercício', 'Série', 'Carga', 'Reps', 'Obs.'],
             data: data,
             headerStyle: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
             cellStyle: const pw.TextStyle(fontSize: 8),
             cellPadding: const pw.EdgeInsets.all(5),
-            columnWidths: {0: const pw.FixedColumnWidth(53), 1: const pw.FixedColumnWidth(59), 2: const pw.FlexColumnWidth(2), 3: const pw.FlexColumnWidth(1), 4: const pw.FixedColumnWidth(50)},
+            columnWidths: {0: const pw.FixedColumnWidth(55), 1: const pw.FixedColumnWidth(50), 2: const pw.FlexColumnWidth(2), 3: const pw.FixedColumnWidth(25), 4: const pw.FixedColumnWidth(54), 5: const pw.FixedColumnWidth(32), 6: const pw.FixedColumnWidth(44)},
           ),
       ],
     ));

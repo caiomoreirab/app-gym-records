@@ -12,8 +12,10 @@ import '../widgets/cardio_group_card.dart';
 import '../widgets/machine_list_card.dart';
 import '../widgets/muscle_group_card.dart';
 import '../widgets/page_body.dart';
+import '../widgets/section_card.dart';
 import 'group_screen.dart';
 import 'machine_screen.dart';
+import 'today_workout_screen.dart';
 import 'settings_screen.dart';
 import 'data_privacy_screen.dart';
 import 'cardio_screen.dart';
@@ -52,6 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ? filteredMachines
         : filteredMachines.take(10).toList(growable: false);
     final recentMachines = controller.recentlyUsedMachines.take(4).toList();
+    final favorites = controller.favoriteMachines.take(6).toList();
     final searching = _query.trim().isNotEmpty;
     final matchedGroups = searching ? _matchingGroups() : <MuscleGroup>[];
     final searchResults = searching
@@ -240,6 +243,42 @@ class _HomeScreenState extends State<HomeScreen> {
                 onOpenCardio: () => _openCardio(context),
               )
             else ...[
+              SectionCard(
+                child: ListTile(
+                  key: const Key('today_workout_card'),
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.calendar_today, color: AppTheme.electricLime),
+                  title: const Text('Treino de hoje', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: Text(controller.todaysMachines.length.toString() +
+                    ' exercícios registrados • abrir minha sessão'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const TodayWorkoutScreen()),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              if (favorites.isNotEmpty) ...[
+                _SectionHeading(title: 'Favoritos', subtitle: 'Seus exercícios preferidos'),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 194,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: favorites.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    itemBuilder: (context, index) {
+                      final machine = favorites[index];
+                      return _QuickMachineCard(
+                        machine: machine,
+                        unit: controller.unit,
+                        onTap: () => _openMachine(context, machine),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 18),
+              ],
               if (recentMachines.isNotEmpty) ...[
                 _SectionHeading(
                   title: context.strings.quickAccess,
