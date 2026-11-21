@@ -231,7 +231,10 @@ class _MachineScreenState extends State<MachineScreen> {
         previousDurationSeconds: previousDurationSeconds,
         metric: isNewWeight ? StrengthAchievementMetric.weight : isNewReps ? StrengthAchievementMetric.repetitions : StrengthAchievementMetric.duration,
       );
-      if (mounted) setState(() {});
+      if (mounted) {
+        _showUndoForSaved(app, machine, saved);
+        setState(() {});
+      }
       return;
     }
 
