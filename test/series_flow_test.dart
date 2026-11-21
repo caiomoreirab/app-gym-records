@@ -106,6 +106,39 @@ void main() {
     app.dispose();
   });
 
+  test('duas sessões no mesmo dia têm IDs distintos e persistem', () async {
+    final store = MemoryLocalDataStore();
+    final app = AppController(persistenceEnabled: false, store: store);
+    await app.loadPreferences();
+    final machine = app.ensureMachineAdded(
+      buildExerciseCatalog().firstWhere((e) => e.id == 'barbell_bench_press'),
+    );
+    final firstSession = app.startSession(name: 'Treino A');
+    app.addExerciseToSession(machine);
+    final first = app.addRecord(machine, weight: 60, repetitions: 8);
+    app.finishSession();
+    final secondSession = app.startSession(name: 'Treino B');
+    final second = app.addRecord(machine, weight: 70, repetitions: 6);
+    expect(firstSession, isNot(secondSession));
+    expect(first.sessionId, firstSession);
+    expect(second.sessionId, secondSession);
+    await app.flushPendingWrites();
+    final restarted = AppController(persistenceEnabled: false, store: store);
+    await restarted.loadPreferences();
+    expect(restarted.activeSessionId, secondSession);
+    expect(restarted.sessionNames[firstSession], 'Treino A');
+    expect(restarted.sessionNames[secondSession], 'Treino B');
+    expect(restarted.machineById(machine.id).records.length, 2);
+    restarted.finishSession();
+    await restarted.flushPendingWrites();
+    final finalApp = AppController(persistenceEnabled: false, store: store);
+    await finalApp.loadPreferences();
+    expect(finalApp.activeSessionId, isNull);
+    app.dispose();
+    restarted.dispose();
+    finalApp.dispose();
+  });
+
   test('CSV básico continua disponível sem assinatura Pro', () async {
     final app = AppController(persistenceEnabled: false);
     expect(app.isPro, isFalse);
