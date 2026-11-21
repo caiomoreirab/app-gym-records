@@ -9,7 +9,7 @@ abstract final class IllustrationAssets {
   /// These are never presented as validated exercise photographs. They remain
   /// in the catalog and preserve their records while dedicated art is reviewed.
   static const Set<String> executionArtworkUnderReview = {
-    'plank', 'side_plank', 'ab_wheel', 'captain_chair_raise',
+    'side_plank', 'ab_wheel', 'captain_chair_raise',
     'hanging_knee_raise', 'dead_bug', 'russian_twist',
     'pallof_press', 'cable_woodchop',
     'barbell_squat', 'front_squat', 'smith_squat', 'goblet_squat',
@@ -41,6 +41,9 @@ abstract final class IllustrationAssets {
 
   /// Main exercise thumbnail. It must always represent execution.
   static String exercise(Machine machine, IllustrationStyle style) {
+    if (machine.id == 'plank') {
+      return 'assets/images/exercises/${style.assetFolder}/abs_forearm_plank.webp';
+    }
     final explicit = machine.visualAssetId;
     if (explicit != null && explicit.isNotEmpty) {
       return 'assets/images/exercises/${style.assetFolder}/$explicit.webp';
