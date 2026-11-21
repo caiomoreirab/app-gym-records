@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../l10n/app_strings.dart';
 import '../models/machine.dart';
 import '../models/muscle_group.dart';
+import '../models/workout_record.dart';
 import '../state/app_controller.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
@@ -52,6 +53,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ? filteredMachines
         : filteredMachines.take(10).toList(growable: false);
     final recentMachines = controller.recentlyUsedMachines.take(4).toList();
+    final favoriteMachines = controller.favoriteMachines.take(6).toList();
+    final todaysMachines = controller.todaysMachines;
     final searching = _query.trim().isNotEmpty;
     final matchedGroups = searching ? _matchingGroups() : <MuscleGroup>[];
     final searchResults = searching
@@ -240,6 +243,59 @@ class _HomeScreenState extends State<HomeScreen> {
                 onOpenCardio: () => _openCardio(context),
               )
             else ...[
+              Card(
+                color: AppTheme.surfaceNavy,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        const Icon(Icons.today_rounded, color: AppTheme.electricLime),
+                        const SizedBox(width: 10),
+                        Text('Treino de hoje',
+                          style: Theme.of(context).textTheme.titleLarge),
+                        const Spacer(),
+                        Text('${todaysMachines.length} exercícios',
+                          style: const TextStyle(color: AppTheme.iceBlue)),
+                      ]),
+                      const SizedBox(height: 10),
+                      if (todaysMachines.isEmpty)
+                        const Text('Seu treino começa com a primeira série registrada.')
+                      else
+                        for (final machine in todaysMachines.take(4))
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: const Icon(Icons.check_circle, color: AppTheme.electricLime),
+                            title: Text(machine.name),
+                            subtitle: Text('${machine.records.where((r) =>
+                                WorkoutRecord.dayKey(r.date) ==
+                                WorkoutRecord.dayKey(DateTime.now())).length} séries hoje'),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () => _openMachine(context, machine),
+                          ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              if (favoriteMachines.isNotEmpty) ...[
+                _SectionHeading(
+                  title: 'Favoritos',
+                  subtitle: 'Um toque para registrar novamente',
+                ),
+                const SizedBox(height: 12),
+                for (final machine in favoriteMachines)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: MachineListCard(
+                      machine: machine,
+                      unit: controller.unit,
+                      onTap: () => _openMachine(context, machine),
+                    ),
+                  ),
+                const SizedBox(height: 14),
+              ],
               if (recentMachines.isNotEmpty) ...[
                 _SectionHeading(
                   title: context.strings.quickAccess,
