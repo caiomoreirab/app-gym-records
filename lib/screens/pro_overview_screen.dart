@@ -98,7 +98,7 @@ class ProOverviewScreen extends StatelessWidget {
                 'Sincronização na nuvem fica para outra versão.',
               style: TextStyle(color: AppTheme.iceBlue)),
             const SizedBox(height: 10),
-            const Text('Hipótese para pesquisa: R$ 7,90–9,90/mês. '
+            const Text('Hipótese para pesquisa: R\$ 7,90–9,90/mês. '
                 'Não há cobrança nem assinatura real nesta prévia.',
               style: TextStyle(color: AppTheme.warning)),
           ])),
