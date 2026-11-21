@@ -36,6 +36,7 @@ class AppController extends ChangeNotifier {
   static const _proPreviewKey = 'pro_preview_enabled';
   static const _languageKey = 'language_code';
   static const _largeTextKey = 'accessibility_large_text';
+  static const _highContrastKey = 'accessibility_high_contrast';
   static const _analyticsConsentKey = 'analytics_consent_v2';
   static const _reviewBuild = bool.fromEnvironment('GYM_IS_REVIEW',
       defaultValue: false);
@@ -63,6 +64,7 @@ class AppController extends ChangeNotifier {
   bool isPro = false; // opt-in preview only; not a paid subscription
   String languageCode = 'system';
   bool largeText = false;
+  bool highContrast = false;
 
   final List<Machine> _machines;
   final List<CardioActivity> _cardioActivities;
@@ -196,6 +198,7 @@ class AppController extends ChangeNotifier {
       isPro = await preferences.getBool(_prefKey(_proPreviewKey)) ?? false;
       languageCode = await preferences.getString(_prefKey(_languageKey)) ?? 'system';
       largeText = await preferences.getBool(_prefKey(_largeTextKey)) ?? false;
+      highContrast = await preferences.getBool(_prefKey(_highContrastKey)) ?? false;
       analyticsConsent = await preferences.getBool(_prefKey(_analyticsConsentKey)) ?? false;
     }
     final store = _store;
@@ -392,6 +395,12 @@ class AppController extends ChangeNotifier {
     increment = value;
     notifyListeners();
     _saveDouble(_incrementKey, value);
+  }
+
+  void setHighContrast(bool value) {
+    highContrast = value;
+    _saveBool(_highContrastKey, value);
+    notifyListeners();
   }
 
   void setLargeText(bool value) {
