@@ -26,11 +26,25 @@ class MachineListCard extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              ExerciseVisualPager(machine: machine, width: 82, height: 82, fit: BoxFit.cover, compact: true),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: 88,
+                  height: 66,
+                  padding: const EdgeInsets.all(2),
+                  color: AppTheme.accentBlueSoft,
+                  child: AdaptiveExerciseImage(
+                    machine: machine,
+                    width: 84,
+                    height: 62,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(machine.localizedName(Localizations.localeOf(context)), style: Theme.of(context).textTheme.titleMedium),
+                  Text(machine.localizedName(Localizations.localeOf(context)), maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 7),
                   Text(
                     latest == null ? context.strings.t('Ainda sem registros', 'No records yet', 'Aún sin registros') : '${context.strings.updatedOn} ${formatShortDate(latest.date, Localizations.localeOf(context))}',
@@ -39,7 +53,21 @@ class MachineListCard extends StatelessWidget {
                 ]),
               ),
               const SizedBox(width: 10),
-              Text(_summary(context), style: TextStyle(color: _hasAnyRecord ? AppTheme.electricLime : AppTheme.iceBlue, fontSize: _hasAnyRecord ? 24 : 13, fontWeight: _hasAnyRecord ? FontWeight.w600 : FontWeight.w400)),
+              SizedBox(
+                width: 78,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(_summary(context),
+                    maxLines: 1,
+                    style: TextStyle(
+                      color: _hasAnyRecord ? AppTheme.electricLime : AppTheme.iceBlue,
+                      fontSize: _hasAnyRecord ? 22 : 13,
+                      fontWeight: _hasAnyRecord ? FontWeight.w600 : FontWeight.w400,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
