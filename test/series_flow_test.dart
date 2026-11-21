@@ -6,6 +6,7 @@ import 'package:gymrecords/models/workout_record.dart';
 import 'package:gymrecords/services/local_data_store.dart';
 import 'package:gymrecords/services/report_export_service.dart';
 import 'package:gymrecords/services/analytics_service.dart';
+import 'package:gymrecords/services/weekly_workout_summary.dart';
 import 'package:gymrecords/state/app_controller.dart';
 
 void main() {
@@ -50,6 +51,49 @@ void main() {
         contains('barbell_bench_press'));
     app.dispose();
     next.dispose();
+  });
+
+  test('regulagens estruturadas persistem no backup sem perder registros', () async {
+    final store = MemoryLocalDataStore();
+    final app = AppController(persistenceEnabled: false, store: store);
+    await app.loadPreferences();
+    final machine = app.ensureMachineAdded(
+      buildExerciseCatalog().firstWhere((e) => e.id == 'barbell_bench_press'),
+    );
+    app.addRecord(machine, weight: 50, repetitions: 10);
+    app.updateMachineAdjustments(machine, {
+      'seat': 'posição 4',
+      'grip': 'pegada neutra',
+      'other': '',
+    });
+    await app.flushPendingWrites();
+    final reopened = AppController(persistenceEnabled: false, store: store);
+    await reopened.loadPreferences();
+    final saved = reopened.machineById(machine.id);
+    expect(saved.adjustments['seat'], 'posição 4');
+    expect(saved.adjustments['grip'], 'pegada neutra');
+    expect(saved.adjustments.containsKey('other'), isFalse);
+    expect(saved.records.single.repetitions, 10);
+    app.dispose();
+    reopened.dispose();
+  });
+
+  test('resumo semanal conta dias e séries sem aquecimento', () {
+    final machine = buildExerciseCatalog().firstWhere(
+      (e) => e.id == 'barbell_bench_press',
+    );
+    machine.records.addAll([
+      WorkoutRecord(date: DateTime(2026, 11, 16, 10), weight: 50, repetitions: 8),
+      WorkoutRecord(date: DateTime(2026, 11, 16, 11), weight: 20, repetitions: 10, isWarmup: true),
+      WorkoutRecord(date: DateTime(2026, 11, 18, 9), weight: 55, repetitions: 8),
+      WorkoutRecord(date: DateTime(2026, 11, 15, 9), weight: 99, repetitions: 1),
+    ]);
+    final summary = WeeklyWorkoutSummary.calculate([machine],
+        now: DateTime(2026, 11, 20, 18));
+    expect(summary.trainingDays, 2);
+    expect(summary.exerciseCount, 1);
+    expect(summary.workingSets, 2);
+    expect(summary.totalVolume, 840);
   });
 
   test('CSV básico continua disponível sem assinatura Pro', () async {
