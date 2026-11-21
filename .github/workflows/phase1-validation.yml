@@ -1,0 +1,28 @@
+name: GymRecords - Qualidade Fase 1
+
+on:
+  push:
+    branches:
+      - feat/fase1-registro-confiavel-classico
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Flutter analyze e testes da Fase 1
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.50.0'
+          cache: true
+      - run: flutter pub get
+      - run: python3 tools/verify_visual_assets.py
+      - run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - run: flutter test --reporter expanded
+      - run: flutter build web --release --base-href=/app-gym-records/phase1/
