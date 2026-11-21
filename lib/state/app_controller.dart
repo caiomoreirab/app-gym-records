@@ -41,6 +41,7 @@ class AppController extends ChangeNotifier {
   static const _incrementKey = 'weight_increment';
   static const _proPreviewKey = 'pro_preview_enabled';
   static const _largeTextKey = 'accessibility_large_text';
+  static const _bodyWeightKey = 'body_weight_kg';
   static const _languageKey = 'language_code';
   static const _analyticsConsentKey = 'analytics_consent_v2';
 
@@ -66,6 +67,8 @@ class AppController extends ChangeNotifier {
   bool isPro = true; // front-end preview; billing will replace this flag later
   String languageCode = 'system';
   bool largeText = false;
+  /// Optional local profile value; never inferred from workout weights.
+  double? bodyWeightKg;
 
   final List<Machine> _machines;
   final List<CardioActivity> _cardioActivities;
@@ -135,16 +138,18 @@ class AppController extends ChangeNotifier {
     _scheduleSave();
   }
 
-  void completeSession() {
+  /// Completes once and returns the exact saved session for the celebration.
+  WorkoutSession? completeSession({DateTime? at}) {
     final id = activeSessionId;
-    if (id == null) return;
+    if (id == null) return null;
     final index = _sessions.indexWhere((s) => s.id == id);
-    if (index >= 0) {
-      _sessions[index] = _sessions[index].copyWith(completedAt: DateTime.now());
-    }
+    if (index < 0) return null;
+    final session = _sessions[index].copyWith(completedAt: at ?? DateTime.now());
+    _sessions[index] = session;
     activeSessionId = null;
     notifyListeners();
     _scheduleSave();
+    return session;
   }
 
   WorkoutSession _ensureSession() {
@@ -249,6 +254,9 @@ class AppController extends ChangeNotifier {
       isPro = await preferences.getBool(_preferenceKey(_proPreviewKey)) ?? true;
       languageCode = await preferences.getString(_preferenceKey(_languageKey)) ?? 'system';
       largeText = await preferences.getBool(_preferenceKey(_largeTextKey)) ?? false;
+      final storedKg = await preferences.getDouble(_preferenceKey(_bodyWeightKey));
+      bodyWeightKg = storedKg != null && storedKg.isFinite &&
+          storedKg >= 20 && storedKg <= 400 ? storedKg : null;
       analyticsConsent = await preferences.getBool(_preferenceKey(_analyticsConsentKey)) ?? false;
     }
     final store = _store;
@@ -443,6 +451,21 @@ class AppController extends ChangeNotifier {
     languageCode = value;
     notifyListeners();
     _saveString(_languageKey, value);
+  }
+
+  Future<void> setBodyWeightKg(double? value) async {
+    if (value != null && (!value.isFinite || value < 20 || value > 400)) {
+      throw const FormatException('Informe um peso entre 20 e 400 kg.');
+    }
+    bodyWeightKg = value;
+    notifyListeners();
+    final preferences = _preferences;
+    if (!persistenceEnabled || preferences == null) return;
+    if (value == null) {
+      await preferences.remove(_preferenceKey(_bodyWeightKey));
+    } else {
+      await preferences.setDouble(_preferenceKey(_bodyWeightKey), value);
+    }
   }
 
   void setLargeText(bool value) {
