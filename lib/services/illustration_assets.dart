@@ -5,6 +5,32 @@ import '../models/user_profile.dart';
 abstract final class IllustrationAssets {
   static const String fallbackMachine = 'assets/illustrations/generic_machine.webp';
 
+  /// Movements whose existing shared image depicts a different execution.
+  /// These are never presented as validated exercise photographs. They remain
+  /// in the catalog and preserve their records while dedicated art is reviewed.
+  static const Set<String> executionArtworkUnderReview = {
+    'plank', 'side_plank', 'ab_wheel', 'captain_chair_raise',
+    'hanging_knee_raise', 'dead_bug', 'russian_twist',
+    'pallof_press', 'cable_woodchop',
+    'barbell_squat', 'front_squat', 'smith_squat', 'goblet_squat',
+    'bulgarian_split_squat', 'walking_lunge', 'sumo_squat',
+    'romanian_deadlift', 'stiff_leg_deadlift', 'good_morning',
+    'nordic_curl', 'deadlift',
+    'barbell_bench_press', 'dumbbell_bench_press',
+    'incline_barbell_press', 'incline_dumbbell_press',
+    'decline_barbell_press', 'decline_dumbbell_press',
+    'dumbbell_fly', 'incline_dumbbell_fly', 'push_up', 'chest_dip',
+    'barbell_row', 'one_arm_dumbbell_row',
+    'chest_supported_dumbbell_row',
+    'barbell_curl', 'dumbbell_curl', 'hammer_curl',
+    'barbell_overhead_press', 'dumbbell_shoulder_press',
+    'skull_crusher', 'dumbbell_french_press',
+  };
+
+  static bool needsExecutionArtworkReview(Machine machine) =>
+      executionArtworkUnderReview.contains(machine.id);
+
+
   static String onboarding(IllustrationStyle style) =>
       'assets/images/onboarding/illustration_${style.assetFolder}.webp';
 
