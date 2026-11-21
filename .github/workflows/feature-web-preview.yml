@@ -2,10 +2,12 @@ name: GymRecords - Validação Web /review/
 
 on:
   push:
-    branches: ['feat/registro-sessoes-validacao']
+    branches: ['feat/registro-sessoes-validacao', 'fix/imagens-catalogo-auditoria-20261121']
     paths:
       - 'lib/**'
+      - 'assets/**'
       - 'test/**'
+      - 'tools/**'
       - 'pubspec.yaml'
       - 'pubspec.lock'
       - '.github/workflows/feature-web-preview.yml'
@@ -35,7 +37,7 @@ jobs:
       - name: Checkout versao candidata
         uses: actions/checkout@v4
         with:
-          ref: feat/registro-sessoes-validacao
+          ref: ${{ github.ref_name }}
           path: candidate
 
       - name: Configurar Flutter
@@ -112,5 +114,5 @@ jobs:
         run: |
           echo "### GymRecords: duas versoes independentes" >> "$GITHUB_STEP_SUMMARY"
           echo "- Main atual: https://caiomoreirab.github.io/app-gym-records/" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Branch de treinos: https://caiomoreirab.github.io/app-gym-records/review/" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Branch em validação: https://caiomoreirab.github.io/app-gym-records/review/" >> "$GITHUB_STEP_SUMMARY"
           echo "A versao candidata nao modifica codigo, banco ou deploy de origem da main." >> "$GITHUB_STEP_SUMMARY"
