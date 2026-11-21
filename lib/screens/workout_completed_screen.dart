@@ -138,6 +138,7 @@ class _WorkoutCompletedScreenState extends State<WorkoutCompletedScreen> {
             key: _shareCardKey,
             child: _ShareCard(
               summary: summary,
+              weightUnit: app.unit,
               dateText: _dateTime(session.completedAt!.toLocal()),
               durationText: _duration(summary.duration),
             ),
@@ -226,10 +227,12 @@ class _WorkoutCompletedScreenState extends State<WorkoutCompletedScreen> {
 class _ShareCard extends StatelessWidget {
   const _ShareCard({
     required this.summary,
+    required this.weightUnit,
     required this.dateText,
     required this.durationText,
   });
   final CompletedWorkoutSummary summary;
+  final String weightUnit;
   final String dateText, durationText;
 
   String _clock(DateTime value) =>
@@ -300,7 +303,7 @@ class _ShareCard extends StatelessWidget {
       Row(children: [
         Expanded(child: Text('Volume registrado',
           style: Theme.of(context).textTheme.bodyMedium)),
-        Text('${summary.volumeKg.toStringAsFixed(0)} kg',
+        Text('${summary.volumeKg.toStringAsFixed(0)} $weightUnit',
           style: const TextStyle(color: AppTheme.electricLime,
             fontSize: 20, fontWeight: FontWeight.w600)),
       ]),
