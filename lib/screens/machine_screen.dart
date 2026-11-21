@@ -65,6 +65,15 @@ class _MachineScreenState extends State<MachineScreen> {
         leading: const BackButton(),
         title: Text(machine.localizedName(Localizations.localeOf(context))),
         actions: [
+          IconButton(
+            key: const Key('favorite_exercise'),
+            tooltip: app.isFavorite(machine.id)
+              ? 'Remover dos favoritos' : 'Adicionar aos favoritos',
+            onPressed: () => app.toggleFavorite(machine.id),
+            icon: Icon(app.isFavorite(machine.id)
+              ? Icons.star_rounded : Icons.star_border_rounded,
+              color: AppTheme.electricLime),
+          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert_rounded),
             onSelected: (value) {
@@ -95,6 +104,15 @@ class _MachineScreenState extends State<MachineScreen> {
             ),
             const SizedBox(height: 16),
             _RecordCard(machine: machine, unit: app.unit),
+            if (app.activeSession != null &&
+                !app.activeSession!.exerciseIds.contains(machine.id)) ...[
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: () => app.addExerciseToSession(machine),
+                icon: const Icon(Icons.playlist_add_rounded),
+                label: const Text('Adicionar ao treino de hoje'),
+              ),
+            ],
             const SizedBox(height: 16),
             _NoteCard(note: machine.note, onEdit: () => _editNote(machine)),
             const SizedBox(height: 16),
