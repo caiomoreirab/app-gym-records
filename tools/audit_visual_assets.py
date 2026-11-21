@@ -73,9 +73,13 @@ for profile in PROFILES:
     for kind in KINDS:
         folder = ASSETS / kind / profile
         items = sorted(folder.glob("*.webp"))
-        if len(items) != 32:
-            problems.append(f"UNEXPECTED_BASE_SET: {kind}/{profile} count={len(items)} expected=32")
+        expected = 33 if kind == "exercises" else 32
+        if len(items) != expected:
+            problems.append(
+                f"UNEXPECTED_BASE_SET: {kind}/{profile} count={len(items)} expected={expected}")
         for item in items:
+            if item.stem == "abs_forearm_plank" and kind == "exercises":
+                continue  # Dedicated execution uses existing abs_plank anatomy.
             peer = ASSETS / ("muscles" if kind == "exercises" else "exercises") / profile / item.name
             if not peer.is_file():
                 problems.append(f"MISSING_PAIR: {item.relative_to(ROOT)}")
@@ -91,12 +95,17 @@ for profile in PROFILES:
 
 rows = []
 for e in catalog:
-    state = ("execution_mismatch_confirmed" if e["id"] in REVIEW
+    state = ("dedicated_new_execution_art" if e["id"] == "plank"
+             else "execution_mismatch_confirmed" if e["id"] in REVIEW
              else "explicit_asset_not_biomechanically_verified" if e["explicit_stem"]
              else "shared_family_art_pending_validation")
     for profile in PROFILES:
         stem = e["explicit_stem"]
         for kind in KINDS:
+            if e["id"] == "plank" and kind == "exercises":
+                stem = "abs_forearm_plank"
+            elif e["id"] == "plank" and kind == "muscles":
+                stem = "abs_plank"
             if stem:
                 target = ASSETS / kind / profile / (stem + ".webp")
                 if not target.exists():
