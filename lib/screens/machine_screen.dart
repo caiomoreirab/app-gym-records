@@ -53,6 +53,9 @@ class _MachineScreenState extends State<MachineScreen> {
     _minutes = duration?.inMinutes ?? 0;
     _seconds = duration?.inSeconds.remainder(60) ?? 0;
     _initialized = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) AppScope.of(context).markSetEntryStarted();
+    });
   }
 
   @override
