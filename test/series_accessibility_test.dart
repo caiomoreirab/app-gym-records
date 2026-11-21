@@ -35,6 +35,10 @@ void main() {
     ));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+    // The classic detail screen has a tall illustration and record section.
+    // Scroll to the set controls before asserting visible content.
+    await tester.drag(find.byType(ListView).first, const Offset(0, -470));
+    await tester.pumpAndSettle();
     expect(find.text('Repetições'), findsOneWidget);
     expect(find.byKey(const Key('repeat_last_set')), findsOneWidget);
     expect(find.text('Séries e histórico por sessão'), findsOneWidget);
