@@ -35,6 +35,7 @@ class AppController extends ChangeNotifier {
   static const _incrementKey = 'weight_increment';
   static const _proPreviewKey = 'pro_preview_enabled';
   static const _languageKey = 'language_code';
+  static const _largeTextKey = 'accessibility_large_text';
   static const _analyticsConsentKey = 'analytics_consent_v2';
   static const _reviewBuild = bool.fromEnvironment('GYM_IS_REVIEW',
       defaultValue: false);
@@ -61,6 +62,7 @@ class AppController extends ChangeNotifier {
   double increment = 2.5;
   bool isPro = false; // opt-in preview only; not a paid subscription
   String languageCode = 'system';
+  bool largeText = false;
 
   final List<Machine> _machines;
   final List<CardioActivity> _cardioActivities;
@@ -149,6 +151,7 @@ class AppController extends ChangeNotifier {
       increment = await preferences.getDouble(_prefKey(_incrementKey)) ?? 2.5;
       isPro = await preferences.getBool(_prefKey(_proPreviewKey)) ?? false;
       languageCode = await preferences.getString(_prefKey(_languageKey)) ?? 'system';
+      largeText = await preferences.getBool(_prefKey(_largeTextKey)) ?? false;
       analyticsConsent = await preferences.getBool(_prefKey(_analyticsConsentKey)) ?? false;
     }
     final store = _store;
@@ -325,6 +328,12 @@ class AppController extends ChangeNotifier {
     increment = value;
     notifyListeners();
     _saveDouble(_incrementKey, value);
+  }
+
+  void setLargeText(bool value) {
+    largeText = value;
+    _saveBool(_largeTextKey, value);
+    notifyListeners();
   }
 
   void setLanguageCode(String value) {
