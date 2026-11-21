@@ -28,6 +28,7 @@ class WorkoutSnapshotCodec {
               'custom': machine.isCustom,
               'name': machine.name,
               'note': machine.note,
+              'adjustments': machine.adjustments,
               'group': machine.group.name,
               'equipment': machine.equipment.name,
               'records': [
@@ -133,6 +134,20 @@ class WorkoutSnapshotCodec {
       machine.name = name.trim();
       machine.nameEn = custom ? name.trim() : machine.nameEn;
       machine.note = note;
+      final rawAdjustments = m['adjustments'];
+      if (rawAdjustments != null) {
+        if (rawAdjustments is! Map || rawAdjustments.length > 12) {
+          throw const FormatException('Regulagens inválidas.');
+        }
+        for (final entry in rawAdjustments.entries) {
+          if (entry.key is! String || entry.value is! String ||
+              (entry.key as String).length > 40 ||
+              (entry.value as String).length > 120) {
+            throw const FormatException('Campo de regulagem inválido.');
+          }
+          machine.adjustments[entry.key as String] = entry.value as String;
+        }
+      }
       machine.records.addAll(entries.asMap().entries.map((item) {
         final value = item.value;
         if (value is! Map) throw const FormatException('Registro de treino inválido.');
