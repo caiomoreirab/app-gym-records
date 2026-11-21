@@ -727,16 +727,27 @@ class _MachineRow extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(11),
             child: Container(
-              width: 54,
-              height: 54,
+              width: 86,
+              height: 64,
               color: AppTheme.accentBlueSoft,
+              alignment: Alignment.center,
+              padding: const EdgeInsets.all(2),
               child: photo == null
-                ? AdaptiveExerciseImage(machine: machine,
-                    width: 54, height: 54, fit: BoxFit.contain)
-                : Image.memory(photo, width: 54, height: 54, fit: BoxFit.cover),
+                ? AdaptiveExerciseImage(
+                    machine: machine,
+                    width: 82,
+                    height: 60,
+                    fit: BoxFit.contain,
+                  )
+                : Image.memory(
+                    photo,
+                    width: 82,
+                    height: 60,
+                    fit: BoxFit.cover,
+                  ),
             ),
           ),
-          const SizedBox(width: 11),
+          const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(machine.name, maxLines: 1, overflow: TextOverflow.ellipsis,
