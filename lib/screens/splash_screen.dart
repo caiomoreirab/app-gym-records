@@ -5,7 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import '../l10n/app_strings.dart';
 import '../state/app_controller.dart';
 import '../theme/app_theme.dart';
-import 'home_screen.dart';
+import 'review_experience.dart';
 import 'onboarding/name_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -42,7 +42,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     Navigator.of(context).pushReplacement(
       PageRouteBuilder<void>(
         transitionDuration: const Duration(milliseconds: 260),
-        pageBuilder: (_, __, ___) => controller.onboardingComplete ? const HomeScreen() : const NameScreen(),
+        pageBuilder: (_, __, ___) => controller.onboardingComplete ? const ReviewHomeScreen() : const NameScreen(),
         transitionsBuilder: (_, animation, __, child) => FadeTransition(opacity: animation, child: child),
       ),
     );
