@@ -13,6 +13,7 @@ import 'evolution_screen.dart';
 import 'data_privacy_screen.dart';
 import 'pro_overview_screen.dart';
 import 'pro_export_screen.dart';
+import 'gym_profiles_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -88,6 +89,17 @@ class SettingsScreen extends StatelessWidget {
               subtitle: const Text('Destaca textos e divisórias para facilitar a leitura.'),
               value: app.highContrast,
               onChanged: app.setHighContrast,
+            )),
+            const SizedBox(height: 16),
+            SectionCard(child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.location_city_rounded,
+                color: AppTheme.electricLime),
+              title: const Text('Minhas academias'),
+              subtitle: Text(app.selectedGymName),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => const GymProfilesScreen())),
             )),
             const SizedBox(height: 16),
             _ProSettingsCard(app: app),
