@@ -70,6 +70,9 @@ class _ProExportScreenState extends State<ProExportScreen> {
                   title: 'GymRecords - Relatorio',
                   subtitle: '${_period.label(Localizations.localeOf(context))} • ${_group?.label ?? 'Todos os grupos'}',
                 );
+                if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('PDF preparado. Confira as opções de compartilhamento do sistema.')));
+
               } catch (error) {
                 if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Falha ao gerar PDF: $error')));
               } finally {
