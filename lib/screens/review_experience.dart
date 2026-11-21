@@ -1,6 +1,8 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../models/machine.dart';
+import '../models/muscle_group.dart';
+import '../widgets/adaptive_illustration.dart';
 import '../models/workout_record.dart';
 import '../state/app_controller.dart';
 import '../theme/app_theme.dart';
@@ -32,7 +34,7 @@ class ReviewHomeScreen extends StatelessWidget {
     final today = app.todaysMachines;
     return Scaffold(
       backgroundColor: AppTheme.deepNavy,
-      bottomNavigationBar: _ReviewBottomBar(index: 0),
+      bottomNavigationBar: const ReviewBottomNav(index: 0),
       body: SafeArea(
         child: Center(child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 560),
@@ -201,6 +203,7 @@ class ReviewSessionScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppTheme.deepNavy,
       appBar: AppBar(title: Text(app.currentSessionName)),
+      bottomNavigationBar: const ReviewBottomNav(index: 2),
       body: SafeArea(child: Center(child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
         child: ListView(padding: const EdgeInsets.all(18), children: [
@@ -339,7 +342,7 @@ class ReviewHistoryScreen extends StatelessWidget {
     });
     return Scaffold(backgroundColor: AppTheme.deepNavy,
       appBar: AppBar(title: const Text('Histórico por sessão')),
-      bottomNavigationBar: const _ReviewBottomBar(index: 3),
+      bottomNavigationBar: const ReviewBottomNav(index: 3),
       body: ListView(padding: const EdgeInsets.all(18), children: [
         if (sorted.isEmpty) const _CyanCard(child: Text(
           'Suas sessões aparecerão aqui depois do primeiro registro.',
@@ -373,42 +376,107 @@ class ReviewHistoryScreen extends StatelessWidget {
   }
 }
 
-class _ReviewBottomBar extends StatelessWidget {
-  const _ReviewBottomBar({required this.index});
+/// Accessible primary navigation, reused by all five root tabs.
+class ReviewBottomNav extends StatelessWidget {
+  const ReviewBottomNav({super.key, required this.index});
   final int index;
+
   @override
   Widget build(BuildContext context) {
-    final items = <({IconData icon, String title, Widget screen})>[
-      (icon: Icons.home_rounded, title: 'Início', screen: const ReviewHomeScreen()),
-      (icon: Icons.fitness_center_rounded, title: 'Exercícios', screen: const HomeScreen()),
-      (icon: Icons.play_circle_outline_rounded, title: 'Treino', screen: const ReviewSessionScreen()),
-      (icon: Icons.history_rounded, title: 'Histórico', screen: const ReviewHistoryScreen()),
-      (icon: Icons.settings_rounded, title: 'Perfil', screen: const SettingsScreen()),
+    final tabs = <({String title, IconData icon, Widget page})>[
+      (title: 'Início', icon: Icons.home_rounded, page: const ReviewHomeScreen()),
+      (title: 'Exercícios', icon: Icons.fitness_center_rounded, page: const ReviewCatalogScreen()),
+      (title: 'Treino', icon: Icons.play_circle_rounded, page: const ReviewSessionScreen()),
+      (title: 'Histórico', icon: Icons.calendar_month_rounded, page: const ReviewHistoryScreen()),
+      (title: 'Perfil', icon: Icons.person_rounded, page: const SettingsScreen()),
     ];
-    return SafeArea(top: false, child: Container(
-      height: 65, decoration: const BoxDecoration(color: AppTheme.surfaceNavy,
-        border: Border(top: BorderSide(color: AppTheme.deepBlue))),
-      child: Row(children: [
-        for (var i=0; i<items.length; i++)
-          Expanded(child: InkWell(
-            onTap: () {
-              if (i == index) return;
-              if (i == 2) {
-                final app = AppScope.of(context);
-                if (!app.hasActiveSession) app.startSession();
-              }
-              Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => items[i].screen));
-            },
-            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(items[i].icon, size: 23,
-                color: i == index ? AppTheme.electricLime : AppTheme.iceBlue),
-              const SizedBox(height: 3),
-              Text(items[i].title, style: TextStyle(fontSize: 11,
-                color: i == index ? AppTheme.electricLime : AppTheme.iceBlue)),
-            ]),
-          )),
-      ]),
-    ));
+    final scale = MediaQuery.textScalerOf(context).scale(1);
+    final barHeight = 78.0 + ((scale - 1).clamp(0.0, 1.0) * 20);
+    return Material(
+      color: AppTheme.surfaceNavy,
+      child: SafeArea(
+        top: false,
+        child: Container(
+          height: barHeight,
+          decoration: const BoxDecoration(
+            border: Border(top: BorderSide(color: AppTheme.deepBlue, width: 1)),
+          ),
+          child: Row(children: [
+            for (var i = 0; i < tabs.length; i++)
+              Expanded(
+                child: Semantics(
+                  key: Key('primary_nav_$i'),
+                  label: tabs[i].title,
+                  button: true,
+                  selected: i == index,
+                  child: Tooltip(
+                    message: tabs[i].title,
+                    child: InkWell(
+                      onTap: () {
+                        if (i == index) return;
+                        if (i == 2) {
+                          final app = AppScope.of(context);
+                          if (!app.hasActiveSession) app.startSession();
+                        }
+                        if (i == 0) {
+                          Navigator.of(context).popUntil((route) => route.isFirst);
+                          return;
+                        }
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute<void>(builder: (_) => tabs[i].page),
+                          (route) => route.isFirst,
+                        );
+                      },
+                      child: ExcludeSemantics(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 160),
+                              width: 52,
+                              height: 38,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: i == index ? AppTheme.accentBlueSoft
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                              child: Icon(
+                                tabs[i].icon,
+                                size: 29,
+                                color: i == index
+                                    ? AppTheme.electricLime : AppTheme.iceBlue,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 2),
+                              child: Text(
+                                tabs[i].title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                softWrap: false,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: i == index
+                                      ? FontWeight.w700 : FontWeight.w500,
+                                  color: i == index ? AppTheme.electricLime
+                                      : AppTheme.iceBlue,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ]),
+        ),
+      ),
+    );
   }
 }
 
