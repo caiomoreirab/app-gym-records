@@ -12,6 +12,7 @@ import '../widgets/cardio_group_card.dart';
 import '../widgets/machine_list_card.dart';
 import '../widgets/muscle_group_card.dart';
 import '../widgets/section_card.dart';
+import '../widgets/gym_bottom_navigation.dart';
 import '../widgets/page_body.dart';
 import 'group_screen.dart';
 import 'machine_screen.dart';
@@ -19,6 +20,7 @@ import 'settings_screen.dart';
 import 'data_privacy_screen.dart';
 import 'cardio_screen.dart';
 import 'pro_overview_screen.dart';
+import 'workout_completed_screen.dart';
 
 enum _RecordFilter { all, recorded, unrecorded }
 
@@ -64,6 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.deepNavy,
+      bottomNavigationBar: const GymBottomNavigation(index: 0),
       body: PageBody(
         child: ListView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -249,6 +252,7 @@ class _HomeScreenState extends State<HomeScreen> {
             else ...[
               _TodayWorkoutCard(
                 app: controller,
+                onComplete: () => _finishWorkout(controller),
                 onOpenMachine: (machine) => _openMachine(context, machine),
               ),
               const SizedBox(height: 22),
@@ -367,6 +371,15 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _finishWorkout(AppController app) async {
+    final session = app.completeSession();
+    if (session == null) return;
+    await app.flushPendingWrites();
+    if (!mounted) return;
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => WorkoutCompletedScreen(sessionId: session.id)));
   }
 
   bool get _hasCustomFilters =>
@@ -599,9 +612,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
 /// Compact workout section using the pre-existing home theme and spacing.
 class _TodayWorkoutCard extends StatelessWidget {
-  const _TodayWorkoutCard({required this.app, required this.onOpenMachine});
+  const _TodayWorkoutCard({
+    required this.app, required this.onOpenMachine, required this.onComplete});
   final AppController app;
   final ValueChanged<Machine> onOpenMachine;
+  final VoidCallback onComplete;
 
   @override
   Widget build(BuildContext context) {
@@ -621,7 +636,8 @@ class _TodayWorkoutCard extends StatelessWidget {
           Expanded(child: Text('Treino de hoje',
             style: Theme.of(context).textTheme.titleLarge)),
           if (session != null) TextButton(
-            onPressed: app.completeSession,
+            key: const Key('finish_workout'),
+            onPressed: onComplete,
             child: const Text('Concluir')),
         ]),
         const SizedBox(height: 8),
