@@ -17,10 +17,16 @@ class WorkoutSnapshotCodec {
     required List<CardioActivity> cardioActivities,
     Map<String, List<CardioRecord>> preservedCardio = const {},
     Set<String> favorites = const {},
+    String? activeSessionId,
+    Map<String, String> sessionNames = const {},
+    Map<String, List<String>> sessionExercises = const {},
   }) =>
       {
         'schemaVersion': schemaVersion,
         'favorites': favorites.toList()..sort(),
+        'activeSessionId': activeSessionId,
+        'sessionNames': sessionNames,
+        'sessionExercises': sessionExercises,
         'machines': [
           for (final machine in machines)
             {
@@ -223,7 +229,43 @@ class WorkoutSnapshotCodec {
       }
       favorites.addAll(rawFavorites.cast<String>());
     }
-    return WorkoutRestoredState(newMachines, newCardio, favorites);
+    final rawActiveId = input['activeSessionId'];
+    final rawNames = input['sessionNames'];
+    final rawExercises = input['sessionExercises'];
+    if (rawActiveId != null && (rawActiveId is! String || rawActiveId.length > 100)) {
+      throw const FormatException('Sessão ativa inválida.');
+    }
+    final names = <String, String>{};
+    if (rawNames != null) {
+      if (rawNames is! Map || rawNames.length > 2000) {
+        throw const FormatException('Nomes de sessão inválidos.');
+      }
+      for (final entry in rawNames.entries) {
+        if (entry.key is! String || entry.value is! String ||
+            (entry.key as String).length > 100 || (entry.value as String).length > 100) {
+          throw const FormatException('Nome de sessão inválido.');
+        }
+        names[entry.key as String] = entry.value as String;
+      }
+    }
+    final plans = <String, List<String>>{};
+    if (rawExercises != null) {
+      if (rawExercises is! Map || rawExercises.length > 2000) {
+        throw const FormatException('Planos de sessão inválidos.');
+      }
+      for (final entry in rawExercises.entries) {
+        if (entry.key is! String || entry.value is! List ||
+            (entry.key as String).length > 100 ||
+            (entry.value as List).length > 200 ||
+            (entry.value as List).any((e) => e is! String || e.length > 120)) {
+          throw const FormatException('Exercícios de sessão inválidos.');
+        }
+        plans[entry.key as String] = (entry.value as List).cast<String>();
+      }
+    }
+    return WorkoutRestoredState(newMachines, newCardio, favorites,
+        activeSessionId: rawActiveId as String?, sessionNames: names,
+        sessionExercises: plans);
   }
 
   static T _byName<T extends Enum>(List<T> values, Object? name) {
@@ -264,7 +306,12 @@ class WorkoutSnapshotCodec {
 }
 
 class WorkoutRestoredState {
-  WorkoutRestoredState(this.machines, this.cardio, this.favorites);
+  WorkoutRestoredState(this.machines, this.cardio, this.favorites,
+      {this.activeSessionId, this.sessionNames = const {},
+       this.sessionExercises = const {}});
+  final String? activeSessionId;
+  final Map<String, String> sessionNames;
+  final Map<String, List<String>> sessionExercises;
   final List<Machine> machines;
   final Map<String, List<CardioRecord>> cardio;
   final Set<String> favorites;
