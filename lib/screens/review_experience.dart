@@ -530,16 +530,21 @@ class ReviewHistoryScreen extends StatelessWidget {
               style: const TextStyle(color: AppTheme.iceBlue)),
             const SizedBox(height: 10),
             for (final item in entry.value.take(15))
-              ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                title: Text(item.machine.name),
-                subtitle: Text('${item.record.weight.toStringAsFixed(1)} kg × '
-                    '${item.record.repetitions ?? 0} rep'
-                    '${item.record.isWarmup ? ' · Aquecimento' : ''}'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                  builder: (_) => MachineScreen(machineId: item.machine.id))),
+              Material(
+                color: Colors.transparent,
+                child: ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(item.machine.name, maxLines: 2,
+                    overflow: TextOverflow.ellipsis),
+                  subtitle: Text('${item.record.weight.toStringAsFixed(1)} kg × '
+                      '${item.record.repetitions ?? 0} rep'
+                      '${item.record.isWarmup ? ' · Aquecimento' : ''}',
+                    maxLines: 2, overflow: TextOverflow.ellipsis),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                    builder: (_) => MachineScreen(machineId: item.machine.id))),
+                ),
               ),
           ])),
           const SizedBox(height: 12),
