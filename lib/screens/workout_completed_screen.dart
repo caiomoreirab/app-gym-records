@@ -59,7 +59,7 @@ class _WorkoutCompletedScreenState extends State<WorkoutCompletedScreen> {
         ),
       );
       if (mounted && result.status == ShareResultStatus.success) {
-        AppScope.of(context).localMetrics.sharedRecord();
+        AppScope.of(context).markRecordShared();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Treino compartilhado.')));
       }
@@ -225,6 +225,10 @@ class _ShareCard extends StatelessWidget {
   final CompletedWorkoutSummary summary;
   final String dateText, durationText;
 
+  String _clock(DateTime value) =>
+      '${value.hour.toString().padLeft(2, '0')}:'
+      '${value.minute.toString().padLeft(2, '0')}';
+
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(20),
@@ -254,6 +258,13 @@ class _ShareCard extends StatelessWidget {
       const SizedBox(height: 3),
       Text(dateText, maxLines: 1, overflow: TextOverflow.ellipsis,
         style: const TextStyle(color: AppTheme.iceBlue, fontSize: 13)),
+      const SizedBox(height: 4),
+      Text(
+        'Início ${_clock(summary.session.startedAt.toLocal())}  ·  '
+        'Fim ${_clock(summary.session.completedAt!.toLocal())}',
+        maxLines: 1, overflow: TextOverflow.ellipsis,
+        style: const TextStyle(color: AppTheme.iceBlue, fontSize: 12),
+      ),
       const SizedBox(height: 16),
       Row(children: [
         Expanded(child: _SummaryMetric(
