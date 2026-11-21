@@ -743,8 +743,8 @@ class _HomeProCard extends StatelessWidget {
                     const SizedBox(height: 5),
                     Text(
                       enabled
-                          ? 'PR Radar, mapa muscular e análises do seu histórico.'
-                          : 'Conheça o PR Radar e o GymRecords IQ.',
+                          ? 'Próximo objetivo, mapa muscular e relatórios.'
+                          : 'Conheça os relatórios e próximos objetivos.',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(height: 1.25),
