@@ -75,6 +75,20 @@ class SettingsScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             SectionCard(
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.monitor_weight_outlined,
+                  color: AppTheme.electricLime),
+                title: const Text('Peso corporal (opcional)'),
+                subtitle: Text(app.bodyWeightKg == null
+                  ? 'Informe para estimar calorias dos treinos'
+                  : '${app.bodyWeightKg!.toStringAsFixed(1)} kg · guardado no dispositivo'),
+                trailing: const Icon(Icons.edit_outlined),
+                onTap: () => editBodyWeightDialog(context, app),
+              ),
+            ),
+            const SizedBox(height: 16),
+            SectionCard(
               child: SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 secondary: const Icon(Icons.text_increase_rounded,
@@ -564,5 +578,57 @@ class _ActionRow extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Shared with the post-workout screen; the body weight is never inferred.
+Future<void> editBodyWeightDialog(
+    BuildContext context, AppController app) async {
+  final controller = TextEditingController(
+    text: app.bodyWeightKg?.toStringAsFixed(1) ?? '',
+  );
+  try {
+    final chosen = await showDialog<double?>(context: context,
+      builder: (dialog) => AlertDialog(
+        title: const Text('Peso corporal'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(
+            key: const Key('body_weight_input'),
+            autofocus: true,
+            controller: controller,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              labelText: 'Peso atual (kg)', hintText: 'Ex.: 72,5'),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Usado somente para estimar calorias. Valor opcional '
+            'e armazenado neste dispositivo.',
+            style: TextStyle(color: AppTheme.iceBlue, fontSize: 13),
+          ),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialog),
+            child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(dialog, -1.0),
+            child: const Text('Limpar')),
+          FilledButton(onPressed: () {
+            final kg = double.tryParse(
+                controller.text.trim().replaceAll(',', '.'));
+            if (kg == null || kg < 20 || kg > 400) {
+              ScaffoldMessenger.of(dialog).showSnackBar(
+                const SnackBar(content: Text(
+                  'Informe um peso entre 20 e 400 kg.')));
+              return;
+            }
+            Navigator.pop(dialog, kg);
+          }, child: const Text('Salvar')),
+        ],
+      ),
+    );
+    if (chosen == null) return;
+    await app.setBodyWeightKg(chosen < 0 ? null : chosen);
+  } finally {
+    controller.dispose();
   }
 }
