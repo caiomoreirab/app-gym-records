@@ -36,6 +36,7 @@ class AppController extends ChangeNotifier {
   static const _proPreviewKey = 'pro_preview_enabled';
   static const _languageKey = 'language_code';
   static const _analyticsConsentKey = 'analytics_consent_v2';
+  static const _largeTextKey = 'large_text_enabled';
 
   final bool persistenceEnabled;
   final SharedPreferencesAsync? _preferences;
@@ -58,6 +59,7 @@ class AppController extends ChangeNotifier {
   double increment = 2.5;
   bool isPro = false; // Only a preview, never a real subscription.
   String languageCode = 'system';
+  bool largeText = false;
 
   final List<Machine> _machines;
   final List<CardioActivity> _cardioActivities;
@@ -148,6 +150,7 @@ class AppController extends ChangeNotifier {
       increment = await preferences.getDouble(_incrementKey) ?? 2.5;
       isPro = await preferences.getBool(_proPreviewKey) ?? false;
       languageCode = await preferences.getString(_languageKey) ?? 'system';
+      largeText = await preferences.getBool(_largeTextKey) ?? false;
       analyticsConsent = await preferences.getBool(_analyticsConsentKey) ?? false;
     }
     final store = _store;
@@ -324,6 +327,12 @@ class AppController extends ChangeNotifier {
     increment = value;
     notifyListeners();
     _saveDouble(_incrementKey, value);
+  }
+
+  void setLargeText(bool enabled) {
+    largeText = enabled;
+    notifyListeners();
+    _saveBool(_largeTextKey, enabled);
   }
 
   void setLanguageCode(String value) {
