@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../models/machine.dart';
 import '../models/muscle_group.dart';
 import '../widgets/adaptive_illustration.dart';
+import '../widgets/brand_header.dart';
 import '../models/workout_record.dart';
 import '../state/app_controller.dart';
 import '../theme/app_theme.dart';
@@ -40,21 +41,19 @@ class ReviewHomeScreen extends StatelessWidget {
           constraints: const BoxConstraints(maxWidth: 560),
           child: ListView(padding: const EdgeInsets.fromLTRB(18, 12, 18, 28),
             children: [
-              Row(children: [
-                const Icon(Icons.fitness_center_rounded, color: AppTheme.electricLime, size: 28),
-                const SizedBox(width: 8),
-                const Expanded(child: Text.rich(TextSpan(children: [
-                  TextSpan(text: 'Gym', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                  TextSpan(text: 'Records', style: TextStyle(color: AppTheme.electricLime,
-                      fontSize: 24, fontWeight: FontWeight.bold)),
-                ]))),
-                IconButton(tooltip: 'Configurações', icon: const Icon(Icons.settings_outlined),
-                  onPressed: () => _open(context, const SettingsScreen())),
-              ]),
+              BrandHeader(
+                compact: true,
+                trailing: IconButton(
+                  tooltip: 'Configurações',
+                  icon: const Icon(Icons.settings_outlined, size: 27),
+                  onPressed: () => _open(context, const SettingsScreen()),
+                ),
+              ),
               const SizedBox(height: 22),
               Row(children: [
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Olá, $name! 👋', style: Theme.of(context).textTheme.headlineMedium),
+                  Text('Olá, $name! 👋', maxLines: 2, overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.headlineMedium),
                   const SizedBox(height: 5),
                   const Text('Vamos registrar o treino de hoje?',
                       style: TextStyle(color: AppTheme.iceBlue)),
@@ -66,7 +65,7 @@ class ReviewHomeScreen extends StatelessWidget {
               const SizedBox(height: 17),
               InkWell(
                 key: const Key('review_search_exercises'),
-                onTap: () => _open(context, const HomeScreen()),
+                onTap: () => _open(context, const ReviewCatalogScreen()),
                 borderRadius: BorderRadius.circular(18),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 17),
@@ -101,7 +100,13 @@ class ReviewHomeScreen extends StatelessWidget {
                     const Expanded(child: Text('Treino de hoje',
                       style: TextStyle(fontWeight: FontWeight.w700, fontSize: 20))),
                     if (app.hasActiveSession)
-                      const Chip(label: Text('EM ANDAMENTO')),
+                      const Tooltip(
+                        message: 'Sessão de treino em andamento',
+                        child: Chip(
+                          visualDensity: VisualDensity.compact,
+                          label: Text('ATIVO', style: TextStyle(fontSize: 11)),
+                        ),
+                      ),
                   ]),
                   const SizedBox(height: 7),
                   Text(app.hasActiveSession ? app.currentSessionName
@@ -154,14 +159,57 @@ class ReviewHomeScreen extends StatelessWidget {
                 const _CyanCard(child: Text(
                   'Toque na estrela dos exercícios para encontrá-los rapidamente aqui.',
                   style: TextStyle(color: AppTheme.iceBlue))),
-              const SizedBox(height: 19),
-              const Text('Explorar exercícios', style: TextStyle(fontSize: 20,
-                  fontWeight: FontWeight.bold)),
-              const SizedBox(height: 11),
-              OutlinedButton.icon(
-                onPressed: () => _open(context, const HomeScreen()),
-                icon: const Icon(Icons.fitness_center_rounded),
-                label: const Text('Ver aparelhos e grupos musculares'),
+              const SizedBox(height: 20),
+              Row(children: [
+                const Expanded(
+                  child: Text('Grupos musculares',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                ),
+                TextButton(
+                  onPressed: () => _open(context, const ReviewCatalogScreen()),
+                  child: const Text('Ver todos'),
+                ),
+              ]),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 112,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    for (final group in MuscleGroup.values)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 10),
+                        child: Tooltip(
+                          message: group.label,
+                          child: InkWell(
+                            onTap: () => _open(
+                              context, ReviewCatalogScreen(initialGroup: group)),
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              width: 89,
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppTheme.surfaceNavy,
+                                border: Border.all(color: AppTheme.deepBlue),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Column(children: [
+                                AdaptiveGroupImage(group: group,
+                                  width: 64, height: 64, fit: BoxFit.contain),
+                                const SizedBox(height: 5),
+                                Text(group.label,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(fontSize: 12,
+                                    fontWeight: FontWeight.w600)),
+                              ]),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
               if (app.persistenceError != null) ...[
                 const SizedBox(height: 15),
@@ -263,6 +311,130 @@ class ReviewSessionScreen extends StatelessWidget {
   }
 }
 
+/// Full original exercise catalog. All existing assets and profile variants
+/// are used from IllustrationAssets through AdaptiveExerciseImage.
+class ReviewCatalogScreen extends StatefulWidget {
+  const ReviewCatalogScreen({super.key, this.initialGroup});
+  final MuscleGroup? initialGroup;
+
+  @override
+  State<ReviewCatalogScreen> createState() => _ReviewCatalogScreenState();
+}
+
+class _ReviewCatalogScreenState extends State<ReviewCatalogScreen> {
+  final _search = TextEditingController();
+  String _query = '';
+  MuscleGroup? _group;
+
+  @override
+  void initState() {
+    super.initState();
+    _group = widget.initialGroup;
+  }
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final app = AppScope.of(context);
+    final query = _query.trim().toLowerCase();
+    final matches = app.availableMachines.where((machine) {
+      if (_group != null && machine.group != _group) return false;
+      if (query.isEmpty) return true;
+      return machine.localizedName(Localizations.localeOf(context))
+          .toLowerCase().contains(query) ||
+          machine.group.label.toLowerCase().contains(query) ||
+          machine.subgroup.toLowerCase().contains(query);
+    }).toList();
+    return Scaffold(
+      backgroundColor: AppTheme.deepNavy,
+      bottomNavigationBar: const ReviewBottomNav(index: 1),
+      body: SafeArea(child: Center(child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
+            child: Text('Exercícios',
+              style: Theme.of(context).textTheme.headlineMedium),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            child: TextField(
+              key: const Key('catalog_search'),
+              controller: _search,
+              textInputAction: TextInputAction.search,
+              onChanged: (value) => setState(() => _query = value),
+              decoration: InputDecoration(
+                hintText: 'Buscar exercício ou aparelho',
+                prefixIcon: const Icon(Icons.search_rounded, size: 27),
+                suffixIcon: _query.isEmpty ? null : IconButton(
+                  tooltip: 'Limpar busca',
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: () {
+                    _search.clear();
+                    setState(() => _query = '');
+                  }),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            scrollDirection: Axis.horizontal,
+            child: Row(children: [
+              ChoiceChip(
+                label: const Text('Todos'),
+                selected: _group == null,
+                onSelected: (_) => setState(() => _group = null),
+              ),
+              const SizedBox(width: 8),
+              for (final group in MuscleGroup.values) ...[
+                ChoiceChip(
+                  label: Text(group.label),
+                  selected: _group == group,
+                  onSelected: (_) => setState(() => _group = group),
+                ),
+                const SizedBox(width: 8),
+              ],
+            ]),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 12, 18, 8),
+            child: Text('${matches.length} exercícios encontrados',
+              style: const TextStyle(color: AppTheme.iceBlue, fontSize: 13)),
+          ),
+          Expanded(child: matches.isEmpty
+            ? const Center(child: Padding(
+                padding: EdgeInsets.all(22),
+                child: Text('Nenhum exercício encontrado. Tente outra busca.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppTheme.iceBlue))))
+            : ListView.builder(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.fromLTRB(18, 0, 18, 20),
+                itemCount: matches.length,
+                itemBuilder: (context, index) {
+                  final machine = matches[index];
+                  return _MachineRow(
+                    machine: machine,
+                    onTap: () {
+                      final registered = app.ensureMachineAdded(machine);
+                      Navigator.of(context).push(MaterialPageRoute<void>(
+                        builder: (_) => MachineScreen(machineId: registered.id)));
+                    },
+                  );
+                },
+              )),
+        ]),
+      ))),
+    );
+  }
+}
+
 class ReviewExercisePicker extends StatefulWidget {
   const ReviewExercisePicker({super.key});
   @override
@@ -274,7 +446,7 @@ class _ReviewExercisePickerState extends State<ReviewExercisePicker> {
   Widget build(BuildContext context) {
     final list = AppScope.of(context).availableMachines
       .where((m) => m.name.toLowerCase().contains(query.toLowerCase()))
-      .take(70).toList();
+      .toList();
     return Scaffold(backgroundColor: AppTheme.deepNavy,
       appBar: AppBar(title: const Text('Selecione o exercício')),
       body: SafeArea(child: Column(children: [
@@ -540,10 +712,18 @@ class _MachineRow extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(15),
         child: Padding(padding: const EdgeInsets.all(11),child: Row(children: [
-          Container(width: 42, height: 42,
-            decoration: BoxDecoration(color: AppTheme.accentBlueSoft,
-              borderRadius: BorderRadius.circular(10)),
-            child: const Icon(Icons.fitness_center_rounded, color: AppTheme.electricLime)),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(11),
+            child: Container(
+              width: 54,
+              height: 54,
+              color: AppTheme.accentBlueSoft,
+              child: AppScope.of(context).localPhoto(machine.id) case final photo?
+                ? Image.memory(photo, width: 54, height: 54, fit: BoxFit.cover)
+                : AdaptiveExerciseImage(machine: machine,
+                    width: 54, height: 54, fit: BoxFit.contain),
+            ),
+          ),
           const SizedBox(width: 11),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -552,6 +732,7 @@ class _MachineRow extends StatelessWidget {
               Text(detail ?? (machine.latestRecord == null ? machine.group.label :
                 'Última: ${machine.latestRecord!.weight.toStringAsFixed(0)} kg × '
                 '${machine.latestRecord!.repetitions ?? 0}'),
+                maxLines: 1, overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontSize: 12,color: AppTheme.iceBlue)),
             ])),
           const Icon(Icons.chevron_right_rounded, color: AppTheme.electricLime),
