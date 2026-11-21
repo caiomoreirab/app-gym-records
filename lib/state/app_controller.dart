@@ -177,7 +177,6 @@ class AppController extends ChangeNotifier {
   void restoreRecord(Machine machine, WorkoutRecord record) {
     if (machine.records.any((r) => r.id == record.id)) return;
     machine.records.add(record);
-    localMetrics.savedSet(now, repetitions);
     notifyListeners();
     _scheduleSave();
   }
@@ -605,6 +604,7 @@ class AppController extends ChangeNotifier {
       isWarmup: isWarmup,
     );
     machine.records.add(record);
+    localMetrics.savedSet(now, repetitions);
     notifyListeners();
     _scheduleSave();
     trackUsage('strength_record_created', {
