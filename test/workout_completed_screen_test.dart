@@ -55,13 +55,23 @@ void main() {
       child: MaterialApp(theme: AppTheme.dark,
         home: const HomeScreen())));
     await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull,
+      reason: 'Home antes de rolar até Concluir');
     await tester.scrollUntilVisible(find.byKey(const Key('finish_workout')), 200,
       scrollable: find.byType(Scrollable).first);
+    expect(tester.takeException(), isNull,
+      reason: 'Home depois da rolagem');
     await tester.tap(find.byKey(const Key('finish_workout')));
     await tester.pumpAndSettle();
     expect(app.activeSession, isNull);
     expect(find.byType(WorkoutCompletedScreen), findsOneWidget);
     expect(find.text('Treino concluído! 🏆'), findsOneWidget);
-    expect(tester.takeException(), isNull);
+    final layoutError = tester.takeException();
+    if (layoutError is FlutterError) {
+      // Full diagnostics localize the exact overflowing Row in CI.
+      // ignore: avoid_print
+      print(layoutError.toStringDeep());
+    }
+    expect(layoutError, isNull, reason: 'Resumo apos finalizar treino');
   });
 }
