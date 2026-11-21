@@ -23,6 +23,7 @@ class WorkoutSnapshotCodec {
     Map<String, double> targetWeights = const {},
     Map<String, String> gyms = const {'default': 'Minha academia'},
     String selectedGymId = 'default',
+    Map<String, String> photoData = const {},
   }) =>
       {
         'schemaVersion': schemaVersion,
@@ -33,6 +34,7 @@ class WorkoutSnapshotCodec {
         'targetWeights': targetWeights,
         'gyms': gyms,
         'selectedGymId': selectedGymId,
+        'photoData': photoData,
         'machines': [
           for (final machine in machines)
             {
@@ -309,7 +311,25 @@ class WorkoutSnapshotCodec {
     return WorkoutRestoredState(newMachines, newCardio, favorites,
         activeSessionId: rawActiveId as String?, sessionNames: names,
         sessionExercises: plans, targetWeights: goals,
-        gyms: gyms, selectedGymId: selected);
+        gyms: gyms, selectedGymId: selected,
+        photoData: _decodePhotoData(input['photoData']));
+  }
+
+  static Map<String, String> _decodePhotoData(Object? raw) {
+    if (raw == null) return {};
+    if (raw is! Map || raw.length > 25) {
+      throw const FormatException('Fotos locais inválidas.');
+    }
+    final result = <String, String>{};
+    for (final entry in raw.entries) {
+      if (entry.key is! String || entry.value is! String ||
+          (entry.key as String).length > 240 ||
+          (entry.value as String).length > 600000) {
+        throw const FormatException('Imagem de aparelho inválida.');
+      }
+      result[entry.key as String] = entry.value as String;
+    }
+    return result;
   }
 
   static T _byName<T extends Enum>(List<T> values, Object? name) {
@@ -354,7 +374,8 @@ class WorkoutRestoredState {
       {this.activeSessionId, this.sessionNames = const {},
        this.sessionExercises = const {}, this.targetWeights = const {},
        this.gyms = const {'default': 'Minha academia'},
-       this.selectedGymId = 'default'});
+       this.selectedGymId = 'default', this.photoData = const {}});
+  final Map<String, String> photoData;
   final Map<String, String> gyms;
   final String selectedGymId;
   final Map<String, double> targetWeights;
