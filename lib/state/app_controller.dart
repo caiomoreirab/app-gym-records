@@ -16,6 +16,7 @@ import '../models/workout_session.dart';
 import '../services/local_data_store.dart';
 import '../services/workout_snapshot_codec.dart';
 import '../services/usage_events.dart';
+import '../services/local_usage_metrics.dart';
 
 class AppController extends ChangeNotifier {
   AppController({
@@ -70,6 +71,9 @@ class AppController extends ChangeNotifier {
   final Map<String, dynamic> _rootSnapshotExtras = {};
   String? activeSessionId;
   int _recordSerial = 0;
+  final LocalUsageMetrics localMetrics = LocalUsageMetrics();
+
+  void markSetEntryStarted() => localMetrics.beginSet(DateTime.now());
 
   List<WorkoutSession> get sessions =>
       List<WorkoutSession>.unmodifiable(_sessions);
@@ -110,6 +114,7 @@ class AppController extends ChangeNotifier {
       id: id, startedAt: now, name: name.trim().isEmpty ? 'Treino' : name.trim());
     _sessions.add(session);
     activeSessionId = id;
+    localMetrics.startedSession();
     notifyListeners();
     _scheduleSave();
     return session;
@@ -172,6 +177,7 @@ class AppController extends ChangeNotifier {
   void restoreRecord(Machine machine, WorkoutRecord record) {
     if (machine.records.any((r) => r.id == record.id)) return;
     machine.records.add(record);
+    localMetrics.savedSet(now, repetitions);
     notifyListeners();
     _scheduleSave();
   }
@@ -265,6 +271,7 @@ class AppController extends ChangeNotifier {
     if (sink is ConsentAwareUsageEventSink) {
       await sink.setEnabled(analyticsConsent);
     }
+    localMetrics.opened(DateTime.now());
     notifyListeners();
     trackUsage('app_opened');
   }
@@ -279,6 +286,7 @@ class AppController extends ChangeNotifier {
     _rootSnapshotExtras
       ..clear()
       ..addAll(restored.rootExtras);
+    localMetrics.load(_rootSnapshotExtras['localMetrics']);
     activeSessionId = restored.activeSessionId;
   }
 
@@ -289,7 +297,10 @@ class AppController extends ChangeNotifier {
     sessions: _sessions,
     favorites: _favorites,
     activeSessionId: activeSessionId,
-    rootExtras: _rootSnapshotExtras,
+    rootExtras: {
+      ..._rootSnapshotExtras,
+      'localMetrics': localMetrics.toJson(),
+    },
   );
 
   void _scheduleSave() {
