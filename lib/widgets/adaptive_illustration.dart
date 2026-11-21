@@ -9,7 +9,7 @@ import '../theme/app_theme.dart';
 import 'two_view_image_pager.dart';
 
 class AdaptiveExerciseImage extends StatelessWidget {
-  const AdaptiveExerciseImage({super.key, required this.machine, this.fit = BoxFit.cover, this.width, this.height});
+  const AdaptiveExerciseImage({super.key, required this.machine, this.fit = BoxFit.contain, this.width, this.height});
   final Machine machine;
   final BoxFit fit;
   final double? width;
@@ -29,7 +29,7 @@ class AdaptiveExerciseImage extends StatelessWidget {
 }
 
 class AdaptiveGroupImage extends StatelessWidget {
-  const AdaptiveGroupImage({super.key, required this.group, this.fit = BoxFit.cover, this.width, this.height, this.alignment = Alignment.center});
+  const AdaptiveGroupImage({super.key, required this.group, this.fit = BoxFit.contain, this.width, this.height, this.alignment = Alignment.center});
   final MuscleGroup group;
   final BoxFit fit;
   final double? width;
