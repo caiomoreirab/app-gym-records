@@ -82,6 +82,11 @@ class AppController extends ChangeNotifier {
 
   void markSetEntryStarted() => localMetrics.beginSet(DateTime.now());
 
+  void markRecordShared() {
+    localMetrics.sharedRecord();
+    _scheduleSave();
+  }
+
   List<WorkoutSession> get sessions =>
       List<WorkoutSession>.unmodifiable(_sessions);
   Set<String> get favorites => Set<String>.unmodifiable(_favorites);
