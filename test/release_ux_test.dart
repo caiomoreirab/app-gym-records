@@ -44,7 +44,8 @@ void main() {
     expect(find.byType(ReviewCatalogScreen), findsOneWidget);
     expect(find.byKey(const Key('catalog_search')), findsOneWidget);
     expect(tester.takeException(), isNull);
-    await tester.enterText(find.byKey(const Key('catalog_search')), 'supino');
+    await tester.enterText(find.byKey(const Key('catalog_search')), 'peito');
+    tester.testTextInput.hide();
     await tester.pumpAndSettle();
     expect(find.byType(AdaptiveExerciseImage), findsWidgets);
     expect(tester.takeException(), isNull);
