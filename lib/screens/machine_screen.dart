@@ -31,6 +31,7 @@ class _MachineScreenState extends State<MachineScreen> {
   bool _initialized = false;
   bool _saving = false;
   bool _isWarmup = false;
+  int _detailTab = 0;
   double _weight = 0;
   int? _repetitions;
   bool _showAdditionalWeight = false;
@@ -83,76 +84,122 @@ class _MachineScreenState extends State<MachineScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: PrimaryBottomBar(
-        label: 'Salvar série',
-        onPressed: !_saving && _canSave(machine) ? () => _saveRecord(machine) : null,
-      ),
+      bottomNavigationBar: _detailTab == 0
+          ? PrimaryBottomBar(
+              label: 'Salvar série',
+              onPressed: !_saving && _canSave(machine) ? () => _saveRecord(machine) : null,
+            )
+          : null,
       body: PageBody(
         child: ListView(
-          padding: const EdgeInsets.only(bottom: 28),
+          padding: const EdgeInsets.only(bottom: 32),
           children: [
             ExerciseVisualPager(
               machine: machine,
               width: double.infinity,
-              height: 250,
+              height: 165,
               fit: BoxFit.cover,
               showLabel: true,
             ),
-            const SizedBox(height: 16),
-            _RecordCard(machine: machine, unit: app.unit),
-            const SizedBox(height: 16),
-            _NoteCard(note: machine.note, onEdit: () => _editNote(machine)),
-            const SizedBox(height: 10),
-            _AdjustmentsCard(machine: machine, onEdit: () => _editAdjustments(machine)),
-            const SizedBox(height: 16),
-            _WeightCard(
-              machine: machine,
-              showAdditionalWeight: _showAdditionalWeight,
-              onToggleAdditionalWeight: () => setState(() { _showAdditionalWeight = !_showAdditionalWeight; if (!_showAdditionalWeight) _weight = 0; }),
-              weight: _weight,
-              unit: app.unit,
-              increment: app.increment,
-              repetitions: _repetitions,
-              minutes: _minutes,
-              seconds: _seconds,
-              onWeightChanged: (value) => setState(() => _weight = value.clamp(0, 250).toDouble()),
-              onTapWeight: _editWeight,
-              onRepetitionsChanged: (value) => setState(() => _repetitions = value),
-              onMinutesChanged: (value) => setState(() => _minutes = value.clamp(0, 999)),
-              onSecondsChanged: (value) => setState(() => _seconds = value.clamp(0, 59)),
+            const SizedBox(height: 12),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(children: [
+                for (var index = 0; index < 4; index++) ...[
+                  ChoiceChip(
+                    selected: _detailTab == index,
+                    onSelected: (_) => setState(() => _detailTab = index),
+                    label: Text(const ['Registrar', 'Séries', 'Histórico', 'Recordes'][index]),
+                    selectedColor: AppTheme.electricLime,
+                    labelStyle: TextStyle(color: _detailTab == index
+                        ? AppTheme.deepNavy : AppTheme.polarWhite),
+                  ),
+                  const SizedBox(width: 6),
+                ],
+              ]),
             ),
-            const SizedBox(height: 10),
-            CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Série de aquecimento'),
-              subtitle: const Text('Não entra no cálculo de recordes.'),
-              value: _isWarmup,
-              onChanged: (value) => setState(() => _isWarmup = value ?? false),
-            ),
-            const SizedBox(height: 14),
-            WorkoutSeriesPanel(
-              records: machine.records,
-              unit: app.unit,
-              onRepeat: _saving ? null : () => _repeatLastSet(machine),
-              onEdit: (record) => _editSeries(machine, record),
-              onDelete: (record) => _deleteSeries(machine, record),
-            ),
-            const SizedBox(height: 14),
-            const RestTimerCard(),
-            const SizedBox(height: 16),
-            _StrengthRecordsSummary(machine: machine, unit: app.unit),
-            const SizedBox(height: 18),
-            _MachineProCard(
-              machine: machine,
-              unit: app.unit,
-              increment: app.increment,
-              enabled: app.isPro,
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => app.isPro ? ExerciseInsightsScreen(machineId: machine.id) : const ProOverviewScreen(),
+            const SizedBox(height: 15),
+            if (_detailTab == 0) ...[
+              _RecordCard(machine: machine, unit: app.unit),
+              const SizedBox(height: 14),
+              _WeightCard(
+                machine: machine,
+                showAdditionalWeight: _showAdditionalWeight,
+                onToggleAdditionalWeight: () => setState(() {
+                  _showAdditionalWeight = !_showAdditionalWeight;
+                  if (!_showAdditionalWeight) _weight = 0;
+                }),
+                weight: _weight,
+                unit: app.unit,
+                increment: app.increment,
+                repetitions: _repetitions,
+                minutes: _minutes,
+                seconds: _seconds,
+                onWeightChanged: (value) => setState(
+                    () => _weight = value.clamp(0, 250).toDouble()),
+                onTapWeight: _editWeight,
+                onRepetitionsChanged: (value) => setState(() => _repetitions = value),
+                onMinutesChanged: (value) => setState(
+                    () => _minutes = value.clamp(0, 999)),
+                onSecondsChanged: (value) => setState(
+                    () => _seconds = value.clamp(0, 59)),
+              ),
+              const SizedBox(height: 8),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Série de aquecimento'),
+                subtitle: const Text('Não conta para os recordes.'),
+                value: _isWarmup,
+                onChanged: (value) =>
+                    setState(() => _isWarmup = value ?? false),
+              ),
+              const RestTimerCard(),
+              const SizedBox(height: 10),
+              _NoteCard(note: machine.note, onEdit: () => _editNote(machine)),
+              const SizedBox(height: 10),
+              _AdjustmentsCard(machine: machine,
+                  onEdit: () => _editAdjustments(machine)),
+              if (machine.records.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: _saving ? null : () => _repeatLastSet(machine),
+                  icon: const Icon(Icons.repeat_rounded),
+                  label: const Text('Repetir última série'),
+                ),
+              ],
+            ] else if (_detailTab == 1) ...[
+              WorkoutSeriesPanel(
+                records: machine.records,
+                unit: app.unit,
+                onRepeat: _saving ? null : () => _repeatLastSet(machine),
+                onEdit: (record) => _editSeries(machine, record),
+                onDelete: (record) => _deleteSeries(machine, record),
+              ),
+            ] else if (_detailTab == 2) ...[
+              WorkoutSeriesPanel(
+                records: machine.records,
+                unit: app.unit,
+                onRepeat: _saving ? null : () => _repeatLastSet(machine),
+                onEdit: (record) => _editSeries(machine, record),
+                onDelete: (record) => _deleteSeries(machine, record),
+              ),
+            ] else ...[
+              _StrengthRecordsSummary(machine: machine, unit: app.unit),
+              const SizedBox(height: 14),
+              _MachineProCard(
+                machine: machine,
+                unit: app.unit,
+                increment: app.increment,
+                enabled: app.isPro,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => app.isPro
+                        ? ExerciseInsightsScreen(machineId: machine.id)
+                        : const ProOverviewScreen(),
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -168,7 +215,7 @@ class _MachineScreenState extends State<MachineScreen> {
   }
 
   bool _isHighlightRecord(Machine machine, WorkoutRecord record) {
-    if (record.hasWeight && record.weight == machine.recordWeight) return true;
+    if (!record.isWarmup && record.hasWeight && record.weight == machine.recordWeight) return true;
     if (machine.recordWeight == 0 && record.hasRepetitions && record.repetitions == machine.bestRepetitions) return true;
     if (machine.recordWeight == 0 && machine.bestRepetitions == 0 && record.hasDuration && record.durationSeconds == machine.bestDurationSeconds) return true;
     return false;
@@ -184,7 +231,7 @@ class _MachineScreenState extends State<MachineScreen> {
     final previousDurationSeconds = machine.bestDurationSeconds;
     final durationSeconds = _minutes * 60 + _seconds;
 
-    app.addRecord(
+    final saved = app.addRecord(
       machine,
       weight: _weight,
       repetitions: (_repetitions ?? 0) > 0 ? _repetitions : null,
@@ -218,17 +265,30 @@ class _MachineScreenState extends State<MachineScreen> {
         previousDurationSeconds: previousDurationSeconds,
         metric: isNewWeight ? StrengthAchievementMetric.weight : isNewReps ? StrengthAchievementMetric.repetitions : StrengthAchievementMetric.duration,
       );
-      if (mounted) setState(() {});
+      if (mounted) {
+        setState(() => _detailTab = 1);
+        _savedUndoSnackBar(app, machine, saved);
+      }
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
+    _savedUndoSnackBar(app, machine, saved);
+    setState(() => _detailTab = 1);
+    /* ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(context.strings.t('Registro salvo.', 'Record saved.', 'Registro guardado.'))),
     );
-    setState(() {});
+    setState(() {}); */
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  void _savedUndoSnackBar(AppController app, Machine machine, WorkoutRecord saved) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: const Text('Série registrada e salva no dispositivo.'),
+      action: SnackBarAction(label: 'Desfazer',
+        onPressed: () => app.removeRecord(machine, saved)),
+    ));
   }
 
 
@@ -242,7 +302,7 @@ class _MachineScreenState extends State<MachineScreen> {
     setState(() => _saving = true);
     try {
       final app = AppScope.of(context);
-      app.addRecord(machine,
+      final repeated = app.addRecord(machine,
         weight: last.weight,
         repetitions: last.repetitions,
         durationSeconds: last.durationSeconds,
@@ -252,10 +312,13 @@ class _MachineScreenState extends State<MachineScreen> {
       );
       await app.flushPendingWrites();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(app.persistenceError == null
-            ? 'Série repetida e salva.' : 'Erro de armazenamento. Verifique seus dados.'),
-      ));
+      if (app.persistenceError == null) {
+        _savedUndoSnackBar(app, machine, repeated);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Erro de armazenamento. Verifique seus dados.'),
+        ));
+      }
       setState(() {
         _weight = last.weight;
         _repetitions = last.repetitions;
