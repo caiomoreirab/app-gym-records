@@ -42,12 +42,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(ExerciseCatalogScreen), findsOneWidget);
     expect(find.byKey(const Key('catalog_search')), findsOneWidget);
+    expect(tester.takeException(), isNull, reason: 'Catálogo 320px');
     await tester.tap(find.byKey(const Key('main_nav_2')));
     await tester.pumpAndSettle();
     expect(find.byType(ReportsHubScreen), findsOneWidget);
+    expect(tester.takeException(), isNull, reason: 'Relatórios 320px');
     await tester.tap(find.byKey(const Key('main_nav_3')));
     await tester.pumpAndSettle();
     expect(find.byType(SettingsScreen), findsOneWidget);
+    expect(tester.takeException(), isNull, reason: 'Perfil 320px');
     await tester.tap(find.byKey(const Key('main_nav_0')));
     await tester.pumpAndSettle();
     expect(find.byType(HomeScreen), findsOneWidget);
