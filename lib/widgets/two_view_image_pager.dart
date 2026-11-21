@@ -17,7 +17,7 @@ class TwoViewImagePager extends StatefulWidget {
     this.muscleFallback,
     this.compact = false,
     this.showLabel = false,
-    this.fit = BoxFit.cover,
+    this.fit = BoxFit.contain,
     this.executionIcon = Icons.fitness_center_rounded,
   });
 
