@@ -10,7 +10,7 @@ import '../models/workout_record.dart';
 import 'analytics_service.dart';
 
 class ReportEntry {
-  const ReportEntry({required this.date, required this.group, required this.exercise, required this.type, this.weight = 0, this.repetitions, this.durationSeconds, this.distanceKm, this.sessionId = '', this.isWarmup = false, this.rpe});
+  const ReportEntry({required this.date, required this.group, required this.exercise, required this.type, this.weight = 0, this.repetitions, this.durationSeconds, this.distanceKm, this.sessionId = '', this.gymId = 'default', this.isWarmup = false, this.rpe});
   final DateTime date;
   final String group;
   final String exercise;
@@ -20,6 +20,7 @@ class ReportEntry {
   final int? durationSeconds;
   final double? distanceKm;
   final String sessionId;
+  final String gymId;
   final bool isWarmup;
   final double? rpe;
 }
@@ -39,7 +40,7 @@ abstract final class ReportExportService {
       if (group != null && machine.group != group) continue;
       for (final record in machine.records) {
         if (record.date.isBefore(lower) || record.date.isAfter(now)) continue;
-        all.add(ReportEntry(date: record.date, group: machine.group.label, exercise: machine.name, type: 'strength', weight: record.weight, repetitions: record.repetitions, durationSeconds: record.durationSeconds, sessionId: record.sessionId.isEmpty ? WorkoutRecord.dayKey(record.date) : record.sessionId, isWarmup: record.isWarmup, rpe: record.rpe));
+        all.add(ReportEntry(date: record.date, group: machine.group.label, exercise: machine.name, type: 'strength', weight: record.weight, repetitions: record.repetitions, durationSeconds: record.durationSeconds, sessionId: record.sessionId.isEmpty ? WorkoutRecord.dayKey(record.date) : record.sessionId, gymId: record.gymId, isWarmup: record.isWarmup, rpe: record.rpe));
       }
     }
     if (group == null) {
@@ -56,11 +57,12 @@ abstract final class ReportExportService {
 
   static String toCsv(List<ReportEntry> entries) {
     final rows = <List<String>>[
-      ['date', 'session_id', 'group', 'exercise', 'type', 'weight', 'repetitions', 'warmup', 'rpe', 'duration_seconds', 'distance_km'],
+      ['date', 'session_id', 'gym_id', 'group', 'exercise', 'type', 'weight', 'repetitions', 'warmup', 'rpe', 'duration_seconds', 'distance_km'],
       for (final entry in entries)
         [
           '${entry.date.year}-${entry.date.month.toString().padLeft(2, '0')}-${entry.date.day.toString().padLeft(2, '0')}',
           entry.sessionId,
+          entry.gymId,
           entry.group,
           entry.exercise,
           entry.type,
