@@ -98,6 +98,15 @@ class SettingsScreen extends StatelessWidget {
               ),
             )),
             const SizedBox(height: 16),
+            SectionCard(child: SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.text_increase, color: AppTheme.electricLime),
+              title: const Text('Texto ampliado'),
+              subtitle: const Text('Aumentar o tamanho de todas as letras em 20%'),
+              value: app.largeText,
+              onChanged: app.setLargeText,
+            )),
+            const SizedBox(height: 16),
             SectionCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
