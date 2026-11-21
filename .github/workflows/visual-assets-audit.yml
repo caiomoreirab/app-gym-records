@@ -28,15 +28,6 @@ jobs:
       - name: Inventariar imagens e gerar pranchas de conferência
         run: python3 tools/audit_visual_assets.py
 
-      - name: Disponibilizar auditoria por exercício e perfil
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: GymRecords-imagens-auditoria
-          path: build/image-audit/
-          retention-days: 30
-          if-no-files-found: warn
-
       - name: Configurar Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -46,6 +37,18 @@ jobs:
 
       - name: Instalar dependências
         run: flutter pub get
+
+      - name: Exportar mapeamentos exatos do Flutter
+        run: dart run tools/export_visual_manifest.dart
+
+      - name: Disponibilizar auditoria por exercício e perfil
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: GymRecords-imagens-auditoria
+          path: build/image-audit/
+          retention-days: 30
+          if-no-files-found: warn
 
       - name: Verificar assets
         run: python3 tools/verify_visual_assets.py
