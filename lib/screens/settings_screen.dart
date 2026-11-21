@@ -9,13 +9,15 @@ import '../widgets/illustration_style_card.dart';
 import '../widgets/page_body.dart';
 import '../widgets/pro_widgets.dart';
 import '../widgets/section_card.dart';
+import '../widgets/gym_bottom_navigation.dart';
 import 'evolution_screen.dart';
 import 'data_privacy_screen.dart';
 import 'pro_overview_screen.dart';
 import 'pro_export_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
+  const SettingsScreen({super.key, this.asMainTab = false});
+  final bool asMainTab;
 
   @override
   Widget build(BuildContext context) {
@@ -23,8 +25,11 @@ class SettingsScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppTheme.deepNavy,
+      bottomNavigationBar: asMainTab
+        ? const GymBottomNavigation(index: 3) : null,
       appBar: AppBar(
-        leading: const BackButton(),
+        automaticallyImplyLeading: !asMainTab,
+        leading: asMainTab ? null : const BackButton(),
         title: Text(context.strings.settings),
       ),
       body: PageBody(
