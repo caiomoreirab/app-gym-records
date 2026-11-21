@@ -55,7 +55,6 @@ class _MachineScreenState extends State<MachineScreen> {
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
     final machine = app.machineById(widget.machineId);
-    final records = [...machine.records]..sort((a, b) => b.date.compareTo(a.date));
 
     return Scaffold(
       backgroundColor: AppTheme.deepNavy,
@@ -136,31 +135,7 @@ class _MachineScreenState extends State<MachineScreen> {
               onDelete: (record) => _deleteSeries(machine, record),
             ),
             const SizedBox(height: 16),
-            Text(context.strings.t('Histórico', 'History', 'Historial'), style: Theme.of(context).textTheme.headlineMedium),
-            const SizedBox(height: 14),
-            if (records.isEmpty)
-              SectionCard(
-                child: Text(
-                  context.strings.t('Nenhum registro salvo neste exercício.', 'No records saved for this exercise.', 'No hay registros guardados para este ejercicio.'),
-                  style: const TextStyle(color: AppTheme.iceBlue),
-                ),
-              )
-            else
-              SectionCard(
-                padding: EdgeInsets.zero,
-                child: Column(
-                  children: [
-                    for (var i = 0; i < records.length; i++) ...[
-                      _HistoryRow(
-                        record: records[i],
-                        unit: app.unit,
-                        isRecord: _isHighlightRecord(machine, records[i]),
-                      ),
-                      if (i != records.length - 1) const Divider(height: 1),
-                    ],
-                  ],
-                ),
-              ),
+            _StrengthRecordsSummary(machine: machine, unit: app.unit),
             const SizedBox(height: 18),
             _MachineProCard(
               machine: machine,
@@ -471,6 +446,63 @@ class _MachineScreenState extends State<MachineScreen> {
       Navigator.of(context).pop();
     }
   }
+}
+
+class _StrengthRecordsSummary extends StatelessWidget {
+  const _StrengthRecordsSummary({required this.machine, required this.unit});
+  final Machine machine;
+  final String unit;
+
+  @override
+  Widget build(BuildContext context) {
+    final working = machine.records.where((r) => !r.isWarmup && r.weight > 0).toList();
+    if (working.isEmpty) {
+      return SectionCard(child: const Text(
+        'Registre uma série de trabalho para comparar seus recordes.',
+      ));
+    }
+    var maxWeight = 0.0;
+    var maxRange = 0.0;
+    var estimatedOneRm = 0.0;
+    for (final r in working) {
+      if (r.weight > maxWeight) maxWeight = r.weight;
+      final reps = r.repetitions ?? 0;
+      if (reps >= 8 && reps <= 12 && r.weight > maxRange) maxRange = r.weight;
+      if (reps >= 1 && reps <= 12) {
+        final estimate = r.weight * (1 + reps / 30);
+        if (estimate > estimatedOneRm) estimatedOneRm = estimate;
+      }
+    }
+    return SectionCard(child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Seus recordes', style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 8),
+        const Text('Séries de aquecimento não entram nos cálculos.',
+            style: TextStyle(color: AppTheme.iceBlue, fontSize: 12)),
+        const SizedBox(height: 14),
+        _recordLine('Maior carga', '${maxWeight.toStringAsFixed(1)} $unit'),
+        _recordLine('Maior carga (8–12 reps)',
+            maxRange > 0 ? '${maxRange.toStringAsFixed(1)} $unit' : 'Sem dados'),
+        _recordLine('Carga máxima estimada (1RM)',
+            estimatedOneRm > 0
+                ? '${estimatedOneRm.toStringAsFixed(1)} $unit'
+                : 'Sem dados'),
+        const Text('1RM estimado pela fórmula de Epley, com séries de 1 a 12 repetições. '
+                   'É uma estimativa, não uma recomendação de tentativa máxima.',
+            style: TextStyle(color: AppTheme.iceBlue, fontSize: 11)),
+      ],
+    ));
+  }
+
+  Widget _recordLine(String label, String value) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Row(children: [
+      Expanded(child: Text(label)),
+      Text(value, style: const TextStyle(
+        color: AppTheme.electricLime, fontWeight: FontWeight.w600)),
+    ]),
+  );
 }
 
 class _MachineProCard extends StatelessWidget {
