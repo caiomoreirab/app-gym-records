@@ -7,7 +7,6 @@ import '../widgets/brand_header.dart';
 import '../models/workout_record.dart';
 import '../state/app_controller.dart';
 import '../theme/app_theme.dart';
-import 'home_screen.dart';
 import 'machine_screen.dart';
 import 'settings_screen.dart';
 import 'training_goals_screen.dart';
@@ -704,7 +703,9 @@ class _MachineRow extends StatelessWidget {
   final String? detail;
   final VoidCallback onTap;
   @override
-  Widget build(BuildContext context) => Padding(
+  Widget build(BuildContext context) {
+    final photo = AppScope.of(context).localPhoto(machine.id);
+    return Padding(
     padding: const EdgeInsets.only(bottom: 9),
     child: Material(color: AppTheme.surfaceNavy,
       borderRadius: BorderRadius.circular(15),
@@ -718,10 +719,10 @@ class _MachineRow extends StatelessWidget {
               width: 54,
               height: 54,
               color: AppTheme.accentBlueSoft,
-              child: AppScope.of(context).localPhoto(machine.id) case final photo?
-                ? Image.memory(photo, width: 54, height: 54, fit: BoxFit.cover)
-                : AdaptiveExerciseImage(machine: machine,
-                    width: 54, height: 54, fit: BoxFit.contain),
+              child: photo == null
+                ? AdaptiveExerciseImage(machine: machine,
+                    width: 54, height: 54, fit: BoxFit.contain)
+                : Image.memory(photo, width: 54, height: 54, fit: BoxFit.cover),
             ),
           ),
           const SizedBox(width: 11),
@@ -740,4 +741,5 @@ class _MachineRow extends StatelessWidget {
       ),
     ),
   );
+  }
 }
