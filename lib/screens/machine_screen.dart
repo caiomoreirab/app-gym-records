@@ -102,8 +102,8 @@ class _MachineScreenState extends State<MachineScreen> {
             ExerciseVisualPager(
               machine: machine,
               width: double.infinity,
-              height: 165,
-              fit: BoxFit.cover,
+              height: 210,
+              fit: BoxFit.contain,
               showLabel: true,
             ),
             const SizedBox(height: 12),
