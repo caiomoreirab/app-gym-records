@@ -13,6 +13,7 @@ import '../widgets/page_body.dart';
 import '../widgets/primary_bottom_bar.dart';
 import '../widgets/record_achievement_sheet.dart';
 import '../widgets/section_card.dart';
+import '../widgets/session_series_panel.dart';
 import 'exercise_insights_screen.dart';
 import 'pro_overview_screen.dart';
 
@@ -33,6 +34,10 @@ class _MachineScreenState extends State<MachineScreen> {
   bool _showAdditionalWeight = false;
   int _minutes = 0;
   int _seconds = 0;
+  bool _isWarmup = false;
+  int? _rpe;
+  int? _restSeconds;
+  String _setNote = '';
 
   @override
   void didChangeDependencies() {
@@ -110,33 +115,27 @@ class _MachineScreenState extends State<MachineScreen> {
               onMinutesChanged: (value) => setState(() => _minutes = value.clamp(0, 999)),
               onSecondsChanged: (value) => setState(() => _seconds = value.clamp(0, 59)),
             ),
+            const SizedBox(height: 16),
+            _SetExtras(
+              isWarmup: _isWarmup,
+              onWarmupChanged: (value) => setState(() => _isWarmup = value),
+              rpe: _rpe,
+              onRpeChanged: (value) => setState(() => _rpe = value),
+              restSeconds: _restSeconds,
+              onRestChanged: (value) => setState(() => _restSeconds = value),
+              onNoteChanged: (value) => _setNote = value,
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              key: const Key('repeat_last_set'),
+              onPressed: machine.records.isEmpty || _saving
+                ? null : () => _repeatLastSeries(machine),
+              icon: const Icon(Icons.repeat_rounded),
+              label: const Text('Repetir última série'),
+            ),
             const SizedBox(height: 26),
-            Text(context.strings.t('Histórico', 'History', 'Historial'), style: Theme.of(context).textTheme.headlineMedium),
-            const SizedBox(height: 14),
-            if (records.isEmpty)
-              SectionCard(
-                child: Text(
-                  context.strings.t('Nenhum registro salvo neste exercício.', 'No records saved for this exercise.', 'No hay registros guardados para este ejercicio.'),
-                  style: const TextStyle(color: AppTheme.iceBlue),
-                ),
-              )
-            else
-              SectionCard(
-                padding: EdgeInsets.zero,
-                child: Column(
-                  children: [
-                    for (var i = 0; i < records.length; i++) ...[
-                      _HistoryRow(
-                        record: records[i],
-                        unit: app.unit,
-                        isRecord: _isHighlightRecord(machine, records[i]),
-                      ),
-                      if (i != records.length - 1) const Divider(height: 1),
-                    ],
-                  ],
-                ),
-              ),
-            const SizedBox(height: 18),
+            SessionSeriesPanel(machine: machine),
+            const SizedBox(height: 12),
             _MachineProCard(
               machine: machine,
               unit: app.unit,
@@ -162,13 +161,6 @@ class _MachineScreenState extends State<MachineScreen> {
     return _weight > 0;
   }
 
-  bool _isHighlightRecord(Machine machine, WorkoutRecord record) {
-    if (record.hasWeight && record.weight == machine.recordWeight) return true;
-    if (machine.recordWeight == 0 && record.hasRepetitions && record.repetitions == machine.bestRepetitions) return true;
-    if (machine.recordWeight == 0 && machine.bestRepetitions == 0 && record.hasDuration && record.durationSeconds == machine.bestDurationSeconds) return true;
-    return false;
-  }
-
   Future<void> _saveRecord(Machine machine) async {
     if (_saving) return;
     setState(() => _saving = true);
@@ -179,11 +171,15 @@ class _MachineScreenState extends State<MachineScreen> {
     final previousDurationSeconds = machine.bestDurationSeconds;
     final durationSeconds = _minutes * 60 + _seconds;
 
-    app.addRecord(
+    final saved = app.addRecord(
       machine,
       weight: _weight,
       repetitions: (_repetitions ?? 0) > 0 ? _repetitions : null,
       durationSeconds: durationSeconds > 0 ? durationSeconds : null,
+      rpe: _rpe?.toDouble(),
+      restSeconds: _restSeconds,
+      note: _setNote,
+      isWarmup: _isWarmup,
     );
     // Do not announce a successful save or PR until the local database
     // acknowledges the write. Retain the in-memory record for recovery.
@@ -197,12 +193,13 @@ class _MachineScreenState extends State<MachineScreen> {
       return;
     }
     HapticFeedback.lightImpact();
+    _showUndoForSaved(app, machine, saved);
 
     final isNewWeight = _weight > 0 && _weight > previousWeight;
     final isNewReps = (_repetitions ?? 0) > 0 && _repetitions! > previousRepetitions;
     final isNewDuration = durationSeconds > 0 && durationSeconds > previousDurationSeconds;
 
-    if (isNewWeight || isNewReps || isNewDuration) {
+    if (!_isWarmup && (isNewWeight || isNewReps || isNewDuration)) {
       await showRecordAchievementSheet(
         context: context,
         machine: machine,
@@ -215,10 +212,54 @@ class _MachineScreenState extends State<MachineScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.strings.t('Registro salvo.', 'Record saved.', 'Registro guardado.'))),
-    );
     setState(() {});
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  void _showUndoForSaved(AppController app, Machine machine,
+      WorkoutRecord saved) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: const Text('Série salva no dispositivo.'),
+      action: SnackBarAction(
+        label: 'Desfazer',
+        onPressed: () {
+          if (machine.records.any((r) => r.id == saved.id)) {
+            app.removeRecord(machine, saved.id);
+          }
+        },
+      ),
+    ));
+  }
+
+  Future<void> _repeatLastSeries(Machine machine) async {
+    if (_saving || machine.records.isEmpty) return;
+    setState(() => _saving = true);
+    try {
+      final app = AppScope.of(context);
+      final previous = machine.latestRecord!;
+      final saved = app.addRecord(machine,
+        weight: previous.weight,
+        repetitions: previous.repetitions,
+        durationSeconds: previous.durationSeconds,
+        rpe: previous.rpe,
+        rir: previous.rir,
+        restSeconds: previous.restSeconds,
+        note: previous.note,
+        isWarmup: previous.isWarmup,
+      );
+      await app.flushPendingWrites();
+      if (!mounted) return;
+      if (app.persistenceError == null) {
+        HapticFeedback.lightImpact();
+        _showUndoForSaved(app, machine, saved);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Falha ao gravar a série repetida.')));
+      }
+      setState(() {});
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -631,37 +672,6 @@ class _TimeStepper extends StatelessWidget {
           ]),
         ]),
       );
-}
-
-class _HistoryRow extends StatelessWidget {
-  const _HistoryRow({required this.record, required this.unit, required this.isRecord});
-  final WorkoutRecord record;
-  final String unit;
-  final bool isRecord;
-
-  @override
-  Widget build(BuildContext context) {
-    final parts = <String>[];
-    if (record.hasWeight) parts.add('${formatWeight(record.weight, Localizations.localeOf(context))} $unit');
-    if (record.hasRepetitions) parts.add('${record.repetitions} ${context.strings.t('reps', 'reps', 'reps')}');
-    if (record.hasDuration) parts.add(_formatDurationShort(record.durationSeconds!));
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-      child: Row(children: [
-        Text(formatFullDate(record.date, Localizations.localeOf(context)), style: Theme.of(context).textTheme.bodyLarge),
-        if (isRecord) ...[
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-            decoration: BoxDecoration(color: AppTheme.electricLime, borderRadius: BorderRadius.circular(9)),
-            child: Text(context.strings.t('Recorde', 'Record', 'Récord'), style: const TextStyle(color: AppTheme.deepNavy, fontSize: 12, fontWeight: FontWeight.w600)),
-          ),
-        ],
-        const Spacer(),
-        Text(parts.isEmpty ? '—' : parts.join(' • '), style: Theme.of(context).textTheme.titleMedium),
-      ]),
-    );
-  }
 }
 
 String _machinePrimaryDisplay(Machine machine, String unit, Locale locale) {
