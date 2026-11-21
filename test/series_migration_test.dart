@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:gymrecords/data/mock_data.dart';
 import 'package:gymrecords/state/app_controller.dart';
 import 'package:gymrecords/services/local_data_store.dart';
-import 'package:gymrecords/services/workout_snapshot_codec.dart';
 
 void main() {
   test('migração v1 preserva duas séries iguais sem deduplicar', () async {
