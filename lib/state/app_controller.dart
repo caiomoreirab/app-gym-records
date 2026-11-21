@@ -59,7 +59,7 @@ class AppController extends ChangeNotifier {
   String unit = 'kg';
   String distanceUnit = 'km';
   double increment = 2.5;
-  bool isPro = true; // front-end preview; billing will replace this flag later
+  bool isPro = false; // opt-in preview only; not a paid subscription
   String languageCode = 'system';
 
   final List<Machine> _machines;
@@ -147,7 +147,7 @@ class AppController extends ChangeNotifier {
       unit = await preferences.getString(_prefKey(_unitKey)) ?? 'kg';
       distanceUnit = await preferences.getString(_prefKey(_distanceUnitKey)) ?? 'km';
       increment = await preferences.getDouble(_prefKey(_incrementKey)) ?? 2.5;
-      isPro = await preferences.getBool(_prefKey(_proPreviewKey)) ?? true;
+      isPro = await preferences.getBool(_prefKey(_proPreviewKey)) ?? false;
       languageCode = await preferences.getString(_prefKey(_languageKey)) ?? 'system';
       analyticsConsent = await preferences.getBool(_prefKey(_analyticsConsentKey)) ?? false;
     }
