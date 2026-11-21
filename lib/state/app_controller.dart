@@ -68,6 +68,50 @@ class AppController extends ChangeNotifier {
   final List<CardioActivity> _cardioActivities;
   final Map<String, List<CardioRecord>> _preservedCardio = {};
   final Set<String> _favoriteMachineIds = {};
+  String? activeSessionId;
+  final Map<String, String> sessionNames = {};
+  final Map<String, List<String>> sessionExercises = {};
+
+  bool get hasActiveSession => activeSessionId != null;
+  String get currentSessionName => sessionNames[activeSessionId] ?? 'Treino livre';
+
+  /// Unique IDs distinguish independent sessions on the same day.
+  String startSession({String name = 'Treino livre'}) {
+    if (activeSessionId != null) return activeSessionId!;
+    final id = 'session_${DateTime.now().microsecondsSinceEpoch}';
+    activeSessionId = id;
+    sessionNames[id] = name.trim().isEmpty ? 'Treino livre' : name.trim();
+    sessionExercises[id] = <String>[];
+    notifyListeners();
+    _scheduleSave();
+    return id;
+  }
+
+  void addExerciseToSession(Machine machine) {
+    final id = activeSessionId ?? startSession();
+    final plan = sessionExercises.putIfAbsent(id, () => <String>[]);
+    if (!plan.contains(machine.id)) plan.add(machine.id);
+    ensureMachineAdded(machine);
+    notifyListeners();
+    _scheduleSave();
+  }
+
+  void finishSession() {
+    if (activeSessionId == null) return;
+    activeSessionId = null;
+    notifyListeners();
+    _scheduleSave();
+  }
+
+  List<Machine> get activeSessionMachines {
+    final id = activeSessionId;
+    if (id == null) return const <Machine>[];
+    final planned = sessionExercises[id] ?? const <String>[];
+    return _machines.where((m) =>
+      planned.contains(m.id) || m.records.any((r) => r.sessionId == id)
+    ).toList(growable: false);
+  }
+
   Set<String> get favoriteMachineIds => Set<String>.unmodifiable(_favoriteMachineIds);
 
   bool isFavorite(String id) => _favoriteMachineIds.contains(id);
@@ -163,6 +207,13 @@ class AppController extends ChangeNotifier {
           _favoriteMachineIds
             ..clear()
             ..addAll(restored.favorites);
+          activeSessionId = restored.activeSessionId;
+          sessionNames
+            ..clear()
+            ..addAll(restored.sessionNames);
+          sessionExercises
+            ..clear()
+            ..addAll(restored.sessionExercises);
           _preservedCardio
             ..clear()
             ..addAll(restored.applyTo(_machines, _cardioActivities));
@@ -191,6 +242,9 @@ class AppController extends ChangeNotifier {
       cardioActivities: _cardioActivities,
       preservedCardio: _preservedCardio,
       favorites: _favoriteMachineIds,
+      activeSessionId: activeSessionId,
+      sessionNames: sessionNames,
+      sessionExercises: sessionExercises,
     );
     // Serializing the writes prevents a slow older save from overwriting a
     // newer record. Capture the snapshot before queuing it.
@@ -220,6 +274,9 @@ class AppController extends ChangeNotifier {
           cardioActivities: _cardioActivities,
           preservedCardio: _preservedCardio,
           favorites: _favoriteMachineIds,
+          activeSessionId: activeSessionId,
+          sessionNames: sessionNames,
+          sessionExercises: sessionExercises,
         ),
       );
 
@@ -238,6 +295,13 @@ class AppController extends ChangeNotifier {
     _favoriteMachineIds
       ..clear()
       ..addAll(restored.favorites);
+    activeSessionId = restored.activeSessionId;
+    sessionNames
+      ..clear()
+      ..addAll(restored.sessionNames);
+    sessionExercises
+      ..clear()
+      ..addAll(restored.sessionExercises);
     _failedToReadStorage = false;
     persistenceError = null;
     notifyListeners();
@@ -481,7 +545,7 @@ class AppController extends ChangeNotifier {
     final now = DateTime.now();
     final record = WorkoutRecord(
       id: 'set_${now.microsecondsSinceEpoch}_${_recordSequence++}',
-      sessionId: WorkoutRecord.dayKey(now),
+      sessionId: activeSessionId ?? WorkoutRecord.dayKey(now),
       date: now,
       weight: weight,
       repetitions: repetitions,
@@ -491,6 +555,10 @@ class AppController extends ChangeNotifier {
       note: note,
     );
     machine.records.add(record);
+    if (activeSessionId != null) {
+      final plan = sessionExercises.putIfAbsent(activeSessionId!, () => <String>[]);
+      if (!plan.contains(machine.id)) plan.add(machine.id);
+    }
     notifyListeners();
     _scheduleSave();
     trackUsage('strength_record_created', {
