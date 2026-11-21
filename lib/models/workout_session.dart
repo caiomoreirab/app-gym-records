@@ -5,21 +5,25 @@ class WorkoutSession {
     required this.startedAt,
     this.name = 'Treino',
     this.completedAt,
+    this.exerciseIds = const [],
   });
 
   final String id;
   final DateTime startedAt;
   final String name;
   final DateTime? completedAt;
+  final List<String> exerciseIds;
 
   bool get isCompleted => completedAt != null;
 
-  WorkoutSession copyWith({String? name, DateTime? completedAt}) =>
+  WorkoutSession copyWith({String? name, DateTime? completedAt,
+      List<String>? exerciseIds}) =>
       WorkoutSession(
         id: id,
         startedAt: startedAt,
         name: name ?? this.name,
         completedAt: completedAt ?? this.completedAt,
+        exerciseIds: exerciseIds ?? this.exerciseIds,
       );
 
   static String legacyId(DateTime day) =>
