@@ -1,11 +1,11 @@
-name: GymRecords - Prévia isolada da branch
+name: GymRecords - Validação Web /review/
+
 on:
   push:
     branches: ['feat/registro-sessoes-validacao']
     paths:
       - 'lib/**'
       - 'test/**'
-      - 'assets/**'
       - 'pubspec.yaml'
       - 'pubspec.lock'
       - '.github/workflows/feature-web-preview.yml'
@@ -21,25 +21,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-deploy-review:
-    name: Publicar estável + review na mesma página
+  build:
+    name: Compilar main e review em rotas separadas
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    environment:
-      name: github-pages
-      url: https://caiomoreirab.github.io/app-gym-records/review/
     steps:
-      - name: Buscar main estável
+      - name: Checkout versao publica (main)
         uses: actions/checkout@v4
         with:
           ref: main
           path: stable
 
-      - name: Buscar branch de validação
+      - name: Checkout versao candidata
         uses: actions/checkout@v4
         with:
           ref: feat/registro-sessoes-validacao
-          path: review
+          path: candidate
 
       - name: Configurar Flutter
         uses: subosito/flutter-action@v2
@@ -48,58 +45,67 @@ jobs:
           flutter-version: '3.50.0'
           cache: true
 
-      - name: Compilar main estável
+      - name: Compilar versao main
         working-directory: stable
-        env:
-          FB_API_KEY: ${{ vars.GYM_FIREBASE_API_KEY }}
-          FB_APP_ID: ${{ vars.GYM_FIREBASE_WEB_APP_ID }}
-          FB_PROJECT_ID: ${{ vars.GYM_FIREBASE_PROJECT_ID }}
-          FB_SENDER_ID: ${{ vars.GYM_FIREBASE_SENDER_ID }}
-          FB_MEASUREMENT_ID: ${{ vars.GYM_FIREBASE_WEB_MEASUREMENT_ID }}
         run: |
-          flutter create --platforms=web --project-name=gymrecords --no-pub .
+          if [ ! -f web/index.html ]; then
+            flutter create --platforms=web --project-name=gymrecords --no-pub .
+          fi
           flutter pub get
-          flutter build web --release --base-href "/app-gym-records/" --web-content-hash \
-            --dart-define="GYM_FIREBASE_API_KEY=$FB_API_KEY" \
-            --dart-define="GYM_FIREBASE_APP_ID=$FB_APP_ID" \
-            --dart-define="GYM_FIREBASE_PROJECT_ID=$FB_PROJECT_ID" \
-            --dart-define="GYM_FIREBASE_SENDER_ID=$FB_SENDER_ID" \
-            --dart-define="GYM_FIREBASE_MEASUREMENT_ID=$FB_MEASUREMENT_ID"
+          flutter build web --release --base-href "/app-gym-records/" --web-content-hash
 
-      - name: Compilar branch de validação
-        working-directory: review
+      - name: Compilar versao candidata
+        working-directory: candidate
         run: |
-          flutter create --platforms=web --project-name=gymrecords --no-pub .
+          if [ ! -f web/index.html ]; then
+            flutter create --platforms=web --project-name=gymrecords --no-pub .
+          fi
           flutter pub get
           flutter analyze --no-fatal-infos --no-fatal-warnings
           flutter test --reporter expanded
           flutter build web --release --base-href "/app-gym-records/review/" --web-content-hash
 
-      - name: Empacotar os dois sites
+      - name: Preparar um unico site sem alterar codigo main
         run: |
           mkdir -p site/review
           cp -a stable/build/web/. site/
-          cp -a review/build/web/. site/review/
+          cp -a candidate/build/web/. site/review/
           cp stable/docs/privacy.html site/privacy.html
           touch site/.nojekyll
           cp site/index.html site/404.html
           test -s site/index.html
           test -s site/review/index.html
 
-      - name: Publicar artefato GitHub Pages
+      - name: Publicar copia do build candidato para download
+        uses: actions/upload-artifact@v4
+        with:
+          name: GymRecords-Web-Review
+          path: candidate/build/web
+          retention-days: 7
+
+      - name: Criar artefato GitHub Pages
         uses: actions/upload-pages-artifact@v3
         with:
           path: site
 
-      - name: Configurar GitHub Pages
+  deploy:
+    name: Publicar preview de validacao
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: gymrecords-validation
+      url: https://caiomoreirab.github.io/app-gym-records/review/
+    steps:
+      - name: Preparar Pages
         uses: actions/configure-pages@v5
 
-      - name: Implantar site com review
-        id: deployment
+      - name: Publicar site
         uses: actions/deploy-pages@v4
 
-      - name: Mostrar URL de validação
+      - name: Links para validacao
         run: |
-          echo "### GymRecords — review" >> "$GITHUB_STEP_SUMMARY"
-          echo "https://caiomoreirab.github.io/app-gym-records/review/" >> "$GITHUB_STEP_SUMMARY"
-          echo "Versão estável preservada em https://caiomoreirab.github.io/app-gym-records/" >> "$GITHUB_STEP_SUMMARY"
+          echo "### GymRecords: duas versoes independentes" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Main atual: https://caiomoreirab.github.io/app-gym-records/" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Branch de treinos: https://caiomoreirab.github.io/app-gym-records/review/" >> "$GITHUB_STEP_SUMMARY"
+          echo "A versao candidata nao modifica codigo, banco ou deploy de origem da main." >> "$GITHUB_STEP_SUMMARY"
