@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: gymrecords-phase1-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   quality:
     name: Flutter analyze e testes da Fase 1
