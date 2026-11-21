@@ -20,14 +20,14 @@ class ProOverviewScreen extends StatelessWidget {
       (
         eventKey: 'pr_radar',
         icon: Icons.radar_rounded,
-        title: context.strings.t('PR Radar e próximo alvo', 'PR Radar & next target', 'PR Radar y próximo objetivo'),
+        title: context.strings.t('Próximo objetivo', 'Next goal', 'Próximo objetivo'),
         subtitle: context.strings.t('Sinal heurístico de proximidade e metas por exercício.', 'Heuristic proximity score and exercise targets.', 'Indicador heurístico y metas por ejercicio.'),
         page: (_) => const ProRadarScreen(),
       ),
       (
         eventKey: 'gymrecords_iq',
         icon: Icons.auto_graph_rounded,
-        title: 'GymRecords IQ',
+        title: 'Relatórios',
         subtitle: context.strings.t('Relatórios a partir dos seus registros reais.', 'Reports calculated from your available logs.', 'Informes a partir de tus registros.'),
         page: (_) => const EvolutionScreen(),
       ),
