@@ -377,6 +377,15 @@ class AppController extends ChangeNotifier {
     _scheduleSave();
   }
 
+  void updateMachineAdjustments(Machine machine, Map<String, String> fields) {
+    machine.adjustments
+      ..clear()
+      ..addAll(fields.map((key, value) => MapEntry(key, value.trim()))
+          ..removeWhere((key, value) => value.isEmpty));
+    notifyListeners();
+    _scheduleSave();
+  }
+
   void updateMachineNote(Machine machine, String note) {
     machine.note = note.trim();
     notifyListeners();
