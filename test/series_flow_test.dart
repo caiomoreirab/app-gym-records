@@ -7,6 +7,8 @@ import 'package:gymrecords/services/local_data_store.dart';
 import 'package:gymrecords/services/report_export_service.dart';
 import 'package:gymrecords/services/analytics_service.dart';
 import 'package:gymrecords/services/weekly_workout_summary.dart';
+import 'package:gymrecords/services/csv_history_import_service.dart';
+import 'dart:typed_data';
 import 'package:gymrecords/state/app_controller.dart';
 
 void main() {
@@ -137,6 +139,56 @@ void main() {
     app.dispose();
     restarted.dispose();
     finalApp.dispose();
+  });
+
+  test('academias, metas e foto local persistem em backup v1 compatível', () async {
+    final store = MemoryLocalDataStore();
+    final app = AppController(persistenceEnabled: false, store: store);
+    await app.loadPreferences();
+    final id = app.addGym('Academia Centro');
+    final machine = app.ensureMachineAdded(
+      buildExerciseCatalog().firstWhere((e) => e.id == 'barbell_bench_press'),
+    );
+    app.setTargetWeight(machine.id, 100);
+    app.setLocalPhoto(machine.id, Uint8List.fromList([1, 2, 3]));
+    final record = app.addRecord(machine, weight: 80, repetitions: 10);
+    expect(record.gymId, id);
+    await app.flushPendingWrites();
+
+    final loaded = AppController(persistenceEnabled: false, store: store);
+    await loaded.loadPreferences();
+    expect(loaded.selectedGymId, id);
+    expect(loaded.gyms[id], 'Academia Centro');
+    expect(loaded.targetWeights[machine.id], 100);
+    expect(loaded.localPhoto(machine.id), [1, 2, 3]);
+    expect(loaded.machineById(machine.id).records.last.gymId, id);
+    app.dispose();
+    loaded.dispose();
+  });
+
+  test('CSV com aspas e nomes conhecidos importa sem duplicar', () async {
+    final rows = CsvHistoryImportService.parse(
+      'date,exercise,weight,repetitions\\n'
+      '2026-11-20,"Supino reto com barra",80,10\\n'
+      '2026-11-20,"Exercício inexistente",20,12\\n',
+    );
+    expect(rows.length, 2);
+    final store = MemoryLocalDataStore();
+    final app = AppController(persistenceEnabled: false, store: store);
+    await app.loadPreferences();
+    final first = app.importCsvEntries(rows);
+    expect(first.imported, 1);
+    expect(first.unmatched, 1);
+    final second = app.importCsvEntries(rows);
+    expect(second.imported, 0);
+    expect(second.skipped, 1);
+    await app.flushPendingWrites();
+    final reopened = AppController(persistenceEnabled: false, store: store);
+    await reopened.loadPreferences();
+    expect(reopened.machineById('barbell_bench_press').records
+      .any((r) => r.weight == 80 && r.repetitions == 10), isTrue);
+    app.dispose();
+    reopened.dispose();
   });
 
   test('CSV básico continua disponível sem assinatura Pro', () async {
