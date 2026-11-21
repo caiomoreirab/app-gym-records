@@ -99,6 +99,13 @@ class AppController extends ChangeNotifier {
   WorkoutSession startSession({String name = 'Treino de hoje'}) {
     final now = DateTime.now();
     final id = 'session_${now.microsecondsSinceEpoch}_${_recordSerial++}';
+    final existing = activeSession;
+    if (existing != null) {
+      final index = _sessions.indexWhere((s) => s.id == existing.id);
+      if (index >= 0) {
+        _sessions[index] = existing.copyWith(completedAt: now);
+      }
+    }
     final session = WorkoutSession(
       id: id, startedAt: now, name: name.trim().isEmpty ? 'Treino' : name.trim());
     _sessions.add(session);
@@ -131,8 +138,19 @@ class AppController extends ChangeNotifier {
     _scheduleSave();
   }
 
-  WorkoutSession _ensureSession() =>
-      activeSession ?? startSession();
+  WorkoutSession _ensureSession() {
+    final current = activeSession;
+    if (current == null) return startSession();
+    final today = DateTime.now();
+    final started = current.startedAt;
+    if (started.year == today.year &&
+        started.month == today.month &&
+        started.day == today.day) {
+      return current;
+    }
+    completeSession();
+    return startSession();
+  }
 
   void replaceRecord(Machine machine, WorkoutRecord updated) {
     final index = machine.records.indexWhere((r) => r.id == updated.id);
