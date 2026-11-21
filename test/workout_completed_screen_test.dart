@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:gymrecords/screens/workout_completed_screen.dart';
 import 'package:gymrecords/screens/home_screen.dart';
 import 'package:gymrecords/state/app_controller.dart';
@@ -26,8 +27,9 @@ void main() {
       child: MaterialApp(theme: AppTheme.dark, home:
         WorkoutCompletedScreen(sessionId: session.id))));
     await tester.pumpAndSettle();
-    expect(find.text('Treino concluído! 🏆'), findsOneWidget);
+    expect(find.text('Treino concluído!'), findsOneWidget);
     expect(find.text('Calorias estimadas: —'), findsOneWidget);
+    expect(find.byType(SvgPicture), findsWidgets);
     expect(tester.takeException(), isNull);
     await tester.scrollUntilVisible(
       find.byKey(const Key('share_completed_workout')), 200,
@@ -65,7 +67,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(app.activeSession, isNull);
     expect(find.byType(WorkoutCompletedScreen), findsOneWidget);
-    expect(find.text('Treino concluído! 🏆'), findsOneWidget);
+    expect(find.text('Treino concluído!'), findsOneWidget);
     final layoutError = tester.takeException();
     if (layoutError is FlutterError) {
       // Full diagnostics localize the exact overflowing Row in CI.
