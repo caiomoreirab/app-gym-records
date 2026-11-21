@@ -45,6 +45,7 @@ class Machine {
     this.note = '',
     List<WorkoutRecord>? records,
     this.isCustom = false,
+    this.extra = const {},
   }) : records = records ?? <WorkoutRecord>[];
 
   final String id;
@@ -60,6 +61,7 @@ class Machine {
   String note;
   final List<WorkoutRecord> records;
   final bool isCustom;
+  final Map<String, dynamic> extra;
 
   String localizedName(Locale locale) {
     if (locale.languageCode == 'en' && (nameEn?.trim().isNotEmpty ?? false)) {
