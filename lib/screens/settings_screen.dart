@@ -87,6 +87,17 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
+            SectionCard(child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.file_download_outlined, color: AppTheme.electricLime),
+              title: const Text('Exportar meus dados (Grátis)'),
+              subtitle: const Text('CSV e PDF com carga, repetições e séries'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const ProExportScreen()),
+              ),
+            )),
+            const SizedBox(height: 16),
             SectionCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
