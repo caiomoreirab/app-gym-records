@@ -868,7 +868,7 @@ class _QuickMachineCard extends StatelessWidget {
                 height: 103,
                 child: AdaptiveExerciseImage(
                   machine: machine,
-                  fit: BoxFit.cover,
+                  fit: BoxFit.contain,
                 ),
               ),
               Expanded(
