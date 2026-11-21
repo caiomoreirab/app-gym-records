@@ -1,0 +1,72 @@
+name: GymRecords - Auditoria integral de imagens
+
+on:
+  push:
+    branches:
+      - fix/imagens-catalogo-auditoria-20261121
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gymrecords-visual-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  image-qa:
+    name: Cobertura, integridade, mapeamento e Flutter
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Baixar projeto
+        uses: actions/checkout@v4
+
+      - name: Preparar análise de imagens
+        run: python3 -m pip install --user Pillow
+
+      - name: Inventariar imagens e gerar pranchas de conferência
+        run: python3 tools/audit_visual_assets.py
+
+      - name: Disponibilizar auditoria por exercício e perfil
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: GymRecords-imagens-auditoria
+          path: build/image-audit/
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.50.0'
+          cache: true
+
+      - name: Instalar dependências
+        run: flutter pub get
+
+      - name: Verificar assets
+        run: python3 tools/verify_visual_assets.py
+
+      - name: Analisar Dart
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Executar testes Flutter
+        run: flutter test --reporter expanded
+
+      - name: Preparar Web isolado
+        run: |
+          if [ ! -f web/index.html ]; then
+            flutter create --platforms=web --project-name=gymrecords --no-pub .
+          fi
+          flutter build web --release --base-href "/app-gym-records/review/" --web-content-hash
+
+      - name: Disponibilizar prévia Web para download
+        uses: actions/upload-artifact@v4
+        with:
+          name: GymRecords-image-review-web
+          path: build/web/
+          retention-days: 14
+          if-no-files-found: error
