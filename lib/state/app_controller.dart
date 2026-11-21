@@ -73,6 +73,19 @@ class AppController extends ChangeNotifier {
   String? activeSessionId;
   final Map<String, String> sessionNames = {};
   final Map<String, List<String>> sessionExercises = {};
+  final Map<String, double> targetWeights = {};
+
+  void setTargetWeight(String machineId, double? kg) {
+    if (kg == null) {
+      targetWeights.remove(machineId);
+    } else if (kg.isFinite && kg > 0 && kg <= 10000) {
+      targetWeights[machineId] = kg;
+    } else {
+      return;
+    }
+    notifyListeners();
+    _scheduleSave();
+  }
 
   bool get hasActiveSession => activeSessionId != null;
   String get currentSessionName => sessionNames[activeSessionId] ?? 'Treino livre';
@@ -217,6 +230,9 @@ class AppController extends ChangeNotifier {
           sessionExercises
             ..clear()
             ..addAll(restored.sessionExercises);
+          targetWeights
+            ..clear()
+            ..addAll(restored.targetWeights);
           _preservedCardio
             ..clear()
             ..addAll(restored.applyTo(_machines, _cardioActivities));
@@ -248,6 +264,7 @@ class AppController extends ChangeNotifier {
       activeSessionId: activeSessionId,
       sessionNames: sessionNames,
       sessionExercises: sessionExercises,
+      targetWeights: targetWeights,
     );
     // Serializing the writes prevents a slow older save from overwriting a
     // newer record. Capture the snapshot before queuing it.
@@ -280,6 +297,7 @@ class AppController extends ChangeNotifier {
           activeSessionId: activeSessionId,
           sessionNames: sessionNames,
           sessionExercises: sessionExercises,
+          targetWeights: targetWeights,
         ),
       );
 
@@ -305,6 +323,9 @@ class AppController extends ChangeNotifier {
     sessionExercises
       ..clear()
       ..addAll(restored.sessionExercises);
+    targetWeights
+      ..clear()
+      ..addAll(restored.targetWeights);
     _failedToReadStorage = false;
     persistenceError = null;
     notifyListeners();
