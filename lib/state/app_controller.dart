@@ -106,6 +106,17 @@ class AppController extends ChangeNotifier {
     return session;
   }
 
+  void addExerciseToSession(Machine machine) {
+    final session = _ensureSession();
+    if (session.exerciseIds.contains(machine.id)) return;
+    final index = _sessions.indexWhere((s) => s.id == session.id);
+    if (index < 0) return;
+    _sessions[index] = session.copyWith(
+      exerciseIds: [...session.exerciseIds, machine.id]);
+    notifyListeners();
+    _scheduleSave();
+  }
+
   void completeSession() {
     final id = activeSessionId;
     if (id == null) return;
@@ -539,6 +550,7 @@ class AppController extends ChangeNotifier {
         note.length > 3000) {
       throw const FormatException('Valores de série inválidos.');
     }
+    addExerciseToSession(machine);
     final session = _ensureSession();
     final now = when ?? DateTime.now();
     final record = WorkoutRecord(
