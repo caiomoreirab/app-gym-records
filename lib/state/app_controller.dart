@@ -643,7 +643,7 @@ class AppController extends ChangeNotifier {
     var unmatched = 0;
     final catalog = availableMachines;
     String normalize(String value) =>
-        value.toLowerCase().trim().replaceAll(RegExp(r'\\s+'), ' ');
+        value.toLowerCase().trim().replaceAll(RegExp(r'\s+'), ' ');
     for (final entry in entries) {
       final name = normalize(entry.exercise);
       Machine? machine;
