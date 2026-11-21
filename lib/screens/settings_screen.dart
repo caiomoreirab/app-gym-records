@@ -81,6 +81,15 @@ class SettingsScreen extends StatelessWidget {
               onChanged: app.setLargeText,
             )),
             const SizedBox(height: 16),
+            SectionCard(child: SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.contrast_rounded, color: AppTheme.electricLime),
+              title: const Text('Alto contraste'),
+              subtitle: const Text('Destaca textos e divisórias para facilitar a leitura.'),
+              value: app.highContrast,
+              onChanged: app.setHighContrast,
+            )),
+            const SizedBox(height: 16),
             _ProSettingsCard(app: app),
             const SizedBox(height: 16),
             SectionCard(child: ListTile(
