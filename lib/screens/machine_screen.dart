@@ -78,6 +78,13 @@ class _MachineScreenState extends State<MachineScreen> {
               ? Icons.star_rounded : Icons.star_border_rounded,
               color: AppTheme.electricLime),
           ),
+          IconButton(
+            key: const Key('quick_repeat_set'),
+            tooltip: 'Repetir última série',
+            onPressed: machine.records.isEmpty || _saving
+                ? null : () => _repeatLastSeries(machine),
+            icon: const Icon(Icons.repeat_rounded),
+          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert_rounded),
             onSelected: (value) {
