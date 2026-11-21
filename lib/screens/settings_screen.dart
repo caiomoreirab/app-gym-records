@@ -14,6 +14,7 @@ import 'data_privacy_screen.dart';
 import 'pro_overview_screen.dart';
 import 'pro_export_screen.dart';
 import 'gym_profiles_screen.dart';
+import 'import_history_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -100,6 +101,17 @@ class SettingsScreen extends StatelessWidget {
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
                 builder: (_) => const GymProfilesScreen())),
+            )),
+            const SizedBox(height: 16),
+            SectionCard(child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.upload_file_outlined,
+                color: AppTheme.electricLime),
+              title: const Text('Importar histórico CSV'),
+              subtitle: const Text('GymRecords, Hevy ou Strong · dados locais'),
+              trailing: const Icon(Icons.chevron_right_rounded),
+              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => const ImportHistoryScreen())),
             )),
             const SizedBox(height: 16),
             _ProSettingsCard(app: app),
