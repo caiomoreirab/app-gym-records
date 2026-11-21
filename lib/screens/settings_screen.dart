@@ -58,6 +58,8 @@ class SettingsScreen extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           app.displayName.isEmpty ? context.strings.user : app.displayName,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
                       ],
@@ -69,6 +71,19 @@ class SettingsScreen extends StatelessWidget {
                     icon: const Icon(Icons.edit_outlined),
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            SectionCard(
+              child: SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(Icons.text_increase_rounded,
+                  color: AppTheme.electricLime),
+                title: const Text('Fonte ampliada'),
+                subtitle: const Text(
+                  'Aumenta os textos sem alterar o visual do aplicativo.'),
+                value: app.largeText,
+                onChanged: app.setLargeText,
               ),
             ),
             const SizedBox(height: 16),
