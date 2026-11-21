@@ -10,15 +10,17 @@ import '../models/workout_record.dart';
 class WorkoutSnapshotCodec {
   const WorkoutSnapshotCodec._();
 
-  static const schemaVersion = 1;
+  static const schemaVersion = 2;
 
   static Map<String, dynamic> encode({
     required List<Machine> machines,
     required List<CardioActivity> cardioActivities,
     Map<String, List<CardioRecord>> preservedCardio = const {},
+    Set<String> favorites = const {},
   }) =>
       {
         'schemaVersion': schemaVersion,
+        'favorites': favorites.toList()..sort(),
         'machines': [
           for (final machine in machines)
             {
@@ -32,9 +34,14 @@ class WorkoutSnapshotCodec {
                 for (final r in machine.records)
                   {
                     'date': r.date.toUtc().toIso8601String(),
+                    'id': r.id,
+                    'sessionId': r.effectiveSessionId,
                     'weight': r.weight,
                     'repetitions': r.repetitions,
                     'durationSeconds': r.durationSeconds,
+                    'isWarmup': r.isWarmup,
+                    'rpe': r.rpe,
+                    'note': r.note,
                   },
               ],
             },
@@ -76,9 +83,16 @@ class WorkoutSnapshotCodec {
   /// Parses into new objects before touching live state. A malformed backup
   /// therefore cannot partially erase the data currently in memory.
   static WorkoutRestoredState decode(Map<String, dynamic> input) {
-    if (input['schemaVersion'] != schemaVersion) {
+    final version = input['schemaVersion'];
+    if (version != 1 && version != schemaVersion) {
       throw const FormatException('Versão de backup incompatível.');
     }
+    final rawFavorites = input['favorites'] ?? <dynamic>[];
+    if (rawFavorites is! List || rawFavorites.length > 2000 ||
+        rawFavorites.any((v) => v is! String || v.length > 120)) {
+      throw const FormatException('Favoritos inválidos.');
+    }
+    final favorites = Set<String>.from(rawFavorites);
     final savedMachines = input['machines'];
     final savedCardio = input['cardio'];
     if (savedMachines is! List || savedCardio is! Map) {
@@ -126,16 +140,36 @@ class WorkoutSnapshotCodec {
       machine.name = name.trim();
       machine.nameEn = custom ? name.trim() : machine.nameEn;
       machine.note = note;
-      machine.records.addAll(entries.map((value) {
+      for (var recordIndex = 0; recordIndex < entries.length; recordIndex++) {
+        final value = entries[recordIndex];
         if (value is! Map) throw const FormatException('Registro de treino inválido.');
         final r = Map<String, dynamic>.from(value);
-        return WorkoutRecord(
-          date: _date(r['date']),
+        final when = _date(r['date']);
+        final rid = r['id'];
+        final sid = r['sessionId'];
+        final warmup = r['isWarmup'];
+        final effort = _nonNegativeInteger(r['rpe']);
+        final recordNote = r['note'] ?? '';
+        if ((rid != null && (rid is! String || rid.length > 140)) ||
+            (sid != null && (sid is! String || sid.length > 140)) ||
+            (warmup != null && warmup is! bool) ||
+            (effort != null && (effort < 1 || effort > 10)) ||
+            recordNote is! String || recordNote.length > 1000) {
+          throw const FormatException('Metadados da série inválidos.');
+        }
+        machine.records.add(WorkoutRecord(
+          date: when,
+          id: rid is String && rid.isNotEmpty ? rid : 'legacy-$id-$recordIndex',
+          sessionId: sid is String && sid.isNotEmpty
+              ? sid : WorkoutRecord.sessionForDay(when),
           weight: _nonNegativeNumber(r['weight']) ?? 0,
           repetitions: _nonNegativeInteger(r['repetitions']),
           durationSeconds: _nonNegativeInteger(r['durationSeconds']),
-        );
-      }));
+          isWarmup: warmup == true,
+          rpe: effort,
+          note: recordNote,
+        ));
+      }
       newMachines.add(machine);
     }
 
@@ -173,7 +207,7 @@ class WorkoutSnapshotCodec {
       }
       newCardio[entry.key as String] = records;
     }
-    return WorkoutRestoredState(newMachines, newCardio);
+    return WorkoutRestoredState(newMachines, newCardio, favorites);
   }
 
   static T _byName<T extends Enum>(List<T> values, Object? name) {
@@ -214,9 +248,10 @@ class WorkoutSnapshotCodec {
 }
 
 class WorkoutRestoredState {
-  WorkoutRestoredState(this.machines, this.cardio);
+  WorkoutRestoredState(this.machines, this.cardio, this.favorites);
   final List<Machine> machines;
   final Map<String, List<CardioRecord>> cardio;
+  final Set<String> favorites;
 
   /// Returns records for activities that no longer exist in this version.
   /// Callers must preserve these records in subsequent saves and backups.
