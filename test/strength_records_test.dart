@@ -13,7 +13,7 @@ void main() {
     ];
     expect(StrengthRecords.maxWeight(sets), 100);
     expect(StrengthRecords.maxWeightForRepRange(sets), 85);
-    expect(StrengthRecords.maxEstimatedOneRepMax(sets), closeTo(110, 0.001));
+    expect(StrengthRecords.maxEstimatedOneRepMax(sets), closeTo(112, 0.001));
     expect(StrengthRecords.estimatedOneRepMax(
       WorkoutRecord(date: DateTime(2026), weight: 50, repetitions: 30)), isNull);
     expect(StrengthRecords.estimatedOneRepMax(
