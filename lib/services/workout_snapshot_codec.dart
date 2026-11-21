@@ -4,24 +4,42 @@ import '../models/cardio_record.dart';
 import '../models/machine.dart';
 import '../models/muscle_group.dart';
 import '../models/workout_record.dart';
+import '../models/workout_session.dart';
 
 /// Versioned, portable backup format. The database and backup use the same
 /// serialization; only recorded user state is stored (no sample workout data).
 class WorkoutSnapshotCodec {
   const WorkoutSnapshotCodec._();
 
-  static const schemaVersion = 1;
+  static const schemaVersion = 2;
 
   static Map<String, dynamic> encode({
     required List<Machine> machines,
     required List<CardioActivity> cardioActivities,
     Map<String, List<CardioRecord>> preservedCardio = const {},
+    List<WorkoutSession> sessions = const [],
+    Set<String> favorites = const {},
+    String? activeSessionId,
+    Map<String, dynamic> rootExtras = const {},
   }) =>
       {
+        ...rootExtras,
         'schemaVersion': schemaVersion,
+        'activeSessionId': activeSessionId,
+        'favorites': favorites.toList()..sort(),
+        'sessions': [
+          for (final item in sessions)
+            {
+              'id': item.id,
+              'name': item.name,
+              'startedAt': item.startedAt.toUtc().toIso8601String(),
+              'completedAt': item.completedAt?.toUtc().toIso8601String(),
+            },
+        ],
         'machines': [
           for (final machine in machines)
             {
+              ...machine.extra,
               'id': machine.id,
               'custom': machine.isCustom,
               'name': machine.name,
@@ -31,6 +49,14 @@ class WorkoutSnapshotCodec {
               'records': [
                 for (final r in machine.records)
                   {
+                    ...r.extra,
+                    'id': r.id,
+                    'sessionId': r.effectiveSessionId,
+                    'warmup': r.isWarmup,
+                    'rpe': r.rpe,
+                    'rir': r.rir,
+                    'restSeconds': r.restSeconds,
+                    'note': r.note,
                     'date': r.date.toUtc().toIso8601String(),
                     'weight': r.weight,
                     'repetitions': r.repetitions,
@@ -76,7 +102,7 @@ class WorkoutSnapshotCodec {
   /// Parses into new objects before touching live state. A malformed backup
   /// therefore cannot partially erase the data currently in memory.
   static WorkoutRestoredState decode(Map<String, dynamic> input) {
-    if (input['schemaVersion'] != schemaVersion) {
+    if (input['schemaVersion'] != 1 && input['schemaVersion'] != schemaVersion) {
       throw const FormatException('Versão de backup incompatível.');
     }
     final savedMachines = input['machines'];
@@ -121,19 +147,70 @@ class WorkoutSnapshotCodec {
           equipment: equipment,
           imageAsset: 'assets/illustrations/generic_machine.webp',
           isCustom: true,
+          extra: _extras(m, const {'id', 'custom', 'name', 'note', 'group', 'equipment', 'records'}),
+        );
+      }
+      // The built-in catalog can be reused but its experimental settings must survive.
+      if (machine.extra.isEmpty && !custom && catalog.containsKey(id)) {
+        machine = Machine(
+          id: machine.id, name: machine.name, nameEn: machine.nameEn,
+          group: machine.group, imageAsset: machine.imageAsset,
+          visualAssetId: machine.visualAssetId, equipment: machine.equipment,
+          subgroup: machine.subgroup, subgroupEn: machine.subgroupEn,
+          aliases: machine.aliases, isCustom: machine.isCustom,
+          extra: _extras(m, const {'id', 'custom', 'name', 'note', 'group', 'equipment', 'records'}),
         );
       }
       machine.name = name.trim();
       machine.nameEn = custom ? name.trim() : machine.nameEn;
       machine.note = note;
-      machine.records.addAll(entries.map((value) {
-        if (value is! Map) throw const FormatException('Registro de treino inválido.');
-        final r = Map<String, dynamic>.from(value);
+      machine.records.addAll(entries.asMap().entries.map((entry) {
+        if (entry.value is! Map) {
+          throw const FormatException('Registro de treino inválido.');
+        }
+        final r = Map<String, dynamic>.from(entry.value as Map);
+        final date = _date(r['date']);
+        final rawId = r['id'];
+        final rawSessionId = r['sessionId'];
+        if (rawId != null && (rawId is! String || rawId.length > 160)) {
+          throw const FormatException('Identificador de série inválido.');
+        }
+        if (rawSessionId != null &&
+            (rawSessionId is! String || rawSessionId.length > 160)) {
+          throw const FormatException('Identificador de sessão inválido.');
+        }
+        final rawNote = r['note'] ?? '';
+        if (rawNote is! String || rawNote.length > 3000) {
+          throw const FormatException('Anotação de série inválida.');
+        }
+        final rawRpe = _number(r['rpe']);
+        if (rawRpe != null && (rawRpe < 1 || rawRpe > 10)) {
+          throw const FormatException('RPE inválido.');
+        }
+        final rir = _nonNegativeInteger(r['rir']);
+        if (rir != null && rir > 10) throw const FormatException('RIR inválido.');
+        final rest = _nonNegativeInteger(r['restSeconds']);
+        if (rest != null && rest > 36000) {
+          throw const FormatException('Descanso inválido.');
+        }
         return WorkoutRecord(
-          date: _date(r['date']),
+          id: rawId is String && rawId.isNotEmpty
+              ? rawId : 'migrated_${id}_${entry.key}_${date.microsecondsSinceEpoch}',
+          sessionId: rawSessionId is String && rawSessionId.isNotEmpty
+              ? rawSessionId : WorkoutSession.legacyId(date),
+          date: date,
           weight: _nonNegativeNumber(r['weight']) ?? 0,
           repetitions: _nonNegativeInteger(r['repetitions']),
           durationSeconds: _nonNegativeInteger(r['durationSeconds']),
+          rpe: rawRpe,
+          rir: rir,
+          restSeconds: rest,
+          note: rawNote,
+          isWarmup: r['warmup'] == true,
+          extra: _extras(r, const {
+            'id', 'sessionId', 'date', 'weight', 'repetitions',
+            'durationSeconds', 'rpe', 'rir', 'restSeconds', 'note', 'warmup',
+          }),
         );
       }));
       newMachines.add(machine);
@@ -173,8 +250,80 @@ class WorkoutSnapshotCodec {
       }
       newCardio[entry.key as String] = records;
     }
-    return WorkoutRestoredState(newMachines, newCardio);
+    final sessions = <String, WorkoutSession>{};
+    final rawSessions = input['sessions'];
+    if (rawSessions != null) {
+      if (rawSessions is! List || rawSessions.length > 20000) {
+        throw const FormatException('Lista de sessões inválida.');
+      }
+      for (final raw in rawSessions) {
+        if (raw is! Map) throw const FormatException('Sessão inválida.');
+        final item = Map<String, dynamic>.from(raw);
+        final id = item['id'];
+        final name = item['name'] ?? 'Treino';
+        if (id is! String || id.isEmpty || id.length > 160 ||
+            name is! String || name.length > 160 ||
+            sessions.containsKey(id)) {
+          throw const FormatException('ID ou nome de sessão inválido.');
+        }
+        sessions[id] = WorkoutSession(
+          id: id, name: name,
+          startedAt: _date(item['startedAt']),
+          completedAt: item['completedAt'] == null ? null
+              : _date(item['completedAt']),
+        );
+      }
+    }
+    // The experimental v0.10.0 also used schemaVersion 1, with metadata maps.
+    final legacyNames = input['sessionNames'];
+    for (final machine in newMachines) {
+      for (final record in machine.records) {
+        final id = record.effectiveSessionId;
+        if (sessions.containsKey(id)) continue;
+        var name = 'Treino do dia';
+        if (legacyNames is Map && legacyNames[id] is String) {
+          name = legacyNames[id] as String;
+        }
+        sessions[id] = WorkoutSession(
+          id: id, startedAt: record.date, name: name,
+          completedAt: id.startsWith('legacy_') ? record.date : null,
+        );
+      }
+    }
+    final rawFavorites = input['favorites'];
+    final favorites = <String>{};
+    if (rawFavorites != null) {
+      if (rawFavorites is! List || rawFavorites.length > 2000) {
+        throw const FormatException('Favoritos inválidos.');
+      }
+      for (final value in rawFavorites) {
+        if (value is! String || value.length > 160) {
+          throw const FormatException('Favorito inválido.');
+        }
+        favorites.add(value);
+      }
+    }
+    final active = input['activeSessionId'];
+    if (active != null && (active is! String || active.length > 160)) {
+      throw const FormatException('Sessão ativa inválida.');
+    }
+    final requestedActive = active is String && sessions.containsKey(active) &&
+        !sessions[active]!.isCompleted ? active : null;
+    return WorkoutRestoredState(newMachines, newCardio,
+      sessions: sessions.values.toList(), favorites: favorites,
+      activeSessionId: requestedActive,
+      rootExtras: _extras(input, const {
+        'schemaVersion', 'machines', 'cardio', 'sessions',
+        'favorites', 'activeSessionId',
+      }),
+    );
   }
+
+  static Map<String, dynamic> _extras(Map<String, dynamic> source,
+      Set<String> known) => {
+    for (final entry in source.entries)
+      if (!known.contains(entry.key)) entry.key: entry.value,
+  };
 
   static T _byName<T extends Enum>(List<T> values, Object? name) {
     for (final value in values) {
@@ -214,9 +363,15 @@ class WorkoutSnapshotCodec {
 }
 
 class WorkoutRestoredState {
-  WorkoutRestoredState(this.machines, this.cardio);
+  WorkoutRestoredState(this.machines, this.cardio,
+      {this.sessions = const [], this.favorites = const {},
+       this.activeSessionId, this.rootExtras = const {}});
   final List<Machine> machines;
   final Map<String, List<CardioRecord>> cardio;
+  final List<WorkoutSession> sessions;
+  final Set<String> favorites;
+  final String? activeSessionId;
+  final Map<String, dynamic> rootExtras;
 
   /// Returns records for activities that no longer exist in this version.
   /// Callers must preserve these records in subsequent saves and backups.
