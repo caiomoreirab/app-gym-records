@@ -53,7 +53,15 @@ class _GymRecordsAppState extends State<GymRecordsApp> {
         builder: (context, _) => MaterialApp(
           title: 'GymRecords',
           debugShowCheckedModeBanner: false,
-          theme: AppTheme.dark,
+          theme: _controller.highContrast
+              ? AppTheme.dark.copyWith(
+                  colorScheme: AppTheme.dark.colorScheme.copyWith(
+                    onSurface: Colors.white,
+                    outline: Colors.white,
+                  ),
+                  dividerColor: Colors.white70,
+                )
+              : AppTheme.dark,
           themeMode: ThemeMode.dark,
           locale: _controller.appLocale,
           supportedLocales: const [Locale('pt', 'BR'), Locale('en', 'US'), Locale('es', 'ES')],
