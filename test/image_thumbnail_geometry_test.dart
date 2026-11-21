@@ -37,11 +37,11 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('prancha não exibe o arquivo com outro movimento',
+  testWidgets('prancha lateral não mostra arte de movimento diferente',
       (tester) async {
     final app = AppController(persistenceEnabled: false);
     addTearDown(app.dispose);
-    final exercise = buildExerciseCatalog().firstWhere((m) => m.id == 'plank');
+    final exercise = buildExerciseCatalog().firstWhere((m) => m.id == 'side_plank');
     await tester.pumpWidget(AppScope(
       controller: app,
       child: MaterialApp(
