@@ -61,6 +61,11 @@ jobs:
             flutter create --platforms=web --project-name=gymrecords --no-pub .
           fi
           flutter pub get
+          # Flutter create may add a template test referring to MyApp.
+          # Never execute that generated scaffold test against GymRecords.
+          if grep -q 'MyApp' test/widget_test.dart 2>/dev/null; then
+            rm test/widget_test.dart
+          fi
           flutter analyze --no-fatal-infos --no-fatal-warnings
           flutter test --reporter expanded
           flutter build web --release --base-href "/app-gym-records/review/" --web-content-hash --dart-define=GYM_IS_REVIEW=true
