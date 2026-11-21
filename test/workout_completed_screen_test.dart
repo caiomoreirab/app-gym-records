@@ -30,8 +30,7 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.scrollUntilVisible(
       find.byKey(const Key('share_completed_workout')), 200,
-      scrollable: find.descendant(
-        of: find.byType(ListView).first, matching: find.byType(Scrollable)).first,
+      scrollable: find.byType(Scrollable).first,
     );
     expect(find.byKey(const Key('share_completed_workout')), findsOneWidget);
     expect(tester.takeException(), isNull);
