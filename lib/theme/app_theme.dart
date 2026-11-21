@@ -3,20 +3,20 @@ import 'package:flutter/services.dart';
 
 abstract final class AppTheme {
   // Visual refresh inspired by the approved blue/charcoal GymRecords prototype.
-  static const electricLime = Color(0xFF10B7F4); // primary electric blue
-  static const deepNavy = Color(0xFF030507);
+  static const electricLime = Color(0xFF00D9E8); // mockup cyan accent
+  static const deepNavy = Color(0xFF04101B);
   static const splashNavy = Color(0xFF00112B); // almost-black background
-  static const surfaceNavy = Color(0xFF101417); // charcoal cards
-  static const royalBlue = Color(0xFF087FBB); // selected states
+  static const surfaceNavy = Color(0xFF0B2031); // navy cards from approved mockups
+  static const royalBlue = Color(0xFF087D9F); // selected states
   static const iceBlue = Color(0xFFB7C4D0); // secondary copy
   static const polarWhite = Color(0xFFF7F9FB);
   static const limeLight = Color(0xFF63D5FF);
   static const limeDark = Color(0xFF0876A8);
-  static const deepBlue = Color(0xFF26343E); // borders/dividers
+  static const deepBlue = Color(0xFF254357); // cyan-tinted borders
 
   static const accentBlue = electricLime;
   static const accentBlueSoft = Color(0xFF0B2735);
-  static const cardElevated = Color(0xFF14191D);
+  static const cardElevated = Color(0xFF122A3E);
   static const mutedSurface = Color(0xFF0B0F12);
   static const success = Color(0xFF32D583);
   static const warning = Color(0xFFFFA928);
@@ -139,7 +139,7 @@ abstract final class AppTheme {
         style: FilledButton.styleFrom(
           minimumSize: const Size.fromHeight(buttonHeight),
           backgroundColor: electricLime,
-          foregroundColor: polarWhite,
+          foregroundColor: deepNavy,
           textStyle: _base.copyWith(fontSize: 18, fontWeight: FontWeight.w600),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(17),
