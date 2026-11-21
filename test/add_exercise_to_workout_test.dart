@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:gymrecords/screens/home_screen.dart';
 import 'package:gymrecords/screens/exercise_catalog_screen.dart';
-import 'package:gymrecords/screens/machine_screen.dart';
 import 'package:gymrecords/state/app_controller.dart';
 import 'package:gymrecords/widgets/machine_list_card.dart';
 import 'package:gymrecords/theme/app_theme.dart';
