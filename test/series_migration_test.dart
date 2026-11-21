@@ -9,6 +9,7 @@ void main() {
     final store = MemoryLocalDataStore();
     final app = AppController(persistenceEnabled: false, store: store);
     final payload = jsonDecode(app.exportBackup()) as Map<String, dynamic>;
+    payload['machines'] = [];
     payload['schemaVersion'] = 1;
     payload.remove('sessions');
     payload.remove('activeSessionId');
@@ -44,6 +45,9 @@ void main() {
     final store = MemoryLocalDataStore();
     final app = AppController(persistenceEnabled: false, store: store);
     await app.loadPreferences();
+    await app.importBackup(
+      '{"schemaVersion":2,"machines":[],"cardio":{},'
+      '"sessions":[],"favorites":[],"activeSessionId":null}');
     final machine = app.ensureMachineAdded(
       buildExerciseCatalog().firstWhere((m) => m.id == 'barbell_bench_press'));
     final first = app.addRecord(machine, weight: 100, repetitions: 3);
@@ -75,6 +79,7 @@ void main() {
     final app = AppController(persistenceEnabled: false,
       store: MemoryLocalDataStore());
     final raw = jsonDecode(app.exportBackup()) as Map<String, dynamic>;
+    raw['machines'] = [];
     raw['schemaVersion'] = 1;
     raw['gyms'] = {'default': 'Minha academia'};
     raw['targetWeights'] = {'barbell_bench_press': 100.0};
