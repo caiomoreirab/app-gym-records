@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'muscle_group.dart';
 import 'workout_record.dart';
+import '../services/strength_records.dart';
 
 enum EquipmentType {
   machine,
@@ -114,20 +115,23 @@ class Machine {
 
 
   double get recordWeight {
-    final values = records.where((record) => record.hasWeight).map((record) => record.weight).toList();
+    final values = StrengthRecords.workingSets(records)
+        .where((record) => record.hasWeight).map((record) => record.weight).toList();
     if (values.isEmpty) return 0;
     return values.reduce((current, next) => next > current ? next : current);
   }
 
   int get bestRepetitions {
-    final values = records.where((record) => record.hasRepetitions).map((record) => record.repetitions!).toList();
+    final values = StrengthRecords.workingSets(records)
+        .where((record) => record.hasRepetitions).map((record) => record.repetitions!).toList();
     if (values.isEmpty) return 0;
     values.sort();
     return values.last;
   }
 
   int get bestDurationSeconds {
-    final values = records.where((record) => record.hasDuration).map((record) => record.durationSeconds!).toList();
+    final values = StrengthRecords.workingSets(records)
+        .where((record) => record.hasDuration).map((record) => record.durationSeconds!).toList();
     if (values.isEmpty) return 0;
     values.sort();
     return values.last;
