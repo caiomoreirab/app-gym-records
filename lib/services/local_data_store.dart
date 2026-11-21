@@ -80,7 +80,11 @@ class PreferencesLocalDataStore implements LocalDataStore {
   PreferencesLocalDataStore({SharedPreferencesAsync? preferences})
       : _preferences = preferences ?? SharedPreferencesAsync();
 
-  static const key = 'gymrecords_user_state_v1';
+  // Phase 1 Web validation shares an origin with the classic main site.
+  // A separate key prevents v2 snapshots from overwriting v1 user data.
+  static const key = bool.fromEnvironment('GYM_PHASE1_PREVIEW')
+      ? 'gymrecords_user_state_phase1_v2'
+      : 'gymrecords_user_state_v1';
   final SharedPreferencesAsync _preferences;
 
   @override
