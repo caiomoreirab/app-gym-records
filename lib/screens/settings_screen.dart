@@ -88,7 +88,7 @@ class SettingsScreen extends StatelessWidget {
               leading: const Icon(Icons.file_download_outlined,
                 color: AppTheme.electricLime),
               title: const Text('Exportar meus treinos'),
-              subtitle: const Text('CSV e PDF com cargas, repetições e datas • gratuito'),
+              subtitle: const Text('CSV gratuito; PDF completo na demonstração Pro'),
               trailing: const Icon(Icons.chevron_right_rounded),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(builder: (_) => const ProExportScreen()),
