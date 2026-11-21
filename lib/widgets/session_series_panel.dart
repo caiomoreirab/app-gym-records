@@ -124,7 +124,8 @@ class SessionSeriesPanel extends StatelessWidget {
     await app.flushPendingWrites();
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: const Text('Série excluída.'),
+      content: Text(app.persistenceError == null
+        ? 'Série excluída.' : 'Falha ao salvar exclusão no dispositivo.'),
       action: SnackBarAction(label: 'Desfazer',
         onPressed: () => app.restoreRecord(machine, removed)),
     ));
