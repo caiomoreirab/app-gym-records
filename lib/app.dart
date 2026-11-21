@@ -53,28 +53,12 @@ class _GymRecordsAppState extends State<GymRecordsApp> {
         builder: (context, _) => MaterialApp(
           title: 'GymRecords',
           debugShowCheckedModeBanner: false,
-          theme: _controller.highContrast
-              ? AppTheme.dark.copyWith(
-                  colorScheme: AppTheme.dark.colorScheme.copyWith(
-                    onSurface: Colors.white,
-                    outline: Colors.white,
-                  ),
-                  dividerColor: Colors.white70,
-                )
-              : AppTheme.dark,
+          theme: AppTheme.dark,
           themeMode: ThemeMode.dark,
           locale: _controller.appLocale,
           supportedLocales: const [Locale('pt', 'BR'), Locale('en', 'US'), Locale('es', 'ES')],
           localizationsDelegates: GlobalMaterialLocalizations.delegates,
           scrollBehavior: const GymRecordsScrollBehavior(),
-          builder: (context, child) {
-            final media = MediaQuery.of(context);
-            final factor = media.textScaler.scale(1) * (_controller.largeText ? 1.18 : 1.0);
-            return MediaQuery(
-              data: media.copyWith(textScaler: TextScaler.linear(factor)),
-              child: child ?? const SizedBox.shrink(),
-            );
-          },
           home: const SplashScreen(),
         ),
       ),

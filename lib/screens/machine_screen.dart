@@ -13,9 +13,6 @@ import '../widgets/page_body.dart';
 import '../widgets/primary_bottom_bar.dart';
 import '../widgets/record_achievement_sheet.dart';
 import '../widgets/section_card.dart';
-import '../widgets/workout_series_panel.dart';
-import '../widgets/rest_timer_card.dart';
-import '../widgets/local_machine_photo_card.dart';
 import 'exercise_insights_screen.dart';
 import 'pro_overview_screen.dart';
 
@@ -31,10 +28,6 @@ class MachineScreen extends StatefulWidget {
 class _MachineScreenState extends State<MachineScreen> {
   bool _initialized = false;
   bool _saving = false;
-  bool _isWarmup = false;
-  int _detailTab = 0;
-  double? _rpe;
-  String _setNote = '';
   double _weight = 0;
   int? _repetitions;
   bool _showAdditionalWeight = false;
@@ -48,10 +41,8 @@ class _MachineScreenState extends State<MachineScreen> {
     final machine = AppScope.of(context).machineById(widget.machineId);
     final latest = machine.latestRecord;
     _weight = latest?.weight ?? 0;
-    _repetitions = latest?.repetitions ?? (machine.prefersBodyMetrics ? null : 10);
+    _repetitions = latest?.repetitions ?? (machine.prefersBodyMetrics ? null : machine.supportsRepetitions ? 10 : null);
     _showAdditionalWeight = latest?.hasWeight ?? false;
-    _rpe = latest?.rpe;
-    _setNote = latest?.note ?? '';
     final duration = latest?.duration;
     _minutes = duration?.inMinutes ?? 0;
     _seconds = duration?.inSeconds.remainder(60) ?? 0;
@@ -62,6 +53,7 @@ class _MachineScreenState extends State<MachineScreen> {
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
     final machine = app.machineById(widget.machineId);
+    final records = [...machine.records]..sort((a, b) => b.date.compareTo(a.date));
 
     return Scaffold(
       backgroundColor: AppTheme.deepNavy,
@@ -69,13 +61,6 @@ class _MachineScreenState extends State<MachineScreen> {
         leading: const BackButton(),
         title: Text(machine.localizedName(Localizations.localeOf(context))),
         actions: [
-          IconButton(
-            tooltip: app.isFavorite(machine.id)
-                ? 'Remover dos favoritos' : 'Adicionar aos favoritos',
-            icon: Icon(app.isFavorite(machine.id) ? Icons.star_rounded : Icons.star_border_rounded,
-                color: AppTheme.electricLime),
-            onPressed: () => app.toggleFavorite(machine.id),
-          ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert_rounded),
             onSelected: (value) {
@@ -89,159 +74,80 @@ class _MachineScreenState extends State<MachineScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: _detailTab == 0
-          ? PrimaryBottomBar(
-              label: 'Salvar série',
-              onPressed: !_saving && _canSave(machine) ? () => _saveRecord(machine) : null,
-            )
-          : null,
+      bottomNavigationBar: PrimaryBottomBar(
+        label: context.strings.saveRecord,
+        onPressed: !_saving && _canSave(machine) ? () => _saveRecord(machine) : null,
+      ),
       body: PageBody(
         child: ListView(
-          padding: const EdgeInsets.only(bottom: 32),
+          padding: const EdgeInsets.only(bottom: 28),
           children: [
             ExerciseVisualPager(
               machine: machine,
               width: double.infinity,
-              height: 165,
+              height: 250,
               fit: BoxFit.cover,
               showLabel: true,
             ),
-            const SizedBox(height: 12),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(children: [
-                for (var index = 0; index < 4; index++) ...[
-                  ChoiceChip(
-                    selected: _detailTab == index,
-                    onSelected: (_) => setState(() => _detailTab = index),
-                    label: Text(const ['Registrar', 'Séries', 'Histórico', 'Recordes'][index]),
-                    selectedColor: AppTheme.electricLime,
-                    labelStyle: TextStyle(color: _detailTab == index
-                        ? AppTheme.deepNavy : AppTheme.polarWhite),
-                  ),
-                  const SizedBox(width: 6),
-                ],
-              ]),
+            const SizedBox(height: 16),
+            _RecordCard(machine: machine, unit: app.unit),
+            const SizedBox(height: 16),
+            _NoteCard(note: machine.note, onEdit: () => _editNote(machine)),
+            const SizedBox(height: 16),
+            _WeightCard(
+              machine: machine,
+              showAdditionalWeight: _showAdditionalWeight,
+              onToggleAdditionalWeight: () => setState(() { _showAdditionalWeight = !_showAdditionalWeight; if (!_showAdditionalWeight) _weight = 0; }),
+              weight: _weight,
+              unit: app.unit,
+              increment: app.increment,
+              repetitions: _repetitions,
+              minutes: _minutes,
+              seconds: _seconds,
+              onWeightChanged: (value) => setState(() => _weight = value.clamp(0, 250).toDouble()),
+              onTapWeight: _editWeight,
+              onRepetitionsChanged: (value) => setState(() => _repetitions = value),
+              onMinutesChanged: (value) => setState(() => _minutes = value.clamp(0, 999)),
+              onSecondsChanged: (value) => setState(() => _seconds = value.clamp(0, 59)),
             ),
-            const SizedBox(height: 15),
-            if (_detailTab == 0) ...[
-              _RecordCard(machine: machine, unit: app.unit),
-              const SizedBox(height: 14),
-              _WeightCard(
-                machine: machine,
-                showAdditionalWeight: _showAdditionalWeight,
-                onToggleAdditionalWeight: () => setState(() {
-                  _showAdditionalWeight = !_showAdditionalWeight;
-                  if (!_showAdditionalWeight) _weight = 0;
-                }),
-                weight: _weight,
-                unit: app.unit,
-                increment: app.increment,
-                repetitions: _repetitions,
-                minutes: _minutes,
-                seconds: _seconds,
-                onWeightChanged: (value) => setState(
-                    () => _weight = value.clamp(0, 250).toDouble()),
-                onTapWeight: _editWeight,
-                onRepetitionsChanged: (value) => setState(() => _repetitions = value),
-                onMinutesChanged: (value) => setState(
-                    () => _minutes = value.clamp(0, 999)),
-                onSecondsChanged: (value) => setState(
-                    () => _seconds = value.clamp(0, 59)),
-              ),
-              const SizedBox(height: 8),
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Série de aquecimento'),
-                subtitle: const Text('Não conta para os recordes.'),
-                value: _isWarmup,
-                onChanged: (value) =>
-                    setState(() => _isWarmup = value ?? false),
-              ),
-              const SizedBox(height: 8),
-              Text('Esforço percebido (RPE) · opcional',
-                style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 6),
-              SingleChildScrollView(scrollDirection: Axis.horizontal,
-                child: Row(children: [
-                  for (final level in <double>[6, 7, 8, 9, 10]) ...[
-                    ChoiceChip(
-                      label: Text('${level.toInt()}'),
-                      selected: _rpe == level,
-                      onSelected: (selected) =>
-                        setState(() => _rpe = selected ? level : null),
-                    ),
-                    const SizedBox(width: 7),
+            const SizedBox(height: 26),
+            Text(context.strings.t('Histórico', 'History', 'Historial'), style: Theme.of(context).textTheme.headlineMedium),
+            const SizedBox(height: 14),
+            if (records.isEmpty)
+              SectionCard(
+                child: Text(
+                  context.strings.t('Nenhum registro salvo neste exercício.', 'No records saved for this exercise.', 'No hay registros guardados para este ejercicio.'),
+                  style: const TextStyle(color: AppTheme.iceBlue),
+                ),
+              )
+            else
+              SectionCard(
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: [
+                    for (var i = 0; i < records.length; i++) ...[
+                      _HistoryRow(
+                        record: records[i],
+                        unit: app.unit,
+                        isRecord: _isHighlightRecord(machine, records[i]),
+                      ),
+                      if (i != records.length - 1) const Divider(height: 1),
+                    ],
                   ],
-                ]),
-              ),
-              const SizedBox(height: 10),
-              TextFormField(
-                initialValue: _setNote,
-                maxLength: 160,
-                maxLines: 2,
-                onChanged: (value) => _setNote = value,
-                decoration: const InputDecoration(
-                  labelText: 'Observação desta série (opcional)',
-                  hintText: 'Ex.: execução controlada',
-                  prefixIcon: Icon(Icons.edit_note_outlined),
                 ),
               ),
-              const RestTimerCard(),
-              const SizedBox(height: 10),
-              _NoteCard(note: machine.note, onEdit: () => _editNote(machine)),
-              const SizedBox(height: 10),
-              _AdjustmentsCard(machine: machine,
-                  onEdit: () => _editAdjustments(machine)),
-              const SizedBox(height: 10),
-              LocalMachinePhotoCard(machine: machine),
-              if (machine.records.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                OutlinedButton.icon(
-                  onPressed: _saving ? null : () => _repeatLastSet(machine),
-                  icon: const Icon(Icons.repeat_rounded),
-                  label: const Text('Repetir última série'),
-                ),
-              ],
-            ] else if (_detailTab == 1) ...[
-              WorkoutSeriesPanel(
-                records: machine.records,
-                unit: app.unit,
-                sessionId: app.activeSessionId,
-                sessionNames: app.sessionNames,
-                showHistory: false,
-                onRepeat: _saving ? null : () => _repeatLastSet(machine),
-                onEdit: (record) => _editSeries(machine, record),
-                onDelete: (record) => _deleteSeries(machine, record),
-              ),
-            ] else if (_detailTab == 2) ...[
-              WorkoutSeriesPanel(
-                records: machine.records,
-                unit: app.unit,
-                sessionId: app.activeSessionId,
-                sessionNames: app.sessionNames,
-                showCurrent: false,
-                onRepeat: _saving ? null : () => _repeatLastSet(machine),
-                onEdit: (record) => _editSeries(machine, record),
-                onDelete: (record) => _deleteSeries(machine, record),
-              ),
-            ] else ...[
-              _StrengthRecordsSummary(machine: machine, unit: app.unit),
-              const SizedBox(height: 14),
-              _MachineProCard(
-                machine: machine,
-                unit: app.unit,
-                increment: app.increment,
-                enabled: app.isPro,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => app.isPro
-                        ? ExerciseInsightsScreen(machineId: machine.id)
-                        : const ProOverviewScreen(),
-                  ),
+            const SizedBox(height: 18),
+            _MachineProCard(
+              machine: machine,
+              unit: app.unit,
+              increment: app.increment,
+              enabled: app.isPro,
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => app.isPro ? ExerciseInsightsScreen(machineId: machine.id) : const ProOverviewScreen(),
                 ),
               ),
-            ],
+            ),
           ],
         ),
       ),
@@ -253,11 +159,11 @@ class _MachineScreenState extends State<MachineScreen> {
     if (machine.prefersBodyMetrics) {
       return _weight > 0 || (_repetitions ?? 0) > 0 || durationSeconds > 0;
     }
-    return _weight > 0 && (_repetitions ?? 0) > 0;
+    return _weight > 0;
   }
 
   bool _isHighlightRecord(Machine machine, WorkoutRecord record) {
-    if (!record.isWarmup && record.hasWeight && record.weight == machine.recordWeight) return true;
+    if (record.hasWeight && record.weight == machine.recordWeight) return true;
     if (machine.recordWeight == 0 && record.hasRepetitions && record.repetitions == machine.bestRepetitions) return true;
     if (machine.recordWeight == 0 && machine.bestRepetitions == 0 && record.hasDuration && record.durationSeconds == machine.bestDurationSeconds) return true;
     return false;
@@ -273,14 +179,11 @@ class _MachineScreenState extends State<MachineScreen> {
     final previousDurationSeconds = machine.bestDurationSeconds;
     final durationSeconds = _minutes * 60 + _seconds;
 
-    final saved = app.addRecord(
+    app.addRecord(
       machine,
       weight: _weight,
       repetitions: (_repetitions ?? 0) > 0 ? _repetitions : null,
       durationSeconds: durationSeconds > 0 ? durationSeconds : null,
-      isWarmup: _isWarmup,
-      rpe: _rpe,
-      note: _setNote,
     );
     // Do not announce a successful save or PR until the local database
     // acknowledges the write. Retain the in-memory record for recovery.
@@ -295,9 +198,8 @@ class _MachineScreenState extends State<MachineScreen> {
     }
     HapticFeedback.lightImpact();
 
-    final isNewWeight = !_isWarmup && _weight > 0 && _weight > previousWeight;
-    final isNewReps = !_isWarmup && (_repetitions ?? 0) > 0 &&
-        _repetitions! > previousRepetitions;
+    final isNewWeight = _weight > 0 && _weight > previousWeight;
+    final isNewReps = (_repetitions ?? 0) > 0 && _repetitions! > previousRepetitions;
     final isNewDuration = durationSeconds > 0 && durationSeconds > previousDurationSeconds;
 
     if (isNewWeight || isNewReps || isNewDuration) {
@@ -309,161 +211,17 @@ class _MachineScreenState extends State<MachineScreen> {
         previousDurationSeconds: previousDurationSeconds,
         metric: isNewWeight ? StrengthAchievementMetric.weight : isNewReps ? StrengthAchievementMetric.repetitions : StrengthAchievementMetric.duration,
       );
-      if (mounted) {
-        setState(() => _detailTab = 1);
-        _savedUndoSnackBar(app, machine, saved);
-      }
+      if (mounted) setState(() {});
       return;
     }
 
-    _savedUndoSnackBar(app, machine, saved);
-    setState(() => _detailTab = 1);
-
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.strings.t('Registro salvo.', 'Record saved.', 'Registro guardado.'))),
+    );
+    setState(() {});
     } finally {
       if (mounted) setState(() => _saving = false);
     }
-  }
-
-  void _savedUndoSnackBar(AppController app, Machine machine, WorkoutRecord saved) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: const Text('Série registrada e salva no dispositivo.'),
-      action: SnackBarAction(label: 'Desfazer',
-        onPressed: () => app.removeRecord(machine, saved)),
-    ));
-  }
-
-
-  Future<void> _repeatLastSet(Machine machine) async {
-    if (_saving || machine.records.isEmpty) return;
-    final now = DateTime.now();
-    final todays = machine.records.where(
-      (r) => WorkoutRecord.dayKey(r.date) == WorkoutRecord.dayKey(now),
-    ).toList()..sort((a, b) => b.date.compareTo(a.date));
-    final last = todays.isNotEmpty ? todays.first : machine.latestRecord!;
-    setState(() => _saving = true);
-    try {
-      final app = AppScope.of(context);
-      final repeated = app.addRecord(machine,
-        weight: last.weight,
-        repetitions: last.repetitions,
-        durationSeconds: last.durationSeconds,
-        isWarmup: last.isWarmup,
-        rpe: last.rpe,
-        note: last.note,
-      );
-      await app.flushPendingWrites();
-      if (!mounted) return;
-      if (app.persistenceError == null) {
-        _savedUndoSnackBar(app, machine, repeated);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Erro de armazenamento. Verifique seus dados.'),
-        ));
-      }
-      setState(() {
-        _weight = last.weight;
-        _repetitions = last.repetitions;
-        _isWarmup = last.isWarmup;
-      });
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
-
-  Future<void> _editSeries(Machine machine, WorkoutRecord record) async {
-    final weightController = TextEditingController(text: record.weight.toString());
-    final repsController = TextEditingController(text: record.repetitions?.toString() ?? '');
-    var warmup = record.isWarmup;
-    final updated = await showDialog<WorkoutRecord>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: AppTheme.surfaceNavy,
-          title: const Text('Editar série'),
-          content: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(
-              controller: weightController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: 'Carga (kg)'),
-            ),
-            TextField(
-              controller: repsController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Repetições'),
-            ),
-            CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Aquecimento'),
-              value: warmup,
-              onChanged: (v) => setDialogState(() => warmup = v ?? false),
-            ),
-          ]),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: () {
-                final weight = double.tryParse(
-                  weightController.text.replaceAll(',', '.'));
-                final reps = int.tryParse(repsController.text);
-                if (weight == null || weight < 0 || weight > 250 ||
-                    (reps != null && (reps <= 0 || reps > 500))) return;
-                if (weight == 0 && reps == null) return;
-                Navigator.pop(dialogContext, record.copyWith(
-                  weight: weight,
-                  repetitions: reps,
-                  isWarmup: warmup,
-                ));
-              },
-              child: const Text('Salvar alterações'),
-            ),
-          ],
-        ),
-      ),
-    );
-    weightController.dispose();
-    repsController.dispose();
-    if (updated == null || !mounted) return;
-    final app = AppScope.of(context);
-    app.updateRecord(machine, record, updated);
-    await app.flushPendingWrites();
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
-        app.persistenceError == null ? 'Série atualizada.' : 'Não foi possível salvar no dispositivo.',
-      )));
-    }
-  }
-
-  Future<void> _deleteSeries(Machine machine, WorkoutRecord record) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: AppTheme.surfaceNavy,
-        title: const Text('Excluir esta série?'),
-        content: const Text('Você poderá desfazer a exclusão logo em seguida.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Excluir')),
-        ],
-      ),
-    );
-    if (confirm != true || !mounted) return;
-    final app = AppScope.of(context);
-    app.removeRecord(machine, record);
-    await app.flushPendingWrites();
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(app.persistenceError == null
-          ? 'Série excluída.' : 'Falha ao persistir exclusão.'),
-      action: SnackBarAction(
-        label: 'Desfazer',
-        onPressed: () => app.restoreRecord(machine, record),
-      ),
-    ));
   }
 
   Future<void> _editWeight() async {
@@ -493,60 +251,6 @@ class _MachineScreenState extends State<MachineScreen> {
     );
     controller.dispose();
     if (value != null && mounted) setState(() => _weight = value.clamp(0, 250).toDouble());
-  }
-
-  Future<void> _editAdjustments(Machine machine) async {
-    const labels = <String, String>{
-      'seat': 'Altura do banco/assento',
-      'backrest': 'Posição do encosto',
-      'grip': 'Pegada',
-      'other': 'Outra regulagem',
-    };
-    final controllers = {
-      for (final entry in labels.entries)
-        entry.key: TextEditingController(text: machine.adjustments[entry.key] ?? ''),
-    };
-    try {
-      final result = await showDialog<Map<String, String>>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          backgroundColor: AppTheme.surfaceNavy,
-          title: const Text('Ficha de regulagem'),
-          content: SingleChildScrollView(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              const Text('Guarde como você deixou o aparelho para repetir na próxima visita.'),
-              const SizedBox(height: 12),
-              for (final entry in labels.entries)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: TextField(
-                    controller: controllers[entry.key],
-                    maxLength: 120,
-                    decoration: InputDecoration(labelText: entry.value),
-                  ),
-                ),
-            ]),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.of(dialogContext).pop(),
-                child: const Text('Cancelar')),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop({
-                for (final entry in controllers.entries) entry.key: entry.value.text.trim(),
-              }),
-              child: const Text('Salvar regulagens'),
-            ),
-          ],
-        ),
-      );
-      if (result != null && mounted) {
-        AppScope.of(context).updateMachineAdjustments(machine, result);
-      }
-    } finally {
-      for (final controller in controllers.values) {
-        controller.dispose();
-      }
-    }
   }
 
   Future<void> _editNote(Machine machine) async {
@@ -609,91 +313,6 @@ class _MachineScreenState extends State<MachineScreen> {
       Navigator.of(context).pop();
     }
   }
-}
-
-class _AdjustmentsCard extends StatelessWidget {
-  const _AdjustmentsCard({required this.machine, required this.onEdit});
-  final Machine machine;
-  final VoidCallback onEdit;
-
-  @override
-  Widget build(BuildContext context) {
-    final values = machine.adjustments.values.where((v) => v.trim().isNotEmpty);
-    return SectionCard(
-      child: ListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: const Icon(Icons.tune_rounded, color: AppTheme.electricLime),
-        title: const Text('Minha regulagem do aparelho'),
-        subtitle: Text(values.isEmpty
-            ? 'Anote banco, encosto e pegada para a próxima vez.'
-            : machine.adjustments.entries.where((e) => e.value.isNotEmpty)
-                .map((e) => '${const <String, String>{
-                  'seat': 'Banco', 'backrest': 'Encosto',
-                  'grip': 'Pegada', 'other': 'Outro',
-                }[e.key] ?? e.key}: ${e.value}').join(' · '),
-            maxLines: 3, overflow: TextOverflow.ellipsis),
-        trailing: const Icon(Icons.edit_outlined),
-        onTap: onEdit,
-      ),
-    );
-  }
-}
-
-class _StrengthRecordsSummary extends StatelessWidget {
-  const _StrengthRecordsSummary({required this.machine, required this.unit});
-  final Machine machine;
-  final String unit;
-
-  @override
-  Widget build(BuildContext context) {
-    final working = machine.records.where((r) => !r.isWarmup && r.weight > 0).toList();
-    if (working.isEmpty) {
-      return SectionCard(child: const Text(
-        'Registre uma série de trabalho para comparar seus recordes.',
-      ));
-    }
-    var maxWeight = 0.0;
-    var maxRange = 0.0;
-    var estimatedOneRm = 0.0;
-    for (final r in working) {
-      if (r.weight > maxWeight) maxWeight = r.weight;
-      final reps = r.repetitions ?? 0;
-      if (reps >= 8 && reps <= 12 && r.weight > maxRange) maxRange = r.weight;
-      if (reps >= 1 && reps <= 12) {
-        final estimate = r.weight * (1 + reps / 30);
-        if (estimate > estimatedOneRm) estimatedOneRm = estimate;
-      }
-    }
-    return SectionCard(child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Seus recordes', style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 8),
-        const Text('Séries de aquecimento não entram nos cálculos.',
-            style: TextStyle(color: AppTheme.iceBlue, fontSize: 12)),
-        const SizedBox(height: 14),
-        _recordLine('Maior carga', '${maxWeight.toStringAsFixed(1)} $unit'),
-        _recordLine('Maior carga (8–12 reps)',
-            maxRange > 0 ? '${maxRange.toStringAsFixed(1)} $unit' : 'Sem dados'),
-        _recordLine('Carga máxima estimada (1RM)',
-            estimatedOneRm > 0
-                ? '${estimatedOneRm.toStringAsFixed(1)} $unit'
-                : 'Sem dados'),
-        const Text('1RM estimado pela fórmula de Epley, com séries de 1 a 12 repetições. '
-                   'É uma estimativa, não uma recomendação de tentativa máxima.',
-            style: TextStyle(color: AppTheme.iceBlue, fontSize: 11)),
-      ],
-    ));
-  }
-
-  Widget _recordLine(String label, String value) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
-    child: Row(children: [
-      Expanded(child: Text(label)),
-      Text(value, style: const TextStyle(
-        color: AppTheme.electricLime, fontWeight: FontWeight.w600)),
-    ]),
-  );
 }
 
 class _MachineProCard extends StatelessWidget {
@@ -854,6 +473,7 @@ class _WeightCard extends StatelessWidget {
     required this.onMinutesChanged,
     required this.onSecondsChanged,
   });
+
   final Machine machine;
   final bool showAdditionalWeight;
   final VoidCallback onToggleAdditionalWeight;
@@ -861,7 +481,8 @@ class _WeightCard extends StatelessWidget {
   final String unit;
   final double increment;
   final int? repetitions;
-  final int minutes, seconds;
+  final int minutes;
+  final int seconds;
   final ValueChanged<double> onWeightChanged;
   final VoidCallback onTapWeight;
   final ValueChanged<int?> onRepetitionsChanged;
@@ -870,93 +491,90 @@ class _WeightCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final weightVisible = !machine.prefersBodyMetrics || showAdditionalWeight;
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      if (machine.prefersBodyMetrics) ...[
-        OutlinedButton.icon(
-          onPressed: onToggleAdditionalWeight,
-          icon: Icon(showAdditionalWeight
-            ? Icons.remove_circle_outline_rounded : Icons.add_circle_outline_rounded),
-          label: Text(showAdditionalWeight
-            ? 'Remover carga adicional' : 'Adicionar carga extra (opcional)'),
-        ),
-        const SizedBox(height: 10),
-      ],
-      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        if (weightVisible) ...[
-          Expanded(child: _NeonValuePanel(
-            label: 'Carga ($unit)',
-            value: formatWeight(weight, Localizations.localeOf(context)),
-            onMinus: () => onWeightChanged((weight - increment).clamp(0, 250).toDouble()),
-            onPlus: () => onWeightChanged((weight + increment).clamp(0, 250).toDouble()),
-            onValueTap: onTapWeight,
-          )),
-          if (machine.supportsRepetitions) const SizedBox(width: 10),
+    return SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (machine.prefersBodyMetrics) ...[
+            OutlinedButton.icon(
+              onPressed: onToggleAdditionalWeight,
+              icon: Icon(showAdditionalWeight ? Icons.remove_circle_outline_rounded : Icons.add_circle_outline_rounded),
+              label: Text(showAdditionalWeight ? context.strings.t('Remover carga adicional', 'Remove extra load', 'Quitar carga adicional') : context.strings.t('Adicionar carga extra (opcional)', 'Add extra load (optional)', 'Añadir carga extra (opcional)')),
+            ),
+            if (showAdditionalWeight) const SizedBox(height: 12),
+          ],
+          if (!machine.prefersBodyMetrics || showAdditionalWeight) ...[
+            Text(machine.prefersBodyMetrics ? context.strings.t('Carga adicional', 'Additional load', 'Carga adicional') : context.strings.t('Peso', 'Weight', 'Peso'), style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                _RoundControl(icon: Icons.remove_rounded, onTap: () => onWeightChanged((weight - increment).clamp(0, 250).toDouble())),
+                Expanded(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: onTapWeight,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Text.rich(
+                        TextSpan(children: [
+                          TextSpan(text: formatWeight(weight, Localizations.localeOf(context)), style: const TextStyle(color: AppTheme.polarWhite, fontSize: 66, fontWeight: FontWeight.w600, height: 1)),
+                          TextSpan(text: ' $unit', style: const TextStyle(color: AppTheme.iceBlue, fontSize: 20)),
+                        ]),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+                ),
+                _RoundControl(icon: Icons.add_rounded, onTap: () => onWeightChanged((weight + increment).clamp(0, 250).toDouble())),
+              ],
+            ),
+            Slider(value: weight.clamp(0, 250).toDouble(), min: 0, max: 250, divisions: 100, onChanged: onWeightChanged),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4),
+              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('0', style: TextStyle(color: AppTheme.iceBlue)), Text('250', style: TextStyle(color: AppTheme.iceBlue))]),
+            ),
+            if (!machine.prefersBodyMetrics) ...[
+              const SizedBox(height: 12),
+              Row(children: [Text(context.strings.t('Incremento', 'Increment', 'Incremento'), style: const TextStyle(color: AppTheme.iceBlue)), const Spacer(), _IncrementChip(label: '1', selected: increment == 1), const SizedBox(width: 8), _IncrementChip(label: '2,5', selected: increment == 2.5), const SizedBox(width: 8), _IncrementChip(label: '5', selected: increment == 5)]),
+            ],
+          ],
+          if (machine.supportsRepetitions) ...[
+            if (!machine.prefersBodyMetrics || showAdditionalWeight) const SizedBox(height: 18),
+            if (!machine.prefersBodyMetrics || showAdditionalWeight) const Divider(),
+            if (!machine.prefersBodyMetrics || showAdditionalWeight) const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: Text.rich(
+                    TextSpan(children: [TextSpan(text: context.strings.t('Repetições ', 'Repetitions ', 'Repeticiones ')), TextSpan(text: '(${context.strings.optional})', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.iceBlue))]),
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                _RoundControl(icon: Icons.remove_rounded, onTap: () { final value = repetitions ?? 0; onRepetitionsChanged(value <= 1 ? null : value - 1); }),
+                SizedBox(width: 62, child: Text(repetitions?.toString() ?? '—', textAlign: TextAlign.center, style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w600))),
+                _RoundControl(icon: Icons.add_rounded, onTap: () => onRepetitionsChanged((repetitions ?? 0) + 1)),
+              ],
+            ),
+          ],
+          if (machine.supportsDuration) ...[
+            const SizedBox(height: 18),
+            const Divider(),
+            const SizedBox(height: 16),
+            Text.rich(
+              TextSpan(children: [TextSpan(text: context.strings.t('Tempo ', 'Duration ', 'Tiempo ')), TextSpan(text: '(${context.strings.optional})', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.iceBlue))]),
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(child: _TimeStepper(label: context.strings.t('Minutos', 'Minutes', 'Minutos'), value: minutes, onDecrement: () => onMinutesChanged(minutes - 1), onIncrement: () => onMinutesChanged(minutes + 1))),
+                const SizedBox(width: 12),
+                Expanded(child: _TimeStepper(label: context.strings.t('Segundos', 'Seconds', 'Segundos'), value: seconds, onDecrement: () => onSecondsChanged(seconds - 1), onIncrement: () => onSecondsChanged(seconds + 1))),
+              ],
+            ),
+          ],
         ],
-        if (machine.supportsRepetitions)
-          Expanded(child: _NeonValuePanel(
-            label: 'Repetições',
-            value: repetitions?.toString() ?? '—',
-            onMinus: () {
-              final value = repetitions ?? 0;
-              onRepetitionsChanged(value <= 1 ? null : value - 1);
-            },
-            onPlus: () => onRepetitionsChanged((repetitions ?? 0) + 1),
-          )),
-      ]),
-      if (machine.supportsDuration) ...[
-        const SizedBox(height: 14),
-        SectionCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Duração (opcional)',
-              style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 10),
-            Row(children: [
-              Expanded(child: _TimeStepper(label: 'Minutos', value: minutes,
-                onDecrement: () => onMinutesChanged(minutes - 1),
-                onIncrement: () => onMinutesChanged(minutes + 1))),
-              const SizedBox(width: 10),
-              Expanded(child: _TimeStepper(label: 'Segundos', value: seconds,
-                onDecrement: () => onSecondsChanged(seconds - 1),
-                onIncrement: () => onSecondsChanged(seconds + 1))),
-            ]),
-          ])),
-      ],
-    ]);
-  }
-}
-
-class _NeonValuePanel extends StatelessWidget {
-  const _NeonValuePanel({required this.label, required this.value,
-    required this.onMinus,required this.onPlus,this.onValueTap});
-  final String label, value;
-  final VoidCallback onMinus, onPlus;
-  final VoidCallback? onValueTap;
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-      decoration: BoxDecoration(color: AppTheme.surfaceNavy,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppTheme.electricLime, width: 1.25)),
-      child: Column(children: [
-        Text(label, style: const TextStyle(color: AppTheme.iceBlue,
-          fontSize: 13, fontWeight: FontWeight.w600)),
-        const SizedBox(height: 12),
-        InkWell(
-          onTap: onValueTap,
-          child: Text(value, maxLines: 1,
-            style: const TextStyle(fontSize: 38,
-              color: AppTheme.polarWhite, fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center),
-        ),
-        const SizedBox(height: 10),
-        Row(children: [
-          Expanded(child: _RoundControl(icon: Icons.remove_rounded, onTap: onMinus)),
-          const SizedBox(width: 12),
-          Expanded(child: _RoundControl(icon: Icons.add_rounded, onTap: onPlus)),
-        ]),
-      ]),
+      ),
     );
   }
 }

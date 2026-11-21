@@ -43,11 +43,9 @@ class Machine {
     this.subgroupEn = '',
     this.aliases = const <String>[],
     this.note = '',
-    Map<String, String>? adjustments,
     List<WorkoutRecord>? records,
     this.isCustom = false,
-  }) : adjustments = adjustments ?? <String, String>{},
-       records = records ?? <WorkoutRecord>[];
+  }) : records = records ?? <WorkoutRecord>[];
 
   final String id;
   String name;
@@ -60,8 +58,6 @@ class Machine {
   final String subgroupEn;
   final List<String> aliases;
   String note;
-  /// Local structured equipment adjustments, independent of workout sets.
-  final Map<String, String> adjustments;
   final List<WorkoutRecord> records;
   final bool isCustom;
 
@@ -111,18 +107,18 @@ class Machine {
       };
 
   bool get supportsWeight => !prefersBodyMetrics || records.any((record) => record.hasWeight);
-  bool get supportsRepetitions => true;
+  bool get supportsRepetitions => prefersBodyMetrics || equipment != EquipmentType.machine;
   bool get supportsDuration => prefersBodyMetrics;
 
 
   double get recordWeight {
-    final values = records.where((record) => record.hasWeight && !record.isWarmup).map((record) => record.weight).toList();
+    final values = records.where((record) => record.hasWeight).map((record) => record.weight).toList();
     if (values.isEmpty) return 0;
     return values.reduce((current, next) => next > current ? next : current);
   }
 
   int get bestRepetitions {
-    final values = records.where((record) => record.hasRepetitions && !record.isWarmup).map((record) => record.repetitions!).toList();
+    final values = records.where((record) => record.hasRepetitions).map((record) => record.repetitions!).toList();
     if (values.isEmpty) return 0;
     values.sort();
     return values.last;

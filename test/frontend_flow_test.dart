@@ -62,9 +62,9 @@ void main() {
     expect(controller.displayName, 'Caio');
     expect(controller.illustrationStyle, IllustrationStyle.feminine);
     expect(controller.onboardingComplete, isTrue);
-    expect(find.text('Olá, Caio! 👋'), findsOneWidget);
-    expect(find.byKey(const Key('review_search_exercises')), findsOneWidget);
-    expect(find.byKey(const Key('start_training')), findsOneWidget);
+    expect(find.text('Caio'), findsOneWidget);
+    expect(find.text('Registre sua execução'), findsOneWidget);
+    expect(find.byKey(const Key('globalExerciseSearch')), findsOneWidget);
     // The Pro card may be outside the visible viewport on compact testers.
     // The search field and welcome copy confirm that Home is mounted.
     expect(find.byType(IllustrationStyleScreen), findsNothing);

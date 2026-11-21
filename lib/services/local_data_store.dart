@@ -80,11 +80,7 @@ class PreferencesLocalDataStore implements LocalDataStore {
   PreferencesLocalDataStore({SharedPreferencesAsync? preferences})
       : _preferences = preferences ?? SharedPreferencesAsync();
 
-  static const bool isReviewBuild = bool.fromEnvironment('GYM_IS_REVIEW',
-      defaultValue: false);
-  static const key = isReviewBuild
-      ? 'gymrecords_user_state_v1_review'
-      : 'gymrecords_user_state_v1';
+  static const key = 'gymrecords_user_state_v1';
   final SharedPreferencesAsync _preferences;
 
   @override

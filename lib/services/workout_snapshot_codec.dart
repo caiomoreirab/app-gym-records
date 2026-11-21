@@ -16,25 +16,9 @@ class WorkoutSnapshotCodec {
     required List<Machine> machines,
     required List<CardioActivity> cardioActivities,
     Map<String, List<CardioRecord>> preservedCardio = const {},
-    Set<String> favorites = const {},
-    String? activeSessionId,
-    Map<String, String> sessionNames = const {},
-    Map<String, List<String>> sessionExercises = const {},
-    Map<String, double> targetWeights = const {},
-    Map<String, String> gyms = const {'default': 'Minha academia'},
-    String selectedGymId = 'default',
-    Map<String, String> photoData = const {},
   }) =>
       {
         'schemaVersion': schemaVersion,
-        'favorites': favorites.toList()..sort(),
-        'activeSessionId': activeSessionId,
-        'sessionNames': sessionNames,
-        'sessionExercises': sessionExercises,
-        'targetWeights': targetWeights,
-        'gyms': gyms,
-        'selectedGymId': selectedGymId,
-        'photoData': photoData,
         'machines': [
           for (final machine in machines)
             {
@@ -42,19 +26,12 @@ class WorkoutSnapshotCodec {
               'custom': machine.isCustom,
               'name': machine.name,
               'note': machine.note,
-              'adjustments': machine.adjustments,
               'group': machine.group.name,
               'equipment': machine.equipment.name,
               'records': [
                 for (final r in machine.records)
                   {
-                    'id': r.id,
-                    'sessionId': r.sessionId.isEmpty ? WorkoutRecord.dayKey(r.date) : r.sessionId,
-                    'gymId': r.gymId,
                     'date': r.date.toUtc().toIso8601String(),
-                    'warmup': r.isWarmup,
-                    'rpe': r.rpe,
-                    'note': r.note,
                     'weight': r.weight,
                     'repetitions': r.repetitions,
                     'durationSeconds': r.durationSeconds,
@@ -149,46 +126,11 @@ class WorkoutSnapshotCodec {
       machine.name = name.trim();
       machine.nameEn = custom ? name.trim() : machine.nameEn;
       machine.note = note;
-      final rawAdjustments = m['adjustments'];
-      if (rawAdjustments != null) {
-        if (rawAdjustments is! Map || rawAdjustments.length > 12) {
-          throw const FormatException('Regulagens inválidas.');
-        }
-        for (final entry in rawAdjustments.entries) {
-          if (entry.key is! String || entry.value is! String ||
-              (entry.key as String).length > 40 ||
-              (entry.value as String).length > 120) {
-            throw const FormatException('Campo de regulagem inválido.');
-          }
-          machine.adjustments[entry.key as String] = entry.value as String;
-        }
-      }
-      machine.records.addAll(entries.asMap().entries.map((item) {
-        final value = item.value;
+      machine.records.addAll(entries.map((value) {
         if (value is! Map) throw const FormatException('Registro de treino inválido.');
         final r = Map<String, dynamic>.from(value);
-        final date = _date(r['date']);
-        final explicitId = r['id'];
-        final explicitSessionId = r['sessionId'];
-        final rpe = _number(r['rpe']);
-        if (rpe != null && (rpe < 1 || rpe > 10)) {
-          throw const FormatException('RPE fora de 1 a 10.');
-        }
-        final note = r['note'] ?? '';
-        if (note is! String || note.length > 1000) {
-          throw const FormatException('Anotação de série inválida.');
-        }
         return WorkoutRecord(
-          id: explicitId is String && explicitId.isNotEmpty
-              ? explicitId : 'legacy_${id}_${item.key}_${date.microsecondsSinceEpoch}',
-          sessionId: explicitSessionId is String && explicitSessionId.isNotEmpty
-              ? explicitSessionId : WorkoutRecord.dayKey(date),
-          gymId: r['gymId'] is String && (r['gymId'] as String).isNotEmpty
-              ? r['gymId'] as String : 'default',
-          date: date,
-          isWarmup: r['warmup'] == true,
-          rpe: rpe,
-          note: note,
+          date: _date(r['date']),
           weight: _nonNegativeNumber(r['weight']) ?? 0,
           repetitions: _nonNegativeInteger(r['repetitions']),
           durationSeconds: _nonNegativeInteger(r['durationSeconds']),
@@ -231,105 +173,7 @@ class WorkoutSnapshotCodec {
       }
       newCardio[entry.key as String] = records;
     }
-    final rawFavorites = input['favorites'];
-    final favorites = <String>{};
-    if (rawFavorites != null) {
-      if (rawFavorites is! List || rawFavorites.length > 2000 ||
-          rawFavorites.any((x) => x is! String)) {
-        throw const FormatException('Favoritos inválidos.');
-      }
-      favorites.addAll(rawFavorites.cast<String>());
-    }
-    final rawActiveId = input['activeSessionId'];
-    final rawNames = input['sessionNames'];
-    final rawExercises = input['sessionExercises'];
-    if (rawActiveId != null && (rawActiveId is! String || rawActiveId.length > 100)) {
-      throw const FormatException('Sessão ativa inválida.');
-    }
-    final names = <String, String>{};
-    if (rawNames != null) {
-      if (rawNames is! Map || rawNames.length > 2000) {
-        throw const FormatException('Nomes de sessão inválidos.');
-      }
-      for (final entry in rawNames.entries) {
-        if (entry.key is! String || entry.value is! String ||
-            (entry.key as String).length > 100 || (entry.value as String).length > 100) {
-          throw const FormatException('Nome de sessão inválido.');
-        }
-        names[entry.key as String] = entry.value as String;
-      }
-    }
-    final plans = <String, List<String>>{};
-    if (rawExercises != null) {
-      if (rawExercises is! Map || rawExercises.length > 2000) {
-        throw const FormatException('Planos de sessão inválidos.');
-      }
-      for (final entry in rawExercises.entries) {
-        if (entry.key is! String || entry.value is! List ||
-            (entry.key as String).length > 100 ||
-            (entry.value as List).length > 200 ||
-            (entry.value as List).any((e) => e is! String || e.length > 120)) {
-          throw const FormatException('Exercícios de sessão inválidos.');
-        }
-        plans[entry.key as String] = (entry.value as List).cast<String>();
-      }
-    }
-    final goals = <String, double>{};
-    final rawGoals = input['targetWeights'];
-    if (rawGoals != null) {
-      if (rawGoals is! Map || rawGoals.length > 2000) {
-        throw const FormatException('Metas inválidas.');
-      }
-      for (final entry in rawGoals.entries) {
-        if (entry.key is! String || entry.value is! num ||
-            !(entry.value as num).isFinite ||
-            (entry.value as num) <= 0 || (entry.value as num) > 10000 ||
-            (entry.key as String).length > 120) {
-          throw const FormatException('Meta de carga inválida.');
-        }
-        goals[entry.key as String] = (entry.value as num).toDouble();
-      }
-    }
-    final gyms = <String, String>{'default': 'Minha academia'};
-    final savedGyms = input['gyms'];
-    if (savedGyms != null) {
-      if (savedGyms is! Map || savedGyms.length > 30) {
-        throw const FormatException('Academias inválidas.');
-      }
-      for (final entry in savedGyms.entries) {
-        if (entry.key is! String || entry.value is! String ||
-            (entry.key as String).length > 100 ||
-            (entry.value as String).length > 120) {
-          throw const FormatException('Academia inválida.');
-        }
-        gyms[entry.key as String] = entry.value as String;
-      }
-    }
-    final requestedGym = input['selectedGymId'];
-    final selected = requestedGym is String && gyms.containsKey(requestedGym)
-      ? requestedGym : 'default';
-    return WorkoutRestoredState(newMachines, newCardio, favorites,
-        activeSessionId: rawActiveId as String?, sessionNames: names,
-        sessionExercises: plans, targetWeights: goals,
-        gyms: gyms, selectedGymId: selected,
-        photoData: _decodePhotoData(input['photoData']));
-  }
-
-  static Map<String, String> _decodePhotoData(Object? raw) {
-    if (raw == null) return {};
-    if (raw is! Map || raw.length > 25) {
-      throw const FormatException('Fotos locais inválidas.');
-    }
-    final result = <String, String>{};
-    for (final entry in raw.entries) {
-      if (entry.key is! String || entry.value is! String ||
-          (entry.key as String).length > 240 ||
-          (entry.value as String).length > 600000) {
-        throw const FormatException('Imagem de aparelho inválida.');
-      }
-      result[entry.key as String] = entry.value as String;
-    }
-    return result;
+    return WorkoutRestoredState(newMachines, newCardio);
   }
 
   static T _byName<T extends Enum>(List<T> values, Object? name) {
@@ -370,21 +214,9 @@ class WorkoutSnapshotCodec {
 }
 
 class WorkoutRestoredState {
-  WorkoutRestoredState(this.machines, this.cardio, this.favorites,
-      {this.activeSessionId, this.sessionNames = const {},
-       this.sessionExercises = const {}, this.targetWeights = const {},
-       this.gyms = const {'default': 'Minha academia'},
-       this.selectedGymId = 'default', this.photoData = const {}});
-  final Map<String, String> photoData;
-  final Map<String, String> gyms;
-  final String selectedGymId;
-  final Map<String, double> targetWeights;
-  final String? activeSessionId;
-  final Map<String, String> sessionNames;
-  final Map<String, List<String>> sessionExercises;
+  WorkoutRestoredState(this.machines, this.cardio);
   final List<Machine> machines;
   final Map<String, List<CardioRecord>> cardio;
-  final Set<String> favorites;
 
   /// Returns records for activities that no longer exist in this version.
   /// Callers must preserve these records in subsequent saves and backups.

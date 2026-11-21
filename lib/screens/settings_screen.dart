@@ -13,9 +13,6 @@ import 'evolution_screen.dart';
 import 'data_privacy_screen.dart';
 import 'pro_overview_screen.dart';
 import 'pro_export_screen.dart';
-import 'gym_profiles_screen.dart';
-import 'import_history_screen.dart';
-import 'review_experience.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -26,7 +23,6 @@ class SettingsScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppTheme.deepNavy,
-      bottomNavigationBar: const ReviewBottomNav(index: 4),
       appBar: AppBar(
         leading: const BackButton(),
         title: Text(context.strings.settings),
@@ -62,8 +58,6 @@ class SettingsScreen extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           app.displayName.isEmpty ? context.strings.user : app.displayName,
-                           maxLines: 2,
-                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
                       ],
@@ -78,59 +72,7 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            SectionCard(child: SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              secondary: const Icon(Icons.text_fields_rounded, color: AppTheme.electricLime),
-              title: const Text('Texto ampliado'),
-              subtitle: const Text('Aumenta o tamanho das letras em todo o aplicativo.'),
-              value: app.largeText,
-              onChanged: app.setLargeText,
-            )),
-            const SizedBox(height: 16),
-            SectionCard(child: SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              secondary: const Icon(Icons.contrast_rounded, color: AppTheme.electricLime),
-              title: const Text('Alto contraste'),
-              subtitle: const Text('Destaca textos e divisórias para facilitar a leitura.'),
-              value: app.highContrast,
-              onChanged: app.setHighContrast,
-            )),
-            const SizedBox(height: 16),
-            SectionCard(child: ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.location_city_rounded,
-                color: AppTheme.electricLime),
-              title: const Text('Minhas academias'),
-              subtitle: Text(app.selectedGymName),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                builder: (_) => const GymProfilesScreen())),
-            )),
-            const SizedBox(height: 16),
-            SectionCard(child: ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.upload_file_outlined,
-                color: AppTheme.electricLime),
-              title: const Text('Importar histórico CSV'),
-              subtitle: const Text('GymRecords, Hevy ou Strong · dados locais'),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                builder: (_) => const ImportHistoryScreen())),
-            )),
-            const SizedBox(height: 16),
             _ProSettingsCard(app: app),
-            const SizedBox(height: 16),
-            SectionCard(child: ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.file_download_outlined,
-                color: AppTheme.electricLime),
-              title: const Text('Exportar meus treinos'),
-              subtitle: const Text('Exportação CSV e PDF dos seus registros • grátis'),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const ProExportScreen()),
-              ),
-            )),
             const SizedBox(height: 16),
             SectionCard(
               child: ListTile(
@@ -319,7 +261,7 @@ class SettingsScreen extends StatelessWidget {
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
                       const Spacer(),
-                      const Text('GRÁTIS', style: TextStyle(color: AppTheme.iceBlue, fontSize: 11)),
+                      const ProPill(),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -332,6 +274,7 @@ class SettingsScreen extends StatelessWidget {
                     icon: Icons.table_chart_outlined,
                     title: context.strings.t('Exportar CSV', 'Export CSV'),
                     subtitle: context.strings.t('Planilha com seu histórico de registros', 'Spreadsheet with your workout history'),
+                    locked: !app.isPro,
                     onTap: () => _handleExport(context, app, 'CSV'),
                   ),
                   const Divider(height: 1),
@@ -339,6 +282,7 @@ class SettingsScreen extends StatelessWidget {
                     icon: Icons.picture_as_pdf_outlined,
                     title: context.strings.t('Exportar PDF', 'Export PDF'),
                     subtitle: context.strings.t('Relatório organizado de exercícios e recordes', 'Organized report of exercises and records'),
+                    locked: !app.isPro,
                     onTap: () => _handleExport(context, app, 'PDF'),
                   ),
                 ],
@@ -347,7 +291,7 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: 36),
             Center(
               child: Text(
-                context.strings.t('GymRecords 0.10.0 • Dados locais', 'GymRecords 0.10.0 • Local data', 'GymRecords 0.10.0 • Datos locales'),
+                context.strings.t('Versão de validação 0.9.1 • Dados locais', 'Validation build 0.9.1 • Local data', 'Versión de prueba 0.9.1 • Datos locales'),
                 style: const TextStyle(color: AppTheme.iceBlue),
               ),
             ),
@@ -398,7 +342,7 @@ class SettingsScreen extends StatelessWidget {
 
   static void _handleExport(BuildContext context, AppController app, String format) {
     Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => const ProExportScreen(),
+      builder: (_) => app.isPro ? const ProExportScreen() : const ProOverviewScreen(),
     ));
   }
 

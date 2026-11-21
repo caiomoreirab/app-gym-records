@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,7 +14,6 @@ import '../models/user_profile.dart';
 import '../models/workout_record.dart';
 import '../services/local_data_store.dart';
 import '../services/workout_snapshot_codec.dart';
-import '../services/csv_history_import_service.dart';
 import '../services/usage_events.dart';
 
 class AppController extends ChangeNotifier {
@@ -37,12 +35,7 @@ class AppController extends ChangeNotifier {
   static const _incrementKey = 'weight_increment';
   static const _proPreviewKey = 'pro_preview_enabled';
   static const _languageKey = 'language_code';
-  static const _largeTextKey = 'accessibility_large_text';
-  static const _highContrastKey = 'accessibility_high_contrast';
   static const _analyticsConsentKey = 'analytics_consent_v2';
-  static const _reviewBuild = bool.fromEnvironment('GYM_IS_REVIEW',
-      defaultValue: false);
-  static String _prefKey(String key) => _reviewBuild ? 'review_$key' : key;
 
   final bool persistenceEnabled;
   final SharedPreferencesAsync? _preferences;
@@ -63,137 +56,12 @@ class AppController extends ChangeNotifier {
   String unit = 'kg';
   String distanceUnit = 'km';
   double increment = 2.5;
-  bool isPro = false; // opt-in preview only; not a paid subscription
+  bool isPro = true; // front-end preview; billing will replace this flag later
   String languageCode = 'system';
-  bool largeText = false;
-  bool highContrast = false;
 
   final List<Machine> _machines;
   final List<CardioActivity> _cardioActivities;
   final Map<String, List<CardioRecord>> _preservedCardio = {};
-  final Set<String> _favoriteMachineIds = {};
-  String? activeSessionId;
-  final Map<String, String> sessionNames = {};
-  final Map<String, List<String>> sessionExercises = {};
-  final Map<String, double> targetWeights = {};
-  final Map<String, String> gyms = {'default': 'Minha academia'};
-  String selectedGymId = 'default';
-  final Map<String, String> photoData = {};
-  String _photoKey(String machineId) => '${selectedGymId}_$machineId';
-  Uint8List? localPhoto(String machineId) {
-    final raw = photoData[_photoKey(machineId)];
-    if (raw == null) return null;
-    try { return base64Decode(raw); } catch (_) { return null; }
-  }
-  void setLocalPhoto(String machineId, Uint8List? bytes) {
-    final key = _photoKey(machineId);
-    if (bytes == null) {
-      photoData.remove(key);
-    } else {
-      if (bytes.length > 400000 ||
-          (!photoData.containsKey(key) && photoData.length >= 25)) {
-        throw const FormatException('Foto muito grande ou limite de fotos atingido.');
-      }
-      photoData[key] = base64Encode(bytes);
-    }
-    notifyListeners();
-    _scheduleSave();
-  }
-  String get selectedGymName => gyms[selectedGymId] ?? 'Minha academia';
-
-  void selectGym(String id) {
-    if (!gyms.containsKey(id)) return;
-    selectedGymId = id;
-    notifyListeners();
-    _scheduleSave();
-  }
-
-  String addGym(String name) {
-    final value = name.trim();
-    if (value.isEmpty || value.length > 120 || gyms.length >= 30) {
-      throw const FormatException('Nome de academia inválido.');
-    }
-    final id = 'gym_${DateTime.now().microsecondsSinceEpoch}';
-    gyms[id] = value;
-    selectedGymId = id;
-    notifyListeners();
-    _scheduleSave();
-    return id;
-  }
-
-
-  void setTargetWeight(String machineId, double? kg) {
-    if (kg == null) {
-      targetWeights.remove(machineId);
-    } else if (kg.isFinite && kg > 0 && kg <= 10000) {
-      targetWeights[machineId] = kg;
-    } else {
-      return;
-    }
-    notifyListeners();
-    _scheduleSave();
-  }
-
-  bool get hasActiveSession => activeSessionId != null;
-  String get currentSessionName => sessionNames[activeSessionId] ?? 'Treino livre';
-
-  /// Unique IDs distinguish independent sessions on the same day.
-  String startSession({String name = 'Treino livre'}) {
-    if (activeSessionId != null) return activeSessionId!;
-    final id = 'session_${DateTime.now().microsecondsSinceEpoch}';
-    activeSessionId = id;
-    sessionNames[id] = name.trim().isEmpty ? 'Treino livre' : name.trim();
-    sessionExercises[id] = <String>[];
-    notifyListeners();
-    _scheduleSave();
-    return id;
-  }
-
-  void addExerciseToSession(Machine machine) {
-    final id = activeSessionId ?? startSession();
-    final plan = sessionExercises.putIfAbsent(id, () => <String>[]);
-    if (!plan.contains(machine.id)) plan.add(machine.id);
-    ensureMachineAdded(machine);
-    notifyListeners();
-    _scheduleSave();
-  }
-
-  void finishSession() {
-    if (activeSessionId == null) return;
-    activeSessionId = null;
-    notifyListeners();
-    _scheduleSave();
-  }
-
-  List<Machine> get activeSessionMachines {
-    final id = activeSessionId;
-    if (id == null) return const <Machine>[];
-    final planned = sessionExercises[id] ?? const <String>[];
-    return _machines.where((m) =>
-      planned.contains(m.id) || m.records.any((r) => r.sessionId == id)
-    ).toList(growable: false);
-  }
-
-  Set<String> get favoriteMachineIds => Set<String>.unmodifiable(_favoriteMachineIds);
-
-  bool isFavorite(String id) => _favoriteMachineIds.contains(id);
-
-  void toggleFavorite(String id) {
-    if (!_favoriteMachineIds.add(id)) _favoriteMachineIds.remove(id);
-    notifyListeners();
-    _scheduleSave();
-  }
-
-  List<Machine> get favoriteMachines =>
-      availableMachines.where((m) => isFavorite(m.id)).toList(growable: false);
-
-  List<Machine> get todaysMachines {
-    final day = WorkoutRecord.dayKey(DateTime.now());
-    return _machines.where((machine) => machine.records.any(
-      (record) => WorkoutRecord.dayKey(record.date) == day,
-    )).toList(growable: false);
-  }
-
 
   bool get onboardingComplete =>
       _onboardingCompleted &&
@@ -246,20 +114,18 @@ class AppController extends ChangeNotifier {
   Future<void> loadPreferences() async {
     final preferences = _preferences;
     if (persistenceEnabled && preferences != null) {
-      displayName = (await preferences.getString(_prefKey(_nameKey)))?.trim() ?? '';
+      displayName = (await preferences.getString(_nameKey))?.trim() ?? '';
       illustrationStyle = illustrationStyleFromStorage(
-        await preferences.getString(_prefKey(_illustrationStyleKey)),
+        await preferences.getString(_illustrationStyleKey),
       );
       _onboardingCompleted =
-          await preferences.getBool(_prefKey(_onboardingCompleteKey)) ?? false;
-      unit = await preferences.getString(_prefKey(_unitKey)) ?? 'kg';
-      distanceUnit = await preferences.getString(_prefKey(_distanceUnitKey)) ?? 'km';
-      increment = await preferences.getDouble(_prefKey(_incrementKey)) ?? 2.5;
-      isPro = await preferences.getBool(_prefKey(_proPreviewKey)) ?? false;
-      languageCode = await preferences.getString(_prefKey(_languageKey)) ?? 'system';
-      largeText = await preferences.getBool(_prefKey(_largeTextKey)) ?? false;
-      highContrast = await preferences.getBool(_prefKey(_highContrastKey)) ?? false;
-      analyticsConsent = await preferences.getBool(_prefKey(_analyticsConsentKey)) ?? false;
+          await preferences.getBool(_onboardingCompleteKey) ?? false;
+      unit = await preferences.getString(_unitKey) ?? 'kg';
+      distanceUnit = await preferences.getString(_distanceUnitKey) ?? 'km';
+      increment = await preferences.getDouble(_incrementKey) ?? 2.5;
+      isPro = await preferences.getBool(_proPreviewKey) ?? true;
+      languageCode = await preferences.getString(_languageKey) ?? 'system';
+      analyticsConsent = await preferences.getBool(_analyticsConsentKey) ?? false;
     }
     final store = _store;
     if (store != null) {
@@ -267,26 +133,6 @@ class AppController extends ChangeNotifier {
         final snapshot = await store.load();
         if (snapshot != null) {
           final restored = WorkoutSnapshotCodec.decode(snapshot);
-          _favoriteMachineIds
-            ..clear()
-            ..addAll(restored.favorites);
-          activeSessionId = restored.activeSessionId;
-          sessionNames
-            ..clear()
-            ..addAll(restored.sessionNames);
-          sessionExercises
-            ..clear()
-            ..addAll(restored.sessionExercises);
-          targetWeights
-            ..clear()
-            ..addAll(restored.targetWeights);
-          gyms
-            ..clear()
-            ..addAll(restored.gyms);
-          selectedGymId = restored.selectedGymId;
-          photoData
-            ..clear()
-            ..addAll(restored.photoData);
           _preservedCardio
             ..clear()
             ..addAll(restored.applyTo(_machines, _cardioActivities));
@@ -314,14 +160,6 @@ class AppController extends ChangeNotifier {
       machines: _machines,
       cardioActivities: _cardioActivities,
       preservedCardio: _preservedCardio,
-      favorites: _favoriteMachineIds,
-      activeSessionId: activeSessionId,
-      sessionNames: sessionNames,
-      sessionExercises: sessionExercises,
-      targetWeights: targetWeights,
-      gyms: gyms,
-      selectedGymId: selectedGymId,
-      photoData: photoData,
     );
     // Serializing the writes prevents a slow older save from overwriting a
     // newer record. Capture the snapshot before queuing it.
@@ -350,14 +188,6 @@ class AppController extends ChangeNotifier {
           machines: _machines,
           cardioActivities: _cardioActivities,
           preservedCardio: _preservedCardio,
-          favorites: _favoriteMachineIds,
-          activeSessionId: activeSessionId,
-          sessionNames: sessionNames,
-          sessionExercises: sessionExercises,
-          targetWeights: targetWeights,
-          gyms: gyms,
-          selectedGymId: selectedGymId,
-          photoData: photoData,
         ),
       );
 
@@ -373,26 +203,6 @@ class AppController extends ChangeNotifier {
     _preservedCardio
       ..clear()
       ..addAll(restored.applyTo(_machines, _cardioActivities));
-    _favoriteMachineIds
-      ..clear()
-      ..addAll(restored.favorites);
-    activeSessionId = restored.activeSessionId;
-    sessionNames
-      ..clear()
-      ..addAll(restored.sessionNames);
-    sessionExercises
-      ..clear()
-      ..addAll(restored.sessionExercises);
-    targetWeights
-      ..clear()
-      ..addAll(restored.targetWeights);
-    gyms
-      ..clear()
-      ..addAll(restored.gyms);
-    selectedGymId = restored.selectedGymId;
-    photoData
-      ..clear()
-      ..addAll(restored.photoData);
     _failedToReadStorage = false;
     persistenceError = null;
     notifyListeners();
@@ -417,19 +227,19 @@ class AppController extends ChangeNotifier {
   void _saveString(String key, String value) {
     final preferences = _preferences;
     if (!persistenceEnabled || preferences == null) return;
-    unawaited(preferences.setString(_prefKey(key), value));
+    unawaited(preferences.setString(key, value));
   }
 
   void _saveBool(String key, bool value) {
     final preferences = _preferences;
     if (!persistenceEnabled || preferences == null) return;
-    unawaited(preferences.setBool(_prefKey(key), value));
+    unawaited(preferences.setBool(key, value));
   }
 
   void _saveDouble(String key, double value) {
     final preferences = _preferences;
     if (!persistenceEnabled || preferences == null) return;
-    unawaited(preferences.setDouble(_prefKey(key), value));
+    unawaited(preferences.setDouble(key, value));
   }
 
   List<Machine> machinesFor(MuscleGroup group) {
@@ -485,18 +295,6 @@ class AppController extends ChangeNotifier {
     _saveDouble(_incrementKey, value);
   }
 
-  void setHighContrast(bool value) {
-    highContrast = value;
-    _saveBool(_highContrastKey, value);
-    notifyListeners();
-  }
-
-  void setLargeText(bool value) {
-    largeText = value;
-    _saveBool(_largeTextKey, value);
-    notifyListeners();
-  }
-
   void setLanguageCode(String value) {
     languageCode = value;
     notifyListeners();
@@ -541,17 +339,7 @@ class AppController extends ChangeNotifier {
   }
 
   void deleteMachine(Machine machine) {
-    _favoriteMachineIds.remove(machine.id);
     _machines.remove(machine);
-    notifyListeners();
-    _scheduleSave();
-  }
-
-  void updateMachineAdjustments(Machine machine, Map<String, String> fields) {
-    machine.adjustments
-      ..clear()
-      ..addAll(fields.map((key, value) => MapEntry(key, value.trim()))
-          ..removeWhere((key, value) => value.isEmpty));
     notifyListeners();
     _scheduleSave();
   }
@@ -633,113 +421,21 @@ class AppController extends ChangeNotifier {
     return metrics.isEmpty ? null : CardioAchievement(metrics);
   }
 
-  ({int imported, int skipped, int unmatched}) importCsvEntries(
-      List<CsvWorkoutEntry> entries) {
-    if (_failedToReadStorage) {
-      throw StateError('Banco indisponível. Não é seguro importar agora.');
-    }
-    var imported = 0;
-    var skipped = 0;
-    var unmatched = 0;
-    final catalog = availableMachines;
-    String normalize(String value) =>
-        value.toLowerCase().trim().replaceAll(RegExp(r'\s+'), ' ');
-    for (final entry in entries) {
-      final name = normalize(entry.exercise);
-      Machine? machine;
-      for (final item in catalog) {
-        if (normalize(item.name) == name ||
-            (item.nameEn != null && normalize(item.nameEn!) == name)) {
-          machine = item;
-          break;
-        }
-      }
-      if (machine == null) {
-        unmatched++;
-        continue;
-      }
-      final current = hasMachine(machine.id) ? machineById(machine.id)
-          : ensureMachineAdded(machine);
-      final importedId = 'csv_${machine.id}_${entry.date.microsecondsSinceEpoch}_'
-          '${entry.rowNumber}_${entry.weight}_${entry.repetitions}';
-      if (current.records.any((r) => r.id == importedId)) {
-        skipped++;
-        continue;
-      }
-      current.records.add(WorkoutRecord(
-        id: importedId,
-        sessionId: WorkoutRecord.dayKey(entry.date),
-        gymId: selectedGymId,
-        date: entry.date,
-        weight: entry.weight,
-        repetitions: entry.repetitions,
-      ));
-      imported++;
-    }
-    if (imported > 0) {
-      notifyListeners();
-      _scheduleSave();
-    }
-    return (imported: imported, skipped: skipped, unmatched: unmatched);
-  }
-
-  static int _recordSequence = 0;
-
-  WorkoutRecord addRecord(Machine machine, {
-    double weight = 0, int? repetitions, int? durationSeconds,
-    bool isWarmup = false, double? rpe, String note = '',
-  }) {
-    final now = DateTime.now();
-    final record = WorkoutRecord(
-      id: 'set_${now.microsecondsSinceEpoch}_${_recordSequence++}',
-      sessionId: activeSessionId ?? WorkoutRecord.dayKey(now),
-      gymId: selectedGymId,
-      date: now,
-      weight: weight,
-      repetitions: repetitions,
-      durationSeconds: durationSeconds,
-      isWarmup: isWarmup,
-      rpe: rpe,
-      note: note,
+  void addRecord(Machine machine, {double weight = 0, int? repetitions, int? durationSeconds}) {
+    machine.records.add(
+      WorkoutRecord(
+        date: DateTime.now(),
+        weight: weight,
+        repetitions: repetitions,
+        durationSeconds: durationSeconds,
+      ),
     );
-    machine.records.add(record);
-    if (activeSessionId != null) {
-      final plan = sessionExercises.putIfAbsent(activeSessionId!, () => <String>[]);
-      if (!plan.contains(machine.id)) plan.add(machine.id);
-    }
     notifyListeners();
     _scheduleSave();
     trackUsage('strength_record_created', {
       'group': machine.group.name,
       'exercise': machine.isCustom ? 'custom' : machine.id,
     });
-    return record;
-  }
-
-  bool updateRecord(Machine machine, WorkoutRecord original, WorkoutRecord updated) {
-    final index = machine.records.indexOf(original);
-    if (index < 0) return false;
-    machine.records[index] = updated;
-    notifyListeners();
-    _scheduleSave();
-    return true;
-  }
-
-  bool removeRecord(Machine machine, WorkoutRecord record) {
-    final removed = machine.records.remove(record);
-    if (removed) {
-      notifyListeners();
-      _scheduleSave();
-    }
-    return removed;
-  }
-
-  void restoreRecord(Machine machine, WorkoutRecord record) {
-    if (machine.records.any((r) => identical(r, record) ||
-        (r.id.isNotEmpty && r.id == record.id))) return;
-    machine.records.add(record);
-    notifyListeners();
-    _scheduleSave();
   }
 
   @override
