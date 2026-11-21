@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gymrecords/screens/workout_completed_screen.dart';
+import 'package:gymrecords/screens/home_screen.dart';
 import 'package:gymrecords/state/app_controller.dart';
 import 'package:gymrecords/theme/app_theme.dart';
 
@@ -33,6 +34,34 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.byKey(const Key('share_completed_workout')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('concluir treino da Home abre resumo real e encerra sessão',
+      (tester) async {
+    tester.view.physicalSize = const Size(375, 812);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    final app = AppController(persistenceEnabled: false);
+    addTearDown(app.dispose);
+    await app.importBackup(
+      '{"schemaVersion":2,"machines":[],"cardio":{},'
+      '"sessions":[],"favorites":[],"activeSessionId":null}');
+    app.startSession(name: 'Treino A');
+    await tester.pumpWidget(AppScope(controller: app,
+      child: MaterialApp(theme: AppTheme.dark,
+        home: const HomeScreen())));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.byKey(const Key('finish_workout')), 200,
+      scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.byKey(const Key('finish_workout')));
+    await tester.pumpAndSettle();
+    expect(app.activeSession, isNull);
+    expect(find.byType(WorkoutCompletedScreen), findsOneWidget);
+    expect(find.text('Treino concluído! 🏆'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
