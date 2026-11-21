@@ -4,6 +4,7 @@ import '../l10n/app_strings.dart';
 import '../state/app_controller.dart';
 import '../theme/app_theme.dart';
 import '../widgets/page_body.dart';
+import '../widgets/section_card.dart';
 import '../widgets/pro_widgets.dart';
 import 'evolution_screen.dart';
 import 'pro_export_screen.dart';
@@ -83,6 +84,24 @@ class ProOverviewScreen extends StatelessWidget {
               Image.asset('assets/branding/pro_mascot.webp', width: 112, height: 108, fit: BoxFit.contain),
             ]),
           ),
+          const SizedBox(height: 16),
+          SectionCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('O que é gratuito?', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 7),
+            const Text('Registro de séries, histórico completo, edição, favoritos, '
+                'exercícios personalizados e exportação básica CSV/PDF.',
+              style: TextStyle(color: AppTheme.iceBlue)),
+            const Divider(),
+            Text('O que poderá ser Pro?', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 7),
+            const Text('Gráficos avançados, objetivos e relatórios detalhados. '
+                'Sincronização na nuvem fica para outra versão.',
+              style: TextStyle(color: AppTheme.iceBlue)),
+            const SizedBox(height: 10),
+            const Text('Hipótese para pesquisa: R$ 7,90–9,90/mês. '
+                'Não há cobrança nem assinatura real nesta prévia.',
+              style: TextStyle(color: AppTheme.warning)),
+          ])),
           const SizedBox(height: 18),
           for (final feature in features) ...[
             Material(
