@@ -76,6 +76,11 @@ jobs:
           print('Bundle ID esperado: com.cmvis.gymrecords')
           PY
 
+      - name: Descrever uso local da galeria no iOS
+        run: |
+          /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string Fotos de aparelhos selecionadas pelo usuario sao guardadas localmente para identificar equipamentos." ios/Runner/Info.plist
+          /usr/libexec/PlistBuddy -c "Print :NSPhotoLibraryUsageDescription" ios/Runner/Info.plist
+
       - name: Instalar dependencias Flutter
         run: flutter pub get
 
@@ -98,6 +103,7 @@ jobs:
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' \
             build/ios/iphoneos/Runner.app/Info.plist)" = "com.cmvis.gymrecords"
           test -s build/ios/iphoneos/Runner.app/Runner
+          /usr/libexec/PlistBuddy -c 'Print :NSPhotoLibraryUsageDescription' build/ios/iphoneos/Runner.app/Info.plist
 
       - name: Empacotar IPA nao assinado
         run: |
