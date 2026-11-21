@@ -52,6 +52,24 @@ void main() {
     next.dispose();
   });
 
+  test('CSV básico continua disponível sem assinatura Pro', () async {
+    final app = AppController(persistenceEnabled: false);
+    expect(app.isPro, isFalse);
+    final machine = app.ensureMachineAdded(
+      buildExerciseCatalog().firstWhere((e) => e.id == 'barbell_bench_press'),
+    );
+    app.addRecord(machine, weight: 45, repetitions: 8);
+    final csv = ReportExportService.toCsv(ReportExportService.entries(
+      machines: app.machines,
+      cardioActivities: app.cardioActivities,
+      period: AnalyticsPeriod.all,
+      now: DateTime.now().add(const Duration(minutes: 1)),
+    ));
+    expect(csv, contains('"repetitions"'));
+    expect(csv, contains('"8"'));
+    app.dispose();
+  });
+
   test('backup v1 legado ganha ID estável e mantém séries', () async {
     final store = MemoryLocalDataStore();
     final app = AppController(persistenceEnabled: false, store: store);
