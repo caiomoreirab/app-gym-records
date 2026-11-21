@@ -15,6 +15,7 @@ import 'pro_overview_screen.dart';
 import 'pro_export_screen.dart';
 import 'gym_profiles_screen.dart';
 import 'import_history_screen.dart';
+import 'review_experience.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -25,6 +26,7 @@ class SettingsScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppTheme.deepNavy,
+      bottomNavigationBar: const ReviewBottomNav(index: 4),
       appBar: AppBar(
         leading: const BackButton(),
         title: Text(context.strings.settings),
@@ -60,6 +62,8 @@ class SettingsScreen extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           app.displayName.isEmpty ? context.strings.user : app.displayName,
+                           maxLines: 2,
+                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
                       ],
