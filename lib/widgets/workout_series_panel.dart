@@ -88,7 +88,7 @@ class WorkoutSeriesPanel extends StatelessWidget {
                   const SizedBox(width: 10),
                   Text(entry.key, style: const TextStyle(fontWeight: FontWeight.w600)),
                   const Spacer(),
-                  Text('\${entry.value.length} séries',
+                  Text('${entry.value.length} séries',
                       style: const TextStyle(color: AppTheme.iceBlue)),
                 ]),
                 const SizedBox(height: 8),
@@ -129,9 +129,9 @@ class _SeriesRow extends StatelessWidget {
     final r = record;
     final details = [
       if (r.weight > 0)
-        '\${r.weight.toStringAsFixed(r.weight == r.weight.roundToDouble() ? 0 : 1)} $unit',
-      if (r.repetitions != null) '× \${r.repetitions} reps',
-      if (r.durationSeconds != null) '\${r.durationSeconds}s',
+        '${r.weight.toStringAsFixed(r.weight == r.weight.roundToDouble() ? 0 : 1)} $unit',
+      if (r.repetitions != null) '× ${r.repetitions} reps',
+      if (r.durationSeconds != null) '${r.durationSeconds}s',
     ].join(' ');
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -151,7 +151,7 @@ class _SeriesRow extends StatelessWidget {
             if (r.isWarmup || r.rpe != null || r.note.isNotEmpty)
               Text([
                 if (r.isWarmup) 'Aquecimento',
-                if (r.rpe != null) 'RPE \${r.rpe!.toStringAsFixed(1)}',
+                if (r.rpe != null) 'RPE ${r.rpe!.toStringAsFixed(1)}',
                 if (r.note.isNotEmpty) r.note,
               ].join(' · '), maxLines: 1, overflow: TextOverflow.ellipsis,
                   style: const TextStyle(color: AppTheme.iceBlue, fontSize: 12)),
