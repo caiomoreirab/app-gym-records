@@ -171,6 +171,9 @@ class _MachineScreenState extends State<MachineScreen> {
               WorkoutSeriesPanel(
                 records: machine.records,
                 unit: app.unit,
+                sessionId: app.activeSessionId,
+                sessionNames: app.sessionNames,
+                showHistory: false,
                 onRepeat: _saving ? null : () => _repeatLastSet(machine),
                 onEdit: (record) => _editSeries(machine, record),
                 onDelete: (record) => _deleteSeries(machine, record),
@@ -179,6 +182,9 @@ class _MachineScreenState extends State<MachineScreen> {
               WorkoutSeriesPanel(
                 records: machine.records,
                 unit: app.unit,
+                sessionId: app.activeSessionId,
+                sessionNames: app.sessionNames,
+                showCurrent: false,
                 onRepeat: _saving ? null : () => _repeatLastSet(machine),
                 onEdit: (record) => _editSeries(machine, record),
                 onDelete: (record) => _deleteSeries(machine, record),
@@ -274,10 +280,7 @@ class _MachineScreenState extends State<MachineScreen> {
 
     _savedUndoSnackBar(app, machine, saved);
     setState(() => _detailTab = 1);
-    /* ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.strings.t('Registro salvo.', 'Record saved.', 'Registro guardado.'))),
-    );
-    setState(() {}); */
+
     } finally {
       if (mounted) setState(() => _saving = false);
     }
