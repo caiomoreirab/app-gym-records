@@ -1,6 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../models/muscle_group.dart';
+import '../models/machine.dart';
 import '../state/app_controller.dart';
 import '../theme/app_theme.dart';
 import '../widgets/brand_header.dart';
@@ -11,7 +12,9 @@ import 'machine_screen.dart';
 
 /// Full native catalog with the same images, typography, search and cards.
 class ExerciseCatalogScreen extends StatefulWidget {
-  const ExerciseCatalogScreen({super.key});
+  /// Picker mode returns the chosen machine to the active workout Home.
+  const ExerciseCatalogScreen({super.key, this.pickForWorkout = false});
+  final bool pickForWorkout;
 
   @override
   State<ExerciseCatalogScreen> createState() => _ExerciseCatalogScreenState();
@@ -36,14 +39,26 @@ class _ExerciseCatalogScreenState extends State<ExerciseCatalogScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.deepNavy,
-      bottomNavigationBar: const GymBottomNavigation(index: 1),
+      bottomNavigationBar: widget.pickForWorkout
+        ? null : const GymBottomNavigation(index: 1),
+      appBar: widget.pickForWorkout
+        ? AppBar(title: const Text('Adicionar exercício'))
+        : null,
       body: PageBody(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 14),
-          const BrandHeader(compact: true),
-          const SizedBox(height: 18),
-          Text('Exercícios',
+          if (!widget.pickForWorkout) ...[
+            const BrandHeader(compact: true),
+            const SizedBox(height: 18),
+          ],
+          Text(widget.pickForWorkout
+              ? 'Escolha um aparelho' : 'Exercícios',
             style: Theme.of(context).textTheme.headlineMedium),
+          if (widget.pickForWorkout) ...[
+            const SizedBox(height: 5),
+            const Text('Toque no exercício para adicionar ao treino atual.',
+              style: TextStyle(color: AppTheme.iceBlue, fontSize: 13)),
+          ],
           const SizedBox(height: 12),
           TextField(
             key: const Key('catalog_search'),
@@ -89,6 +104,10 @@ class _ExerciseCatalogScreenState extends State<ExerciseCatalogScreen> {
                       final saved = app.ensureMachineAdded(machine);
                       if (app.activeSession != null) {
                         app.addExerciseToSession(saved);
+                      }
+                      if (widget.pickForWorkout) {
+                        Navigator.of(context).pop<Machine>(saved);
+                        return;
                       }
                       Navigator.of(context).push(MaterialPageRoute<void>(
                         builder: (_) => MachineScreen(machineId: saved.id)));
