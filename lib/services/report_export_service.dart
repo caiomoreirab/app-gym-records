@@ -10,7 +10,7 @@ import '../models/workout_record.dart';
 import 'analytics_service.dart';
 
 class ReportEntry {
-  const ReportEntry({required this.date, required this.group, required this.exercise, required this.type, this.weight = 0, this.repetitions, this.durationSeconds, this.distanceKm});
+  const ReportEntry({required this.date, required this.group, required this.exercise, required this.type, this.weight = 0, this.repetitions, this.durationSeconds, this.distanceKm, this.sessionId = '', this.isWarmup = false, this.rpe});
   final DateTime date;
   final String group;
   final String exercise;
@@ -19,6 +19,9 @@ class ReportEntry {
   final int? repetitions;
   final int? durationSeconds;
   final double? distanceKm;
+  final String sessionId;
+  final bool isWarmup;
+  final double? rpe;
 }
 
 abstract final class ReportExportService {
@@ -36,7 +39,7 @@ abstract final class ReportExportService {
       if (group != null && machine.group != group) continue;
       for (final record in machine.records) {
         if (record.date.isBefore(lower) || record.date.isAfter(now)) continue;
-        all.add(ReportEntry(date: record.date, group: machine.group.label, exercise: machine.name, type: 'strength', weight: record.weight, repetitions: record.repetitions, durationSeconds: record.durationSeconds));
+        all.add(ReportEntry(date: record.date, group: machine.group.label, exercise: machine.name, type: 'strength', weight: record.weight, repetitions: record.repetitions, durationSeconds: record.durationSeconds, sessionId: record.sessionId.isEmpty ? WorkoutRecord.dayKey(record.date) : record.sessionId, isWarmup: record.isWarmup, rpe: record.rpe));
       }
     }
     if (group == null) {
@@ -53,15 +56,18 @@ abstract final class ReportExportService {
 
   static String toCsv(List<ReportEntry> entries) {
     final rows = <List<String>>[
-      ['date', 'group', 'exercise', 'type', 'weight', 'repetitions', 'duration_seconds', 'distance_km'],
+      ['date', 'session_id', 'group', 'exercise', 'type', 'weight', 'repetitions', 'warmup', 'rpe', 'duration_seconds', 'distance_km'],
       for (final entry in entries)
         [
           '${entry.date.year}-${entry.date.month.toString().padLeft(2, '0')}-${entry.date.day.toString().padLeft(2, '0')}',
+          entry.sessionId,
           entry.group,
           entry.exercise,
           entry.type,
           entry.weight > 0 ? entry.weight.toStringAsFixed(2) : '',
           entry.repetitions?.toString() ?? '',
+          entry.isWarmup ? 'yes' : 'no',
+          entry.rpe?.toStringAsFixed(1) ?? '',
           entry.durationSeconds?.toString() ?? '',
           entry.distanceKm?.toStringAsFixed(3) ?? '',
         ],
@@ -83,7 +89,9 @@ abstract final class ReportExportService {
       '${r.date.day}/${r.date.month}/${r.date.year}',
       r.group,
       r.exercise,
-      r.weight > 0 ? '${r.weight.toStringAsFixed(1)} kg' : r.repetitions != null ? '${r.repetitions} reps' : r.distanceKm != null ? '${r.distanceKm!.toStringAsFixed(2)} km' : '—',
+      r.weight > 0 ? '${r.weight.toStringAsFixed(1)} kg' : r.distanceKm != null ? '${r.distanceKm!.toStringAsFixed(2)} km' : '—',
+      r.repetitions?.toString() ?? '—',
+      r.isWarmup ? 'Sim' : 'Não',
       r.durationSeconds != null ? '${(r.durationSeconds! / 60).toStringAsFixed(1)} min' : '—',
     ]).toList();
 
@@ -102,12 +110,12 @@ abstract final class ReportExportService {
           pw.Text('Nenhum registro para este periodo.')
         else
           pw.Table.fromTextArray(
-            headers: ['Data', 'Grupo', 'Exercicio', 'Resultado', 'Duracao'],
+            headers: ['Data', 'Grupo', 'Exercício', 'Carga', 'Reps', 'Aquec.', 'Duração'],
             data: data,
             headerStyle: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
             cellStyle: const pw.TextStyle(fontSize: 8),
             cellPadding: const pw.EdgeInsets.all(5),
-            columnWidths: {0: const pw.FixedColumnWidth(53), 1: const pw.FixedColumnWidth(59), 2: const pw.FlexColumnWidth(2), 3: const pw.FlexColumnWidth(1), 4: const pw.FixedColumnWidth(50)},
+            columnWidths: {0: const pw.FixedColumnWidth(51), 1: const pw.FixedColumnWidth(51), 2: const pw.FlexColumnWidth(2), 3: const pw.FixedColumnWidth(62), 4: const pw.FixedColumnWidth(33), 5: const pw.FixedColumnWidth(38), 6: const pw.FixedColumnWidth(47)},
           ),
       ],
     ));
