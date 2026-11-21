@@ -14,15 +14,16 @@ class LocalUsageMetrics {
   LocalUsageMetrics();
 
   void load(Object? source) {
-    if (source is! Map) return;
-    firstOpenedAt = _parse(source['firstOpenedAt']);
-    firstSavedAt = _parse(source['firstSavedAt']);
-    seriesSaved = _nonNegative(source['seriesSaved']);
-    seriesWithRepetitions = _nonNegative(source['seriesWithRepetitions']);
-    sessionsStarted = _nonNegative(source['sessionsStarted']);
-    timedSeries = _nonNegative(source['timedSeries']);
-    totalSeriesSeconds = _nonNegative(source['totalSeriesSeconds']);
-    recordShares = _nonNegative(source['recordShares']);
+    final saved = source is Map ? source : const {};
+    _entryStartedAt = null;
+    firstOpenedAt = _parse(saved['firstOpenedAt']);
+    firstSavedAt = _parse(saved['firstSavedAt']);
+    seriesSaved = _nonNegative(saved['seriesSaved']);
+    seriesWithRepetitions = _nonNegative(saved['seriesWithRepetitions']);
+    sessionsStarted = _nonNegative(saved['sessionsStarted']);
+    timedSeries = _nonNegative(saved['timedSeries']);
+    totalSeriesSeconds = _nonNegative(saved['totalSeriesSeconds']);
+    recordShares = _nonNegative(saved['recordShares']);
   }
 
   void opened(DateTime now) => firstOpenedAt ??= now;
