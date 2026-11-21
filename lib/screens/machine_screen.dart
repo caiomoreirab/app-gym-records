@@ -14,6 +14,7 @@ import '../widgets/primary_bottom_bar.dart';
 import '../widgets/record_achievement_sheet.dart';
 import '../widgets/section_card.dart';
 import '../widgets/workout_series_panel.dart';
+import '../widgets/rest_timer_card.dart';
 import 'exercise_insights_screen.dart';
 import 'pro_overview_screen.dart';
 
@@ -136,6 +137,8 @@ class _MachineScreenState extends State<MachineScreen> {
               onEdit: (record) => _editSeries(machine, record),
               onDelete: (record) => _deleteSeries(machine, record),
             ),
+            const SizedBox(height: 14),
+            const RestTimerCard(),
             const SizedBox(height: 16),
             _StrengthRecordsSummary(machine: machine, unit: app.unit),
             const SizedBox(height: 18),
