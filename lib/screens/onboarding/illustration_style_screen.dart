@@ -99,6 +99,42 @@ class _IllustrationStyleScreenState extends State<IllustrationStyleScreen> {
                   if (style != IllustrationStyle.values.last)
                     const SizedBox(height: 14),
                 ],
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceNavy,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppTheme.deepBlue),
+                  ),
+                  child: Row(children: [
+                    const Icon(Icons.fitness_center_rounded,
+                      color: AppTheme.electricLime, size: 24),
+                    const SizedBox(width: 12),
+                    Expanded(child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          context.strings.t(
+                            'Exemplo de registro', 'Sample workout entry',
+                            'Ejemplo de registro'),
+                          style: const TextStyle(color: AppTheme.iceBlue,
+                            fontSize: 12),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          context.strings.t(
+                            'Supino reto · 40 kg × 10 repetições',
+                            'Bench press · 40 kg × 10 reps',
+                            'Press de banca · 40 kg × 10 repeticiones'),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    )),
+                  ]),
+                ),
               ],
             ),
           ),
