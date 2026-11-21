@@ -92,7 +92,7 @@ class ProOverviewScreen extends StatelessWidget {
               child: InkWell(
                 onTap: () {
                   app.trackUsage('pro_feature_viewed', {'feature': feature.eventKey});
-                  if (!app.isPro) {
+                  if (!app.isPro && feature.eventKey != 'export') {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.strings.t('Ative a prévia Pro para explorar os recursos.', 'Enable Pro preview to explore features.', 'Activa la vista Pro para explorar las funciones.'))));
                     return;
                   }
