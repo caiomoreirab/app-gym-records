@@ -34,6 +34,7 @@ class WorkoutSnapshotCodec {
               'name': item.name,
               'startedAt': item.startedAt.toUtc().toIso8601String(),
               'completedAt': item.completedAt?.toUtc().toIso8601String(),
+              'exerciseIds': item.exerciseIds,
             },
         ],
         'machines': [
@@ -271,6 +272,9 @@ class WorkoutSnapshotCodec {
           startedAt: _date(item['startedAt']),
           completedAt: item['completedAt'] == null ? null
               : _date(item['completedAt']),
+          exerciseIds: item['exerciseIds'] is List
+              ? (item['exerciseIds'] as List).whereType<String>().toList()
+              : const [],
         );
       }
     }
@@ -279,7 +283,14 @@ class WorkoutSnapshotCodec {
     for (final machine in newMachines) {
       for (final record in machine.records) {
         final id = record.effectiveSessionId;
-        if (sessions.containsKey(id)) continue;
+        final existing = sessions[id];
+        if (existing != null) {
+          if (!existing.exerciseIds.contains(machine.id)) {
+            sessions[id] = existing.copyWith(
+              exerciseIds: [...existing.exerciseIds, machine.id]);
+          }
+          continue;
+        }
         var name = 'Treino do dia';
         if (legacyNames is Map && legacyNames[id] is String) {
           name = legacyNames[id] as String;
@@ -287,6 +298,7 @@ class WorkoutSnapshotCodec {
         sessions[id] = WorkoutSession(
           id: id, startedAt: record.date, name: name,
           completedAt: id.startsWith('legacy_') ? record.date : null,
+          exerciseIds: [machine.id],
         );
       }
     }
