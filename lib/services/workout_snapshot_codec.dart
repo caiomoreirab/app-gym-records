@@ -21,6 +21,8 @@ class WorkoutSnapshotCodec {
     Map<String, String> sessionNames = const {},
     Map<String, List<String>> sessionExercises = const {},
     Map<String, double> targetWeights = const {},
+    Map<String, String> gyms = const {'default': 'Minha academia'},
+    String selectedGymId = 'default',
   }) =>
       {
         'schemaVersion': schemaVersion,
@@ -29,6 +31,8 @@ class WorkoutSnapshotCodec {
         'sessionNames': sessionNames,
         'sessionExercises': sessionExercises,
         'targetWeights': targetWeights,
+        'gyms': gyms,
+        'selectedGymId': selectedGymId,
         'machines': [
           for (final machine in machines)
             {
@@ -44,6 +48,7 @@ class WorkoutSnapshotCodec {
                   {
                     'id': r.id,
                     'sessionId': r.sessionId.isEmpty ? WorkoutRecord.dayKey(r.date) : r.sessionId,
+                    'gymId': r.gymId,
                     'date': r.date.toUtc().toIso8601String(),
                     'warmup': r.isWarmup,
                     'rpe': r.rpe,
@@ -176,6 +181,8 @@ class WorkoutSnapshotCodec {
               ? explicitId : 'legacy_${id}_${item.key}_${date.microsecondsSinceEpoch}',
           sessionId: explicitSessionId is String && explicitSessionId.isNotEmpty
               ? explicitSessionId : WorkoutRecord.dayKey(date),
+          gymId: r['gymId'] is String && (r['gymId'] as String).isNotEmpty
+              ? r['gymId'] as String : 'default',
           date: date,
           isWarmup: r['warmup'] == true,
           rpe: rpe,
@@ -281,9 +288,28 @@ class WorkoutSnapshotCodec {
         goals[entry.key as String] = (entry.value as num).toDouble();
       }
     }
+    final gyms = <String, String>{'default': 'Minha academia'};
+    final savedGyms = input['gyms'];
+    if (savedGyms != null) {
+      if (savedGyms is! Map || savedGyms.length > 30) {
+        throw const FormatException('Academias inválidas.');
+      }
+      for (final entry in savedGyms.entries) {
+        if (entry.key is! String || entry.value is! String ||
+            (entry.key as String).length > 100 ||
+            (entry.value as String).length > 120) {
+          throw const FormatException('Academia inválida.');
+        }
+        gyms[entry.key as String] = entry.value as String;
+      }
+    }
+    final requestedGym = input['selectedGymId'];
+    final selected = requestedGym is String && gyms.containsKey(requestedGym)
+      ? requestedGym : 'default';
     return WorkoutRestoredState(newMachines, newCardio, favorites,
         activeSessionId: rawActiveId as String?, sessionNames: names,
-        sessionExercises: plans, targetWeights: goals);
+        sessionExercises: plans, targetWeights: goals,
+        gyms: gyms, selectedGymId: selected);
   }
 
   static T _byName<T extends Enum>(List<T> values, Object? name) {
@@ -326,7 +352,11 @@ class WorkoutSnapshotCodec {
 class WorkoutRestoredState {
   WorkoutRestoredState(this.machines, this.cardio, this.favorites,
       {this.activeSessionId, this.sessionNames = const {},
-       this.sessionExercises = const {}, this.targetWeights = const {}});
+       this.sessionExercises = const {}, this.targetWeights = const {},
+       this.gyms = const {'default': 'Minha academia'},
+       this.selectedGymId = 'default'});
+  final Map<String, String> gyms;
+  final String selectedGymId;
   final Map<String, double> targetWeights;
   final String? activeSessionId;
   final Map<String, String> sessionNames;
