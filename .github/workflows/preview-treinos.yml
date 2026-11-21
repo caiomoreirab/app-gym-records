@@ -1,0 +1,109 @@
+name: GymRecords - Preview isolada de treinos (branch)
+
+on:
+  push:
+    branches: ['feat/validacao-treinos-v1']
+    paths:
+      - 'lib/**'
+      - 'test/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - '.github/workflows/preview-treinos.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: gymrecords-web-preview
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Compilar main e validacao em rotas separadas
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout versao publica (main)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: stable
+
+      - name: Checkout versao candidata
+        uses: actions/checkout@v4
+        with:
+          ref: feat/validacao-treinos-v1
+          path: candidate
+
+      - name: Configurar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.50.0'
+          cache: true
+
+      - name: Compilar versao main
+        working-directory: stable
+        run: |
+          if [ ! -f web/index.html ]; then
+            flutter create --platforms=web --project-name=gymrecords --no-pub .
+          fi
+          flutter pub get
+          flutter build web --release --base-href "/app-gym-records/" --web-content-hash
+
+      - name: Compilar versao candidata
+        working-directory: candidate
+        run: |
+          if [ ! -f web/index.html ]; then
+            flutter create --platforms=web --project-name=gymrecords --no-pub .
+          fi
+          flutter pub get
+          flutter build web --release --base-href "/app-gym-records/preview/treinos-v1/" --web-content-hash
+
+      - name: Preparar um unico site sem alterar codigo main
+        run: |
+          mkdir -p site/preview/treinos-v1
+          cp -a stable/build/web/. site/
+          cp -a candidate/build/web/. site/preview/treinos-v1/
+          cp stable/docs/privacy.html site/privacy.html
+          touch site/.nojekyll
+          cp site/index.html site/404.html
+          test -s site/index.html
+          test -s site/preview/treinos-v1/index.html
+
+      - name: Publicar copia do build candidato para download
+        uses: actions/upload-artifact@v4
+        with:
+          name: GymRecords-Web-Treinos-V1
+          path: candidate/build/web
+          retention-days: 7
+
+      - name: Criar artefato GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    name: Publicar preview de validacao
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: https://caiomoreirab.github.io/app-gym-records/preview/treinos-v1/
+    steps:
+      - name: Preparar Pages
+        uses: actions/configure-pages@v5
+
+      - name: Publicar site
+        uses: actions/deploy-pages@v4
+
+      - name: Links para validacao
+        run: |
+          echo "### GymRecords: duas versoes independentes" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Main atual: https://caiomoreirab.github.io/app-gym-records/" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Branch de treinos: https://caiomoreirab.github.io/app-gym-records/preview/treinos-v1/" >> "$GITHUB_STEP_SUMMARY"
+          echo "A versao candidata nao modifica codigo, banco ou deploy de origem da main." >> "$GITHUB_STEP_SUMMARY"
