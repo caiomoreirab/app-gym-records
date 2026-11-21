@@ -27,7 +27,6 @@ class _ProExportScreenState extends State<ProExportScreen> {
   @override
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
-    if (!app.isPro) return const ProOverviewScreen();
     final entries = ReportExportService.entries(
       machines: app.machines,
       cardioActivities: app.cardioActivities,
@@ -62,7 +61,7 @@ class _ProExportScreenState extends State<ProExportScreen> {
           ),
           const SizedBox(height: 10),
           OutlinedButton.icon(
-            onPressed: _working ? null : () async {
+            onPressed: _working || !app.isPro ? null : () async {
               setState(() => _working = true);
               try {
                 await ReportExportService.sharePdf(
@@ -79,6 +78,15 @@ class _ProExportScreenState extends State<ProExportScreen> {
             icon: const Icon(Icons.picture_as_pdf_outlined),
             label: Text(_working ? context.strings.t('Gerando...', 'Generating...', 'Generando...') : context.strings.t('Gerar e compartilhar PDF', 'Generate & share PDF', 'Generar y compartir PDF')),
           ),
+          if (!app.isPro) ...[
+            const SizedBox(height: 8),
+            Text('O CSV com seus registros é gratuito. O relatório PDF completo faz parte da demonstração Pro.',
+              style: Theme.of(context).textTheme.bodySmall),
+            TextButton(
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const ProOverviewScreen())),
+              child: const Text('Conhecer a demonstração Pro'),
+            ),
+          ],
           const SizedBox(height: 20),
           Text(context.strings.t('Prévia dos dados', 'Data preview', 'Vista previa de datos'), style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 12),
