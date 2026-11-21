@@ -30,6 +30,13 @@ class _WorkoutCompletedScreenState extends State<WorkoutCompletedScreen> {
     if (_sharing) return;
     setState(() => _sharing = true);
     try {
+      final previewContext = _shareCardKey.currentContext;
+      if (previewContext == null) {
+        throw StateError('Cartão de treino ainda não está disponível.');
+      }
+      await Scrollable.ensureVisible(previewContext,
+        duration: const Duration(milliseconds: 160),
+        alignment: 0.05);
       await WidgetsBinding.instance.endOfFrame;
       if (!mounted) return;
       final boundary = _shareCardKey.currentContext?.findRenderObject();
@@ -108,9 +115,9 @@ class _WorkoutCompletedScreenState extends State<WorkoutCompletedScreen> {
       backgroundColor: AppTheme.deepNavy,
       appBar: AppBar(title: const Text('Resumo do treino'),
         leading: BackButton(onPressed: () => Navigator.of(context).pop())),
-      body: PageBody(child: ListView(
+      body: PageBody(child: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 24),
-        children: [
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           const SizedBox(height: 8),
           Center(child: Image.asset('assets/branding/pro_mascot.webp',
             width: 148, height: 125, fit: BoxFit.contain)),
@@ -210,7 +217,7 @@ class _WorkoutCompletedScreenState extends State<WorkoutCompletedScreen> {
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Voltar para o início')),
-        ],
+        ]),
       )),
     );
   }
