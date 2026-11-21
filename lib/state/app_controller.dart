@@ -74,6 +74,30 @@ class AppController extends ChangeNotifier {
   final Map<String, String> sessionNames = {};
   final Map<String, List<String>> sessionExercises = {};
   final Map<String, double> targetWeights = {};
+  final Map<String, String> gyms = {'default': 'Minha academia'};
+  String selectedGymId = 'default';
+  String get selectedGymName => gyms[selectedGymId] ?? 'Minha academia';
+
+  void selectGym(String id) {
+    if (!gyms.containsKey(id)) return;
+    selectedGymId = id;
+    notifyListeners();
+    _scheduleSave();
+  }
+
+  String addGym(String name) {
+    final value = name.trim();
+    if (value.isEmpty || value.length > 120 || gyms.length >= 30) {
+      throw const FormatException('Nome de academia inválido.');
+    }
+    final id = 'gym_${DateTime.now().microsecondsSinceEpoch}';
+    gyms[id] = value;
+    selectedGymId = id;
+    notifyListeners();
+    _scheduleSave();
+    return id;
+  }
+
 
   void setTargetWeight(String machineId, double? kg) {
     if (kg == null) {
@@ -233,6 +257,10 @@ class AppController extends ChangeNotifier {
           targetWeights
             ..clear()
             ..addAll(restored.targetWeights);
+          gyms
+            ..clear()
+            ..addAll(restored.gyms);
+          selectedGymId = restored.selectedGymId;
           _preservedCardio
             ..clear()
             ..addAll(restored.applyTo(_machines, _cardioActivities));
@@ -265,6 +293,8 @@ class AppController extends ChangeNotifier {
       sessionNames: sessionNames,
       sessionExercises: sessionExercises,
       targetWeights: targetWeights,
+      gyms: gyms,
+      selectedGymId: selectedGymId,
     );
     // Serializing the writes prevents a slow older save from overwriting a
     // newer record. Capture the snapshot before queuing it.
@@ -298,6 +328,8 @@ class AppController extends ChangeNotifier {
           sessionNames: sessionNames,
           sessionExercises: sessionExercises,
           targetWeights: targetWeights,
+          gyms: gyms,
+          selectedGymId: selectedGymId,
         ),
       );
 
@@ -326,6 +358,10 @@ class AppController extends ChangeNotifier {
     targetWeights
       ..clear()
       ..addAll(restored.targetWeights);
+    gyms
+      ..clear()
+      ..addAll(restored.gyms);
+    selectedGymId = restored.selectedGymId;
     _failedToReadStorage = false;
     persistenceError = null;
     notifyListeners();
@@ -576,6 +612,7 @@ class AppController extends ChangeNotifier {
     final record = WorkoutRecord(
       id: 'set_${now.microsecondsSinceEpoch}_${_recordSequence++}',
       sessionId: activeSessionId ?? WorkoutRecord.dayKey(now),
+      gymId: selectedGymId,
       date: now,
       weight: weight,
       repetitions: repetitions,
