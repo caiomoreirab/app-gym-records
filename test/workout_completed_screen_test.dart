@@ -1,6 +1,5 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gymrecords/models/workout_session.dart';
 import 'package:gymrecords/screens/workout_completed_screen.dart';
 import 'package:gymrecords/state/app_controller.dart';
 import 'package:gymrecords/theme/app_theme.dart';
