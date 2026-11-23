@@ -23,6 +23,7 @@ class SessionSeriesPanel extends StatelessWidget {
     final rest = TextEditingController(text: record.restSeconds?.toString() ?? '');
     final note = TextEditingController(text: record.note);
     var warmup = record.isWarmup;
+    String? weightError, repsError, effortError, restError, formError;
     try {
       final updated = await showDialog<WorkoutRecord>(context: context,
         builder: (dialogContext) => StatefulBuilder(
@@ -33,15 +34,15 @@ class SessionSeriesPanel extends StatelessWidget {
               TextField(controller: weight,
                 key: const Key('edit_set_weight'),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Carga ($unit)')),
+                decoration: InputDecoration(labelText: 'Carga ($unit)', errorText: weightError)),
               TextField(controller: reps,
                 key: const Key('edit_set_reps'),
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Repetições')),
+                decoration: InputDecoration(labelText: 'Repetições', errorText: repsError)),
               TextField(controller: rpe, keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Esforço RPE (1–10, opcional)')),
+                decoration: InputDecoration(labelText: 'Esforço RPE (1–10, opcional)', errorText: effortError)),
               TextField(controller: rest, keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Descanso (segundos, opcional)')),
+                decoration: InputDecoration(labelText: 'Descanso (segundos, opcional)', errorText: restError)),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Aquecimento (não conta como PR)'),
@@ -50,6 +51,10 @@ class SessionSeriesPanel extends StatelessWidget {
               TextField(controller: note, maxLength: 300,
                 maxLines: 2,
                 decoration: const InputDecoration(labelText: 'Observação opcional')),
+              if (formError != null) Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Text(formError!,
+                  style: const TextStyle(color: AppTheme.warning))),
             ]),
             actions: [
               TextButton(onPressed: () => Navigator.pop(dialogContext),
@@ -66,21 +71,28 @@ class SessionSeriesPanel extends StatelessWidget {
                       ? null : double.tryParse(rpe.text.replaceAll(',', '.'));
                   final seconds = rest.text.trim().isEmpty
                       ? null : int.tryParse(rest.text.trim());
-                  if (kg == null || !kg.isFinite || kg < 0 || kg > 10000 ||
-                      (count != null && (count <= 0 || count > 1000)) ||
-                      (reps.text.trim().isNotEmpty && count == null) ||
-                      (effort != null && (effort < 1 || effort > 10)) ||
-                      (rpe.text.trim().isNotEmpty && effort == null) ||
-                      (seconds != null && (seconds < 0 || seconds > 36000)) ||
-                      (rest.text.trim().isNotEmpty && seconds == null) ||
-                      (StrengthSetValidation.error(
-                        machine: machine, weight: kg,
-                        repetitions: count,
-                        durationSeconds: record.durationSeconds) != null)) {
-                    ScaffoldMessenger.of(dialogContext).showSnackBar(
-                      const SnackBar(content: Text('Revise carga, repetições e campos opcionais.')));
-                    return;
-                  }
+                  final issue = StrengthSetValidation.error(
+                    machine: machine, weight: kg ?? 0,
+                    repetitions: count,
+                    durationSeconds: record.durationSeconds);
+                  setDialogState(() {
+                    weightError = kg == null || !kg.isFinite ||
+                      kg < 0 || kg > 10000
+                      ? 'Informe uma carga válida.' : null;
+                    repsError = (count != null && (count <= 0 || count > 1000)) ||
+                      (reps.text.trim().isNotEmpty && count == null)
+                      ? 'Informe repetições válidas.' : null;
+                    effortError = (effort != null && (effort < 1 || effort > 10)) ||
+                      (rpe.text.trim().isNotEmpty && effort == null)
+                      ? 'O RPE deve estar entre 1 e 10.' : null;
+                    restError = (seconds != null && (seconds < 0 || seconds > 36000)) ||
+                      (rest.text.trim().isNotEmpty && seconds == null)
+                      ? 'Informe descanso entre 0 e 36000 segundos.' : null;
+                    formError = issue;
+                  });
+                  if (weightError != null || repsError != null ||
+                      effortError != null || restError != null ||
+                      formError != null) return;
                   Navigator.pop(dialogContext, WorkoutRecord(
                     id: record.id,
                     sessionId: record.sessionId,

@@ -28,6 +28,7 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
   bool _finishing = false;
   Timer? _ticker;
   DateTime? _restEndsAt;
+  bool _restFinished = false;
   int _restPresetSeconds = 90;
 
   @override
@@ -40,6 +41,8 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
         if (_restEndsAt != null &&
             !DateTime.now().isBefore(_restEndsAt!)) {
           _restEndsAt = null;
+          _restFinished = true;
+          HapticFeedback.selectionClick();
         }
       });
     });
@@ -53,8 +56,10 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
 
   void _startRest() {
     if (!mounted) return;
-    setState(() => _restEndsAt = DateTime.now().add(
-      Duration(seconds: _restPresetSeconds)));
+    setState(() {
+      _restFinished = false;
+      _restEndsAt = DateTime.now().add(Duration(seconds: _restPresetSeconds));
+    });
   }
 
   void _chooseRestDuration(int seconds) {
@@ -80,12 +85,14 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
           const Icon(Icons.hourglass_bottom_rounded,
             color: AppTheme.electricLime),
           const SizedBox(width: 9),
-          Expanded(child: Text(context.strings.t(
-            'Descanso entre séries', 'Rest between sets',
-            'Descanso entre series'),
+          Expanded(child: Text(_restFinished
+            ? context.strings.t('Descanso concluído',
+                'Rest completed', 'Descanso terminado')
+            : context.strings.t('Descanso entre séries', 'Rest between sets',
+                'Descanso entre series'),
             style: const TextStyle(fontWeight: FontWeight.w600))),
-          Text(_restEndsAt == null
-              ? '${_restPresetSeconds}s' : countdown,
+          Text(_restFinished ? context.strings.t('Pronto', 'Ready', 'Listo')
+              : _restEndsAt == null ? '${_restPresetSeconds}s' : countdown,
             key: const Key('live_rest_countdown'),
             style: const TextStyle(color: AppTheme.electricLime,
               fontWeight: FontWeight.w600, fontSize: 18)),
@@ -101,13 +108,17 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
             TextButton.icon(
               key: Key(_restEndsAt == null
                 ? 'live_rest_start' : 'live_rest_skip'),
-              onPressed: _restEndsAt == null
-                ? _startRest : () => setState(() => _restEndsAt = null),
+              onPressed: _restFinished
+                ? () => setState(() => _restFinished = false)
+                : _restEndsAt == null
+                  ? _startRest : () => setState(() => _restEndsAt = null),
               icon: Icon(_restEndsAt == null
                 ? Icons.play_arrow_rounded : Icons.skip_next_rounded),
-              label: Text(_restEndsAt == null
-                ? context.strings.t('Iniciar', 'Start', 'Iniciar')
-                : context.strings.t('Pular', 'Skip', 'Saltar')),
+              label: Text(_restFinished
+                ? context.strings.t('Fechar', 'Dismiss', 'Cerrar')
+                : _restEndsAt == null
+                  ? context.strings.t('Iniciar', 'Start', 'Iniciar')
+                  : context.strings.t('Pular', 'Skip', 'Saltar')),
             ),
           ]),
       ],
@@ -159,6 +170,9 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
     var durationText = previous?.durationSeconds?.toString() ?? '';
     var saving = false;
     String? error;
+    String? weightError;
+    String? repsError;
+    String? durationError;
 
     await showModalBottomSheet<void>(
         context: context,
@@ -204,6 +218,7 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true),
                         decoration: InputDecoration(
+                          errorText: weightError,
                           labelText: context.strings.t(
                             'Carga (${app.unit})', 'Weight (${app.unit})',
                             'Peso (${app.unit})'),
@@ -218,6 +233,7 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
                         onChanged: (value) => repetitionsText = value,
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
+                          errorText: repsError,
                           labelText: context.strings.t(
                             'Repetições', 'Repetitions', 'Repeticiones'),
                           prefixIcon: const Icon(Icons.repeat_rounded),
@@ -232,6 +248,7 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
                         onChanged: (value) => durationText = value,
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
+                          errorText: durationError,
                           labelText: context.strings.t(
                             'Duração em segundos', 'Duration in seconds',
                             'Duración en segundos'),
@@ -265,10 +282,29 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
                               machine: machine, weight: kg,
                               repetitions: reps, durationSeconds: seconds);
                         if (problem != null) {
-                          update(() => error = problem);
+                          update(() {
+                            error = problem;
+                            weightError = weightText.trim().isNotEmpty &&
+                                entered == null ? context.strings.t(
+                                  'Informe uma carga numérica.',
+                                  'Enter a numeric weight.',
+                                  'Introduce un peso numérico.') : null;
+                            repsError = repetitionsText.trim().isNotEmpty &&
+                                reps == null ? context.strings.t(
+                                  'Informe repetições válidas.',
+                                  'Enter valid repetitions.',
+                                  'Introduce repeticiones válidas.') : null;
+                            durationError = durationText.trim().isNotEmpty &&
+                                seconds == null ? context.strings.t(
+                                  'Informe um tempo válido.',
+                                  'Enter a valid duration.',
+                                  'Introduce un tiempo válido.') : null;
+                          });
                           return;
                         }
-                        update(() { saving = true; error = null; });
+                        update(() { saving = true; error = null;
+                          weightError = null; repsError = null;
+                          durationError = null; });
                         try {
                           app.addRecord(machine, weight: kg,
                             repetitions: reps, durationSeconds: seconds);
@@ -315,6 +351,37 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
       );
   }
 
+  Future<void> _toggleExerciseDone(Machine machine, bool value) async {
+    final app = AppScope.of(context);
+    final session = app.activeSession;
+    if (session == null) return;
+    if (value && !machine.records.any(
+        (record) => record.effectiveSessionId == session.id)) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialog) => AlertDialog(
+          title: Text(context.strings.t('Concluir sem registrar séries?',
+            'Finish without logged sets?', '¿Finalizar sin series registradas?')),
+          content: Text(context.strings.t(
+            'Este exercício ficará concluído, mas não serão criadas séries fictícias.',
+            'The exercise will be marked complete without creating any sets.',
+            'Se marcará como completo sin crear series ficticias.')),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialog, false),
+              child: Text(context.strings.t('Voltar', 'Go back', 'Volver'))),
+            FilledButton(onPressed: () => Navigator.pop(dialog, true),
+              child: Text(context.strings.t('Concluir sem série',
+                'Finish without set', 'Finalizar sin serie'))),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted || app.activeSession?.id != session.id) {
+        return;
+      }
+    }
+    app.setExerciseCompleted(machine.id, value);
+  }
+
   Future<void> _removeUnused(Machine machine) async {
     final app = AppScope.of(context);
     try {
@@ -344,7 +411,7 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
             'Finish workout?', '¿Finalizar entrenamiento?')),
           content: Text(count > 0
             ? context.strings.t(
-              '$count exercício(s) ainda não foram marcados como concluídos. '
+              '$count ${count == 1 ? 'exercício ainda não foi marcado' : 'exercícios ainda não foram marcados'} como concluído${count == 1 ? '' : 's'}. '
               'Seu histórico de séries será mantido.',
               '$count exercise(s) are still unchecked. Saved sets stay intact.',
               'Quedan $count ejercicios sin completar. Las series se conservan.')
@@ -475,7 +542,7 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
               ]),
             ],
           )),
-          if (_restEndsAt != null) ...[
+          if (_restEndsAt != null || _restFinished) ...[
             const SizedBox(height: 12),
             _restControls(context),
           ],
@@ -550,7 +617,7 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
               app: app,
               index: i + 1,
               onToggle: (value) =>
-                  app.setExerciseCompleted(machines[i].id, value),
+                  _toggleExerciseDone(machines[i], value),
               onLog: () => _openRecord(machines[i]),
               onQuick: () => _quickSet(machines[i]),
               onRemove: () => _removeUnused(machines[i]),
@@ -622,7 +689,10 @@ class _ActiveExerciseCard extends StatelessWidget {
         ? sets.last : machine.latestRecord;
     final canRemove = sets.isEmpty;
     final compact = MediaQuery.sizeOf(context).width < 390;
-    final status = done
+    final status = done && sets.isEmpty
+      ? context.strings.t('Concluído sem séries', 'Finished without sets',
+          'Completado sin series')
+      : done
       ? context.strings.t('Concluído', 'Completed', 'Completado')
       : sets.isNotEmpty
         ? context.strings.t('Em andamento', 'In progress', 'En curso')

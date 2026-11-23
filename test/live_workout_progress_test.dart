@@ -101,6 +101,10 @@ void main() {
       findsOneWidget);
     await tester.tap(find.byKey(const Key('live_done_barbell_bench_press')));
     await tester.pumpAndSettle();
+    expect(find.text('Concluir sem registrar séries?'), findsOneWidget);
+    expect(app.activeSession!.completedCount, 0);
+    await tester.tap(find.text('Concluir sem série'));
+    await tester.pumpAndSettle();
     expect(app.activeSession!.completedCount, 1);
     expect(app.recordsForSession(session.id), isEmpty);
     expect(tester.takeException(), isNull);
