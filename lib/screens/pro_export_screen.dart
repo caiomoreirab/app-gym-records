@@ -5,6 +5,7 @@ import '../l10n/app_strings.dart';
 import '../models/muscle_group.dart';
 import '../services/analytics_service.dart';
 import '../services/report_export_service.dart';
+import '../services/weight_units.dart';
 import '../state/app_controller.dart';
 import '../theme/app_theme.dart';
 import '../widgets/analytics_widgets.dart';
@@ -48,7 +49,11 @@ class _ProExportScreenState extends State<ProExportScreen> {
           ProFeatureCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('${entries.length} ${context.strings.t('registros selecionados', 'selected records', 'registros seleccionados')}', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
-            Text(context.strings.t('O relatório usa somente os registros disponíveis nesta versão de validação.', 'The report uses only records available in this preview.', 'El informe usa solamente los registros disponibles en esta vista previa.'), style: Theme.of(context).textTheme.bodySmall),
+            Text(context.strings.t(
+              'CSV e PDF exportam peso em kg e distância em km, independentemente da unidade escolhida no app.',
+              'CSV and PDF use kg for weights and km for distances, regardless of the display units.',
+              'CSV y PDF usan kg para pesos y km para distancias, independientemente de las unidades de pantalla.'
+            ), style: Theme.of(context).textTheme.bodySmall),
           ])),
           const SizedBox(height: 16),
           FilledButton.icon(
@@ -96,7 +101,16 @@ class _ProExportScreenState extends State<ProExportScreen> {
                     Expanded(child: Text(entry.exercise, maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleSmall)),
                     Text('${entry.date.day}/${entry.date.month}', style: const TextStyle(color: AppTheme.iceBlue)),
                     const SizedBox(width: 10),
-                    Text(entry.weight > 0 ? '${entry.weight.toStringAsFixed(1)} kg' : entry.repetitions != null ? '${entry.repetitions} reps' : entry.distanceKm != null ? '${entry.distanceKm!.toStringAsFixed(2)} km' : '—', style: const TextStyle(color: AppTheme.electricLime)),
+                    Flexible(child: Text(
+                      entry.weight > 0
+                        ? '${WeightUnits.format(entry.weight, app.unit, Localizations.localeOf(context))} ${app.unit}'
+                        : entry.repetitions != null
+                          ? '${entry.repetitions} reps'
+                          : entry.distanceKm != null
+                            ? '${(app.distanceUnit == 'mi' ? entry.distanceKm! / 1.609344 : entry.distanceKm!).toStringAsFixed(2)} ${app.distanceUnit}'
+                            : '—',
+                      maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: AppTheme.electricLime))),
                   ]),
                 ),
               ],
