@@ -67,7 +67,7 @@ class _ExerciseCatalogScreenState extends State<ExerciseCatalogScreen> {
           TextField(
             key: const Key('catalog_search'),
             onChanged: (value) => setState(() => _query = value),
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               hintText: context.strings.t('Buscar exercício ou aparelho', 'Search exercise or equipment', 'Buscar ejercicio o equipo'),
               prefixIcon: Icon(Icons.search_rounded),
             ),
