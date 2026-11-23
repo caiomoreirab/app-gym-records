@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 import '../l10n/app_strings.dart';
 import '../models/machine.dart';
@@ -24,6 +26,93 @@ class WorkoutLiveScreen extends StatefulWidget {
 
 class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
   bool _finishing = false;
+  Timer? _ticker;
+  DateTime? _restEndsAt;
+  int _restPresetSeconds = 90;
+
+  @override
+  void initState() {
+    super.initState();
+    // Keep elapsed time and rest countdown accurate while screen is open.
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() {
+        if (_restEndsAt != null &&
+            !DateTime.now().isBefore(_restEndsAt!)) {
+          _restEndsAt = null;
+        }
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  void _startRest() {
+    if (!mounted) return;
+    setState(() => _restEndsAt = DateTime.now().add(
+      Duration(seconds: _restPresetSeconds)));
+  }
+
+  void _chooseRestDuration(int seconds) {
+    setState(() {
+      _restPresetSeconds = seconds;
+      if (_restEndsAt != null) {
+        _restEndsAt = DateTime.now().add(Duration(seconds: seconds));
+      }
+    });
+  }
+
+  Widget _restControls(BuildContext context) {
+    final remaining = _restEndsAt == null ? 0 :
+      _restEndsAt!.difference(DateTime.now()).inSeconds + 1;
+    final seconds = remaining < 0 ? 0 : remaining;
+    final countdown = '${(seconds ~/ 60).toString().padLeft(2, '0')}:'
+      '${(seconds % 60).toString().padLeft(2, '0')}';
+    return SectionCard(child: Column(
+      key: const Key('live_rest_card'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(children: [
+          const Icon(Icons.hourglass_bottom_rounded,
+            color: AppTheme.electricLime),
+          const SizedBox(width: 9),
+          Expanded(child: Text(context.strings.t(
+            'Descanso entre séries', 'Rest between sets',
+            'Descanso entre series'),
+            style: const TextStyle(fontWeight: FontWeight.w600))),
+          Text(_restEndsAt == null
+              ? '${_restPresetSeconds}s' : countdown,
+            key: const Key('live_rest_countdown'),
+            style: const TextStyle(color: AppTheme.electricLime,
+              fontWeight: FontWeight.w600, fontSize: 18)),
+        ]),
+        const SizedBox(height: 10),
+        Wrap(spacing: 8, runSpacing: 6,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            for (final preset in const [60, 90, 120])
+              ChoiceChip(label: Text('${preset}s'),
+                selected: _restPresetSeconds == preset,
+                onSelected: (_) => _chooseRestDuration(preset)),
+            TextButton.icon(
+              key: Key(_restEndsAt == null
+                ? 'live_rest_start' : 'live_rest_skip'),
+              onPressed: _restEndsAt == null
+                ? _startRest : () => setState(() => _restEndsAt = null),
+              icon: Icon(_restEndsAt == null
+                ? Icons.play_arrow_rounded : Icons.skip_next_rounded),
+              label: Text(_restEndsAt == null
+                ? context.strings.t('Iniciar', 'Start', 'Iniciar')
+                : context.strings.t('Pular', 'Skip', 'Saltar')),
+            ),
+          ]),
+      ],
+    ));
+  }
 
   Future<void> _addExercise() async {
     final app = AppScope.of(context);
@@ -47,9 +136,18 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
   }
 
   Future<void> _openRecord(Machine machine) async {
+    final app = AppScope.of(context);
+    final sessionId = app.activeSession?.id;
+    final countBefore = machine.records
+        .where((r) => r.effectiveSessionId == sessionId).length;
     await Navigator.of(context).push<void>(
       MaterialPageRoute(builder: (_) => MachineScreen(machineId: machine.id)),
     );
+    if (!mounted || sessionId == null ||
+        app.activeSession?.id != sessionId) return;
+    final countAfter = machine.records
+        .where((r) => r.effectiveSessionId == sessionId).length;
+    if (countAfter > countBefore) _startRest();
   }
 
   Future<void> _quickSet(Machine machine) async {
@@ -176,6 +274,7 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
                             repetitions: reps, durationSeconds: seconds);
                           await app.flushPendingWrites();
                           if (!sheetContext.mounted) return;
+                          _startRest();
                           if (app.persistenceError != null) {
                             Navigator.of(sheetContext).pop();
                             if (mounted) ScaffoldMessenger.of(context)
@@ -304,6 +403,13 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
     final total = session.exerciseIds.length;
     final completed = session.completedCount;
     final records = app.recordsForSession(session.id);
+    Machine? focusExercise;
+    for (final machine in machines) {
+      if (!session.isExerciseCompleted(machine.id)) {
+        focusExercise = machine;
+        break;
+      }
+    }
     final startedAt = session.startedAt.toLocal();
     final elapsed = DateTime.now().difference(session.startedAt);
     return Scaffold(
@@ -369,6 +475,42 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
               ]),
             ],
           )),
+          const SizedBox(height: 12),
+          _restControls(context),
+          if (focusExercise != null) ...[
+            const SizedBox(height: 12),
+            SectionCard(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(children: [
+                  const Icon(Icons.play_circle_outline_rounded,
+                    color: AppTheme.electricLime),
+                  const SizedBox(width: 9),
+                  Expanded(child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(context.strings.t('Próximo exercício',
+                        'Next exercise', 'Siguiente ejercicio'),
+                        style: const TextStyle(color: AppTheme.iceBlue,
+                          fontSize: 12)),
+                      Text(focusExercise.localizedName(
+                        Localizations.localeOf(context)),
+                        maxLines: 2, overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    ],
+                  )),
+                ]),
+                const SizedBox(height: 10),
+                FilledButton.icon(
+                  key: const Key('live_focus_quick_set'),
+                  onPressed: () => _quickSet(focusExercise!),
+                  icon: const Icon(Icons.add_rounded),
+                  label: Text(context.strings.t('Registrar série agora',
+                    'Log a set now', 'Registrar serie ahora')),
+                ),
+              ],
+            )),
+          ],
           const SizedBox(height: 18),
           Row(children: [
             Expanded(child: Text(context.strings.t(

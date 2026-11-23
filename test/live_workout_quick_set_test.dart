@@ -46,6 +46,8 @@ void main() {
     await tester.tap(find.byKey(const Key('live_save_quick_set')));
     await tester.pumpAndSettle();
 
+    expect(find.byKey(const Key('live_rest_card')), findsOneWidget);
+    expect(find.byKey(const Key('live_rest_skip')), findsOneWidget);
     final recorded = app.recordsForSession(session.id);
     expect(recorded.length, 1);
     expect(recorded.single.weight, 90);
