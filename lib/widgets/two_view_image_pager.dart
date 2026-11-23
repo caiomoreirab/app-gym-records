@@ -19,6 +19,7 @@ class TwoViewImagePager extends StatefulWidget {
     this.showLabel = false,
     this.fit = BoxFit.cover,
     this.executionIcon = Icons.fitness_center_rounded,
+    this.executionPlaceholder,
   });
 
   final String visualSetKey;
@@ -32,6 +33,7 @@ class TwoViewImagePager extends StatefulWidget {
   final bool showLabel;
   final BoxFit fit;
   final IconData executionIcon;
+  final Widget? executionPlaceholder;
 
   @override
   State<TwoViewImagePager> createState() => _TwoViewImagePagerState();
@@ -96,11 +98,13 @@ class _TwoViewImagePagerState extends State<TwoViewImagePager> {
                 transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
                 child: SizedBox.expand(
                   key: ValueKey('${widget.visualSetKey}|${_muscles ? 'muscles' : 'execution'}'),
-                  child: _StrictProfileImage(
-                    path: path,
-                    fallback: fallback,
-                    fit: widget.fit,
-                  ),
+                  child: !_muscles && widget.executionPlaceholder != null
+                      ? widget.executionPlaceholder!
+                      : _StrictProfileImage(
+                          path: path,
+                          fallback: fallback,
+                          fit: widget.fit,
+                        ),
                 ),
               ),
               if (widget.showLabel)
