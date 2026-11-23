@@ -100,8 +100,13 @@ void main() {
       '"sessions":[],"favorites":[],"activeSessionId":null}');
     app.isPro = true; // Preview Pro local, sem cobrança real.
     await tester.pumpWidget(AppScope(controller: app,
-      child: MaterialApp(theme: AppTheme.dark,
-        home: const ProExportScreen())));
+      child: MaterialApp(
+        theme: AppTheme.dark,
+        locale: const Locale('pt', 'BR'),
+        supportedLocales: const [Locale('pt', 'BR'), Locale('en', 'US')],
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        home: const ProExportScreen(),
+      )));
     await tester.pumpAndSettle();
     final scrollable = find.byType(Scrollable).first;
     await tester.scrollUntilVisible(
