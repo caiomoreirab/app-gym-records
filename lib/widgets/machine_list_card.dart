@@ -4,6 +4,7 @@ import '../l10n/app_strings.dart';
 import '../models/machine.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
+import '../services/weight_units.dart';
 import 'adaptive_illustration.dart';
 
 class MachineListCard extends StatelessWidget {
@@ -71,7 +72,7 @@ class MachineListCard extends StatelessWidget {
 
   String _summary(BuildContext context) {
     final locale = Localizations.localeOf(context);
-    if (machine.recordWeight > 0) return '${formatWeight(machine.recordWeight, locale)} $unit';
+    if (machine.recordWeight > 0) return '${WeightUnits.format(machine.recordWeight, unit, locale)} $unit';
     if (machine.bestRepetitions > 0) return '${machine.bestRepetitions} reps';
     if (machine.bestDurationSeconds > 0) {
       final seconds = machine.bestDurationSeconds % 60;
