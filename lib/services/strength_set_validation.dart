@@ -2,8 +2,6 @@ import '../models/machine.dart';
 
 /// Single source of truth for the current strength-set input.
 abstract final class StrengthSetValidation {
-  static bool get isCardio => false;
-
   /// Bodyweight and elastic bands have no meaningful external kilogram load.
   static bool allowsNoExternalWeight(Machine machine) =>
       machine.equipment == EquipmentType.bodyweight ||
@@ -29,11 +27,6 @@ abstract final class StrengthSetValidation {
     }
     if (!allowsNoExternalWeight(machine) && weight <= 0) {
       return 'Informe uma carga maior que zero para este equipamento.';
-    }
-    if (machine.supportsRepetitions &&
-        (repetitions == null || repetitions < 1) &&
-        (durationSeconds == null || durationSeconds <= 0)) {
-      return 'Informe pelo menos uma repetição.';
     }
     if (allowsNoExternalWeight(machine) && weight <= 0 &&
         (repetitions == null || repetitions < 1) &&
