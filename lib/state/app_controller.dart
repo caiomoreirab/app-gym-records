@@ -15,6 +15,7 @@ import '../models/workout_record.dart';
 import '../models/workout_session.dart';
 import '../services/local_data_store.dart';
 import '../services/workout_snapshot_codec.dart';
+import '../services/strength_set_validation.dart';
 import '../services/usage_events.dart';
 import '../services/local_usage_metrics.dart';
 
@@ -620,6 +621,10 @@ class AppController extends ChangeNotifier {
       throw const FormatException('Valores de série inválidos.');
     }
     addExerciseToSession(machine);
+    final validation = StrengthSetValidation.error(
+      machine: machine, weight: weight,
+      repetitions: repetitions, durationSeconds: durationSeconds);
+    if (validation != null) throw FormatException(validation);
     final session = _ensureSession();
     final now = when ?? DateTime.now();
     final record = WorkoutRecord(
