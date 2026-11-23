@@ -198,6 +198,7 @@ class _CardioActivityScreenState extends State<CardioActivityScreen> {
       seconds: int.tryParse(_seconds.text) ?? 0,
     );
     final achievement = app.addCardioRecord(
+            sessionId: app.activeSession?.id,
       activity,
       CardioRecord(
         date: DateTime.now(),

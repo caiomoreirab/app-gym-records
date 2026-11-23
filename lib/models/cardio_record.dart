@@ -8,6 +8,7 @@ class CardioRecord {
     this.inclinePercent,
     this.resistanceLevel,
     this.notes = '',
+    this.sessionId,
   });
 
   final DateTime date;
@@ -18,6 +19,8 @@ class CardioRecord {
   final double? inclinePercent;
   final double? resistanceLevel;
   final String notes;
+  /// Optional workout linkage; legacy cardio records remain independent.
+  final String? sessionId;
 
   double? get paceMinutesPerKm {
     final distance = distanceKm;

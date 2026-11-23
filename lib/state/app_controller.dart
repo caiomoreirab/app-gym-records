@@ -114,7 +114,12 @@ class AppController extends ChangeNotifier {
   }
 
   WorkoutSession startSession({String name = 'Treino de hoje',
-      List<String> selectedGroupIds = const []}) {
+      List<String> selectedGroupIds = const [],
+      List<String> plannedCardioIds = const []}) {
+    if (plannedCardioIds.length != plannedCardioIds.toSet().length ||
+        plannedCardioIds.any((id) => !_cardioActivities.any((a) => a.id == id))) {
+      throw ArgumentError.value(plannedCardioIds, 'plannedCardioIds');
+    }
     final groups = _validateSessionGroups(selectedGroupIds);
     final now = DateTime.now();
     final id = 'session_${now.microsecondsSinceEpoch}_${_recordSerial++}';
@@ -127,7 +132,8 @@ class AppController extends ChangeNotifier {
     }
     final session = WorkoutSession(
       id: id, startedAt: now, name: name.trim().isEmpty ? 'Treino' : name.trim(),
-      selectedGroupIds: groups);
+      selectedGroupIds: groups,
+      plannedCardioIds: List<String>.unmodifiable(plannedCardioIds));
     _sessions.add(session);
     activeSessionId = id;
     localMetrics.startedSession();
@@ -156,6 +162,20 @@ class AppController extends ChangeNotifier {
       throw ArgumentError.value(groupIds, 'groupIds', 'Grupos inválidos');
     }
     return List<String>.unmodifiable(groupIds);
+  }
+
+  void addCardioActivityToSession(String activityId) {
+    if (!_cardioActivities.any((activity) => activity.id == activityId)) {
+      throw ArgumentError.value(activityId, 'activityId');
+    }
+    final session = activeSession;
+    if (session == null) throw StateError('Não há treino ativo.');
+    if (session.plannedCardioIds.contains(activityId)) return;
+    final index = _sessions.indexWhere((s) => s.id == session.id);
+    _sessions[index] = session.copyWith(
+      plannedCardioIds: [...session.plannedCardioIds, activityId]);
+    notifyListeners();
+    _scheduleSave();
   }
 
   void addExerciseToSession(Machine machine) {

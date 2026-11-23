@@ -37,6 +37,7 @@ class WorkoutSnapshotCodec {
               'exerciseIds': item.exerciseIds,
               'completedExerciseIds': item.completedExerciseIds,
               'selectedGroupIds': item.selectedGroupIds,
+              'plannedCardioIds': item.plannedCardioIds,
             },
         ],
         'machines': [
@@ -83,6 +84,7 @@ class WorkoutSnapshotCodec {
                   'inclinePercent': r.inclinePercent,
                   'resistanceLevel': r.resistanceLevel,
                   'notes': r.notes,
+                  'sessionId': r.sessionId,
                 },
             ],
           for (final activity in cardioActivities)
@@ -249,6 +251,9 @@ class WorkoutSnapshotCodec {
           inclinePercent: _number(r['inclinePercent']),
           resistanceLevel: _nonNegativeNumber(r['resistanceLevel']),
           notes: notes,
+          sessionId: r['sessionId'] is String &&
+                  (r['sessionId'] as String).isNotEmpty
+              ? r['sessionId'] as String : null,
         ));
       }
       newCardio[entry.key as String] = records;
@@ -272,9 +277,11 @@ class WorkoutSnapshotCodec {
         final rawExerciseIds = item['exerciseIds'];
         final rawDoneIds = item['completedExerciseIds'];
         final rawGroupIds = item['selectedGroupIds'];
+        final rawCardioIds = item['plannedCardioIds'];
         if ((rawExerciseIds != null && rawExerciseIds is! List) ||
             (rawDoneIds != null && rawDoneIds is! List) ||
-            (rawGroupIds != null && rawGroupIds is! List)) {
+            (rawGroupIds != null && rawGroupIds is! List) ||
+            (rawCardioIds != null && rawCardioIds is! List)) {
           throw const FormatException('Lista de exercícios da sessão inválida.');
         }
         final ids = rawExerciseIds is List
@@ -283,6 +290,15 @@ class WorkoutSnapshotCodec {
             ? rawDoneIds.whereType<String>().toSet().toList() : <String>[];
         final groups = rawGroupIds is List
             ? rawGroupIds.whereType<String>().toList() : <String>[];
+        final plannedCardio = rawCardioIds is List
+            ? rawCardioIds.whereType<String>().toList() : <String>[];
+        if (plannedCardio.length !=
+              (rawCardioIds is List ? rawCardioIds.length : 0) ||
+            plannedCardio.length > 100 ||
+            plannedCardio.length != plannedCardio.toSet().length ||
+            plannedCardio.any((id) => id.isEmpty || id.length > 160)) {
+          throw const FormatException('Atividades de cardio planejadas inválidas.');
+        }
         final validGroupIds = {
           for (final group in MuscleGroup.values) group.name, 'cardio',
         };
@@ -306,6 +322,7 @@ class WorkoutSnapshotCodec {
           exerciseIds: ids,
           completedExerciseIds: done,
           selectedGroupIds: groups,
+          plannedCardioIds: plannedCardio,
         );
       }
     }
