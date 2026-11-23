@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:gymrecords/screens/onboarding/name_screen.dart';
 import 'package:gymrecords/state/app_controller.dart';
@@ -22,6 +23,11 @@ void main() {
           theme: AppTheme.dark,
           supportedLocales: const [
             Locale('pt', 'BR'), Locale('en', 'US'), Locale('es', 'ES'),
+          ],
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
           ],
           locale: app.appLocale,
           home: const NameScreen(),
