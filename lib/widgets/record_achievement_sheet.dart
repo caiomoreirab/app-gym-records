@@ -11,7 +11,6 @@ import '../models/machine.dart';
 import '../models/workout_record.dart';
 import '../state/app_controller.dart';
 import '../theme/app_theme.dart';
-import '../utils/formatters.dart';
 import '../services/weight_units.dart';
 import 'blue_confetti_overlay.dart';
 import 'section_card.dart';
