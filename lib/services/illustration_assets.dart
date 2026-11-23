@@ -13,6 +13,14 @@ abstract final class IllustrationAssets {
 
   static String onboardingLogo() => 'assets/branding/icon_blue.png';
 
+  /// Only explicitly curated catalog illustrations are safe to show as
+  /// a depiction of the actual execution. The generic per-group fallbacks
+  /// were machines reused for free weights (and are therefore misleading).
+  static bool hasVerifiedExecution(Machine machine) =>
+      !machine.isCustom &&
+      machine.visualAssetId != null &&
+      machine.visualAssetId!.isNotEmpty;
+
   /// Main exercise thumbnail. It must always represent execution.
   static String exercise(Machine machine, IllustrationStyle style) {
     final explicit = machine.visualAssetId;
