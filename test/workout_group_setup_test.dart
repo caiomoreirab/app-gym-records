@@ -19,6 +19,9 @@ void main() {
     final app = AppController(persistenceEnabled: false, store: store);
     addTearDown(app.dispose);
     await app.loadPreferences();
+    await app.importBackup(
+      '{"schemaVersion":2,"machines":[],"cardio":{},'
+      '"sessions":[],"favorites":[],"activeSessionId":null}');
     final cardioId = app.cardioActivities.first.id;
     final session = app.startSession(
       selectedGroupIds: ['chest', 'triceps', 'cardio'],
@@ -124,6 +127,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('workout_group_chest')));
     await tester.tap(find.byKey(const Key('workout_group_back')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('workout_groups_continue')));
     await tester.pumpAndSettle();
     final count = tester.widget<ListView>(

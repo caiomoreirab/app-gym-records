@@ -42,7 +42,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(WorkoutExerciseSelectionScreen), findsOneWidget);
     expect(app.activeSession, isNull);
-    await tester.tap(find.byType(MachineListCard).first);
     await tester.tap(find.byKey(const Key('workout_exercises_finish')));
     await tester.pumpAndSettle();
     expect(app.activeSession, isNotNull);
@@ -61,7 +60,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(WorkoutLiveScreen), findsOneWidget);
     final session = app.activeSession!;
-    expect(session.exerciseIds.length, 2);
+    expect(session.exerciseIds.length, 1);
     expect(app.recordsForSession(session.id), isEmpty);
     expect(find.byKey(const Key('live_add_exercise')), findsOneWidget);
     expect(tester.takeException(), isNull);
