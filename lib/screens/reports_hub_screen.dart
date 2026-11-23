@@ -7,6 +7,8 @@ import '../widgets/gym_bottom_navigation.dart';
 import '../widgets/page_body.dart';
 import '../widgets/section_card.dart';
 import 'evolution_screen.dart';
+import 'home_screen.dart';
+import 'workout_completed_screen.dart';
 import 'pro_records_screen.dart';
 
 /// Free workout overview: users can inspect their own records at any tier.
@@ -47,9 +49,19 @@ class ReportsHubScreen extends StatelessWidget {
             Text('Histórico de treinos',
               style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
-            if (sessions.isEmpty)
-              const Text('Conclua um treino para começar seu histórico.',
+            if (sessions.isEmpty) ...[
+              const Text('Nenhum treino concluído com séries ainda.',
                 style: TextStyle(color: AppTheme.iceBlue)),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
+                  (_) => false,
+                ),
+                icon: const Icon(Icons.play_arrow_rounded),
+                label: const Text('Ir para o início e registrar treino'),
+              ),
+            ],
             for (final session in sessions.take(15))
               ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -57,6 +69,9 @@ class ReportsHubScreen extends StatelessWidget {
                   color: AppTheme.electricLime),
                 title: Text(session.name, maxLines: 1,
                   overflow: TextOverflow.ellipsis),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                  builder: (_) => WorkoutCompletedScreen(sessionId: session.id))),
                 subtitle: Text('${session.startedAt.day.toString().padLeft(2, '0')}/'
                   '${session.startedAt.month.toString().padLeft(2, '0')}/'
                   '${session.startedAt.year} · '

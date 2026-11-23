@@ -83,7 +83,7 @@ class _MachineScreenState extends State<MachineScreen> {
           ),
           IconButton(
             key: const Key('quick_repeat_set'),
-            tooltip: 'Repetir última série',
+            tooltip: 'Usar valores da última série',
             onPressed: machine.records.isEmpty || _saving
                 ? null : () => _repeatLastSeries(machine),
             icon: const Icon(Icons.repeat_rounded),
@@ -120,25 +120,10 @@ class _MachineScreenState extends State<MachineScreen> {
             ExerciseVisualPager(
               machine: machine,
               width: double.infinity,
-              height: 250,
-              fit: BoxFit.cover,
+              height: 190,
+              fit: BoxFit.contain,
               showLabel: true,
             ),
-            const SizedBox(height: 16),
-            _RecordCard(machine: machine, unit: app.unit),
-            const SizedBox(height: 8),
-            _RecordTypesCard(machine: machine, unit: app.unit),
-            if (app.activeSession != null &&
-                !app.activeSession!.exerciseIds.contains(machine.id)) ...[
-              const SizedBox(height: 10),
-              OutlinedButton.icon(
-                onPressed: () => app.addExerciseToSession(machine),
-                icon: const Icon(Icons.playlist_add_rounded),
-                label: const Text('Adicionar ao treino de hoje'),
-              ),
-            ],
-            const SizedBox(height: 16),
-            _NoteCard(note: machine.note, onEdit: () => _editNote(machine)),
             const SizedBox(height: 16),
             _WeightCard(
               key: _entryControlsKey,
@@ -174,11 +159,26 @@ class _MachineScreenState extends State<MachineScreen> {
               onPressed: machine.records.isEmpty || _saving
                 ? null : () => _repeatLastSeries(machine),
               icon: const Icon(Icons.repeat_rounded),
-              label: const Text('Repetir última série'),
+              label: const Text('Usar valores da última série'),
             ),
             const SizedBox(height: 26),
             SessionSeriesPanel(machine: machine),
             const SizedBox(height: 12),
+            _RecordCard(machine: machine, unit: app.unit),
+            const SizedBox(height: 8),
+            _RecordTypesCard(machine: machine, unit: app.unit),
+            if (app.activeSession != null &&
+                !app.activeSession!.exerciseIds.contains(machine.id)) ...[
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: () => app.addExerciseToSession(machine),
+                icon: const Icon(Icons.playlist_add_rounded),
+                label: const Text('Adicionar ao treino de hoje'),
+              ),
+            ],
+            const SizedBox(height: 16),
+            _NoteCard(note: machine.note, onEdit: () => _editNote(machine)),
+            const SizedBox(height: 16),
             _MachineProCard(
               machine: machine,
               unit: app.unit,
@@ -305,7 +305,7 @@ class _MachineScreenState extends State<MachineScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text(
-        'Última série preenchida. Revise os valores e toque em Salvar registro.')));
+        'Valores da última série preenchidos. Confira e salve o novo registro.')));
   }
 
   Future<void> _editWeight() async {

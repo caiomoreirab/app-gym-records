@@ -75,8 +75,13 @@ class _TwoViewImagePagerState extends State<TwoViewImagePager> {
       height: widget.height,
       child: ClipRRect(
         borderRadius: radius,
-        child: GestureDetector(
+        child: Semantics(
+          button: true,
+          label: 'Alternar visualização: $label',
+          child: GestureDetector(
           behavior: HitTestBehavior.translucent,
+          // Entire image is clickable; dots/labels remain decorative.
+          onTap: _toggle,
           onHorizontalDragStart: (_) => _dragDistance = 0,
           onHorizontalDragUpdate: (details) => _dragDistance += details.delta.dx,
           onHorizontalDragEnd: _onDragEnd,
@@ -111,8 +116,7 @@ class _TwoViewImagePagerState extends State<TwoViewImagePager> {
                 Positioned(
                   left: 12,
                   bottom: 10,
-                  child: GestureDetector(
-                    onTap: _toggle,
+                  child: IgnorePointer(
                     child: DecoratedBox(
                       decoration: BoxDecoration(
                         color: const Color(0xCC060B13),
@@ -132,8 +136,7 @@ class _TwoViewImagePagerState extends State<TwoViewImagePager> {
               Positioned(
                 right: widget.compact ? 6 : 12,
                 bottom: widget.compact ? 6 : 10,
-                child: GestureDetector(
-                  onTap: _toggle,
+                child: IgnorePointer(
                   child: DecoratedBox(
                     decoration: BoxDecoration(color: const Color(0xC907111B), borderRadius: BorderRadius.circular(99)),
                     child: Padding(
@@ -150,6 +153,7 @@ class _TwoViewImagePagerState extends State<TwoViewImagePager> {
             ],
           ),
         ),
+        ), // Semantics
       ),
     );
   }

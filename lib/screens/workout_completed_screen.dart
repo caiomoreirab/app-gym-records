@@ -273,7 +273,7 @@ class _WorkoutCompletedScreenState extends State<WorkoutCompletedScreen> {
               const SizedBox(height: 7),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Voltar para o início'),
+                child: const Text('Voltar'),
               ),
             ],
           ),

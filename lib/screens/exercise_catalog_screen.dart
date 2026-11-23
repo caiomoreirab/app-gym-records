@@ -106,10 +106,11 @@ class _ExerciseCatalogScreenState extends State<ExerciseCatalogScreen> {
                     unit: app.unit,
                     onTap: () {
                       final saved = app.ensureMachineAdded(machine);
-                      if (app.activeSession != null) {
-                        app.addExerciseToSession(saved);
-                      }
+                      // Only picker mode means the user requested inclusion.
                       if (widget.pickForWorkout) {
+                        if (app.activeSession != null) {
+                          app.addExerciseToSession(saved);
+                        }
                         Navigator.of(context).pop<Machine>(saved);
                         return;
                       }

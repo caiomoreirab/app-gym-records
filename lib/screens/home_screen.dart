@@ -242,13 +242,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 machines: searchResults,
                 unit: controller.unit,
                 onOpenGroup: (group) => _openGroup(context, group),
-                onOpenMachine: (machine) {
-                  if (controller.activeSession != null) {
-                    final ready = controller.ensureMachineAdded(machine);
-                    controller.addExerciseToSession(ready);
-                  }
-                  _openMachine(context, machine);
-                },
+                // Browsing a search result does not change the active workout.
+                onOpenMachine: (machine) => _openMachine(context, machine),
                 showCardio: showCardioSearch,
                 onOpenCardio: () => _openCardio(context),
               )
@@ -690,7 +685,7 @@ class _TodayWorkoutCard extends StatelessWidget {
           Text(context.strings.t('Organize suas séries sem perder o histórico.', 'Keep your sets organized without losing history.', 'Organiza tus series sin perder el historial.'),
             style: TextStyle(color: AppTheme.iceBlue)),
           const SizedBox(height: 12),
-          OutlinedButton.icon(
+          FilledButton.icon(
             key: const Key('start_workout_session'),
             onPressed: onStart,
             icon: const Icon(Icons.play_arrow_rounded),
@@ -700,7 +695,7 @@ class _TodayWorkoutCard extends StatelessWidget {
           Text('${selected.length} ${context.strings.t('exercícios', 'exercises', 'ejercicios')} · ${records.length} ${context.strings.t('séries', 'sets', 'series')}',
             style: const TextStyle(color: AppTheme.iceBlue)),
           const SizedBox(height: 12),
-          OutlinedButton.icon(
+          FilledButton.icon(
             key: const Key('track_active_workout'),
             onPressed: onTrack,
             icon: const Icon(Icons.play_circle_outline_rounded),
@@ -708,11 +703,12 @@ class _TodayWorkoutCard extends StatelessWidget {
               'Track workout', 'Seguir entrenamiento')),
           ),
           const SizedBox(height: 10),
-          FilledButton.icon(
+          OutlinedButton.icon(
             key: const Key('add_exercise_to_session'),
             onPressed: onAddExercise,
             icon: const Icon(Icons.add_circle_outline_rounded),
-            label: Text(context.strings.addEquipment),
+            label: Text(context.strings.t('Adicionar exercício',
+              'Add exercise', 'Añadir ejercicio')),
           ),
           if (selected.isEmpty) ...[
             const SizedBox(height: 12),

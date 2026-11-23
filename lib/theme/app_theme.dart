@@ -58,12 +58,12 @@ abstract final class AppTheme {
       scaffoldBackgroundColor: deepNavy,
       canvasColor: deepNavy,
       primaryColor: deepNavy,
-      focusColor: Colors.transparent,
-      hoverColor: Colors.transparent,
-      highlightColor: Colors.transparent,
-      splashColor: Colors.transparent,
+      focusColor: electricLime.withValues(alpha: 0.12),
+      hoverColor: electricLime.withValues(alpha: 0.05),
+      highlightColor: electricLime.withValues(alpha: 0.07),
+      splashColor: electricLime.withValues(alpha: 0.10),
       colorScheme: scheme,
-      splashFactory: NoSplash.splashFactory,
+      splashFactory: InkRipple.splashFactory,
       textSelectionTheme: const TextSelectionThemeData(
         cursorColor: electricLime,
         selectionColor: royalBlue,
@@ -139,7 +139,8 @@ abstract final class AppTheme {
         style: FilledButton.styleFrom(
           minimumSize: const Size.fromHeight(buttonHeight),
           backgroundColor: electricLime,
-          foregroundColor: polarWhite,
+          // Light-blue primary needs dark content for WCAG AA contrast.
+          foregroundColor: deepNavy,
           textStyle: _base.copyWith(fontSize: 18, fontWeight: FontWeight.w600),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(17),
