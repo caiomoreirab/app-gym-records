@@ -36,6 +36,7 @@ class WorkoutSnapshotCodec {
               'completedAt': item.completedAt?.toUtc().toIso8601String(),
               'exerciseIds': item.exerciseIds,
               'completedExerciseIds': item.completedExerciseIds,
+              'selectedGroupIds': item.selectedGroupIds,
             },
         ],
         'machines': [
@@ -270,14 +271,26 @@ class WorkoutSnapshotCodec {
         }
         final rawExerciseIds = item['exerciseIds'];
         final rawDoneIds = item['completedExerciseIds'];
+        final rawGroupIds = item['selectedGroupIds'];
         if ((rawExerciseIds != null && rawExerciseIds is! List) ||
-            (rawDoneIds != null && rawDoneIds is! List)) {
+            (rawDoneIds != null && rawDoneIds is! List) ||
+            (rawGroupIds != null && rawGroupIds is! List)) {
           throw const FormatException('Lista de exercícios da sessão inválida.');
         }
         final ids = rawExerciseIds is List
             ? rawExerciseIds.whereType<String>().toSet().toList() : <String>[];
         final done = rawDoneIds is List
             ? rawDoneIds.whereType<String>().toSet().toList() : <String>[];
+        final groups = rawGroupIds is List
+            ? rawGroupIds.whereType<String>().toList() : <String>[];
+        final validGroupIds = {
+          for (final group in MuscleGroup.values) group.name, 'cardio',
+        };
+        if (groups.length != (rawGroupIds is List ? rawGroupIds.length : 0) ||
+            groups.length != groups.toSet().length ||
+            groups.any((id) => !validGroupIds.contains(id))) {
+          throw const FormatException('Grupos do treino inválidos.');
+        }
         if (ids.length > 500 || done.length > 500 ||
             ids.any((id) => id.isEmpty || id.length > 160) ||
             done.any((id) => !ids.contains(id)) ||
@@ -292,6 +305,7 @@ class WorkoutSnapshotCodec {
               : _date(item['completedAt']),
           exerciseIds: ids,
           completedExerciseIds: done,
+          selectedGroupIds: groups,
         );
       }
     }

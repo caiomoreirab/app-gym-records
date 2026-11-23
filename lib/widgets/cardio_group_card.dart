@@ -6,9 +6,11 @@ import '../state/app_controller.dart';
 import '../theme/app_theme.dart';
 
 class CardioGroupCard extends StatelessWidget {
-  const CardioGroupCard({super.key, required this.onTap});
+  const CardioGroupCard({super.key, required this.onTap,
+    this.selected = false});
 
   final VoidCallback onTap;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -17,10 +19,14 @@ class CardioGroupCard extends StatelessWidget {
       color: AppTheme.surfaceNavy,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTheme.radius),
-        side: const BorderSide(color: AppTheme.deepBlue),
+        side: BorderSide(color: selected
+          ? AppTheme.electricLime : AppTheme.deepBlue,
+          width: selected ? 2 : 1),
       ),
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
+      child: Semantics(
+        button: true, selected: selected,
+        child: InkWell(
         onTap: onTap,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -51,7 +57,9 @@ class CardioGroupCard extends StatelessWidget {
                         shape: BoxShape.circle,
                         border: Border.all(color: AppTheme.electricLime),
                       ),
-                      child: const Icon(Icons.directions_run_rounded, color: AppTheme.electricLime, size: 23),
+                      child: Icon(selected ? Icons.check_rounded
+                        : Icons.directions_run_rounded,
+                        color: AppTheme.electricLime, size: 23),
                     ),
                   ),
                 ],
@@ -74,6 +82,7 @@ class CardioGroupCard extends StatelessWidget {
             ),
           ],
         ),
+        ), // Semantics
       ),
     );
   }

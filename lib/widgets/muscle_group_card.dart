@@ -11,11 +11,13 @@ class MuscleGroupCard extends StatelessWidget {
     required this.group,
     required this.onTap,
     this.wide = false,
+    this.selected = false,
   });
 
   final MuscleGroup group;
   final VoidCallback onTap;
   final bool wide;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +26,9 @@ class MuscleGroupCard extends StatelessWidget {
         color: AppTheme.surfaceNavy,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTheme.radius),
-          side: const BorderSide(color: AppTheme.deepBlue),
+          side: BorderSide(color: selected
+            ? AppTheme.electricLime : AppTheme.deepBlue,
+            width: selected ? 2 : 1),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -60,21 +64,33 @@ class MuscleGroupCard extends StatelessWidget {
       color: AppTheme.surfaceNavy,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppTheme.radius),
-        side: const BorderSide(color: AppTheme.deepBlue),
+        side: BorderSide(color: selected
+          ? AppTheme.electricLime : AppTheme.deepBlue,
+          width: selected ? 2 : 1),
       ),
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
+      child: Semantics(
+        button: true, selected: selected,
+        child: InkWell(
         onTap: onTap,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(child: AdaptiveGroupImage(group: group, fit: BoxFit.cover)),
+            Expanded(child: Stack(fit: StackFit.expand, children: [
+              AdaptiveGroupImage(group: group, fit: BoxFit.cover),
+              if (selected) const Positioned(
+                top: 9, right: 9,
+                child: Icon(Icons.check_circle_rounded,
+                  color: AppTheme.electricLime, size: 30),
+              ),
+            ])),
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
               child: _Labels(group: group),
             ),
           ],
         ),
+        ), // Semantics
       ),
     );
   }

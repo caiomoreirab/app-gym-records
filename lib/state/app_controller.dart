@@ -113,7 +113,9 @@ class AppController extends ChangeNotifier {
     _scheduleSave();
   }
 
-  WorkoutSession startSession({String name = 'Treino de hoje'}) {
+  WorkoutSession startSession({String name = 'Treino de hoje',
+      List<String> selectedGroupIds = const []}) {
+    final groups = _validateSessionGroups(selectedGroupIds);
     final now = DateTime.now();
     final id = 'session_${now.microsecondsSinceEpoch}_${_recordSerial++}';
     final existing = activeSession;
@@ -124,13 +126,36 @@ class AppController extends ChangeNotifier {
       }
     }
     final session = WorkoutSession(
-      id: id, startedAt: now, name: name.trim().isEmpty ? 'Treino' : name.trim());
+      id: id, startedAt: now, name: name.trim().isEmpty ? 'Treino' : name.trim(),
+      selectedGroupIds: groups);
     _sessions.add(session);
     activeSessionId = id;
     localMetrics.startedSession();
     notifyListeners();
     _scheduleSave();
     return session;
+  }
+
+  /// Changes only the recommended groups; never removes exercises or sets.
+  void setActiveSessionGroups(List<String> groupIds) {
+    final groups = _validateSessionGroups(groupIds);
+    final session = activeSession;
+    if (session == null) throw StateError('Não há treino ativo.');
+    if (session.selectedGroupIds.length == groups.length &&
+        session.selectedGroupIds.every(groups.contains)) return;
+    final index = _sessions.indexWhere((s) => s.id == session.id);
+    _sessions[index] = session.copyWith(selectedGroupIds: groups);
+    notifyListeners();
+    _scheduleSave();
+  }
+
+  static List<String> _validateSessionGroups(List<String> groupIds) {
+    final allowed = {for (final group in MuscleGroup.values) group.name, 'cardio'};
+    if (groupIds.length != groupIds.toSet().length ||
+        groupIds.any((id) => !allowed.contains(id))) {
+      throw ArgumentError.value(groupIds, 'groupIds', 'Grupos inválidos');
+    }
+    return List<String>.unmodifiable(groupIds);
   }
 
   void addExerciseToSession(Machine machine) {

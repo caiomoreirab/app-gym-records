@@ -10,6 +10,7 @@ class WorkoutSession {
     this.completedAt,
     this.exerciseIds = const [],
     this.completedExerciseIds = const [],
+    this.selectedGroupIds = const [],
   });
 
   final String id;
@@ -18,6 +19,9 @@ class WorkoutSession {
   final DateTime? completedAt;
   final List<String> exerciseIds;
   final List<String> completedExerciseIds;
+  /// Optional filters for this session only. Empty means all groups.
+  /// 'cardio' is a filter/shortcut; strength sets remain exercise records.
+  final List<String> selectedGroupIds;
 
   bool get isCompleted => completedAt != null;
   bool isExerciseCompleted(String machineId) =>
@@ -34,6 +38,7 @@ class WorkoutSession {
     DateTime? completedAt,
     List<String>? exerciseIds,
     List<String>? completedExerciseIds,
+    List<String>? selectedGroupIds,
   }) => WorkoutSession(
         id: id,
         startedAt: startedAt,
@@ -41,6 +46,7 @@ class WorkoutSession {
         completedAt: completedAt ?? this.completedAt,
         exerciseIds: exerciseIds ?? this.exerciseIds,
         completedExerciseIds: completedExerciseIds ?? this.completedExerciseIds,
+        selectedGroupIds: selectedGroupIds ?? this.selectedGroupIds,
       );
 
   static String legacyId(DateTime day) =>
