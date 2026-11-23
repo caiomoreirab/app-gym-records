@@ -6,6 +6,7 @@ import '../services/analytics_service.dart';
 import '../state/app_controller.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
+import '../services/weight_units.dart';
 import '../widgets/analytics_widgets.dart';
 import '../widgets/page_body.dart';
 import '../widgets/section_card.dart';
@@ -73,7 +74,7 @@ class _ProRecordsScreenState extends State<ProRecordsScreen> {
                     Text('${AnalyticsService.recordsInRange([machine], _period, now).length} ${context.strings.t('registros', 'logs', 'registros')}', style: const TextStyle(fontSize: 12, color: AppTheme.iceBlue)),
                   ])),
                   Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                    Text(machine.recordWeight > 0 ? '${formatWeight(machine.recordWeight, locale)} ${app.unit}' : machine.bestRepetitions > 0 ? '${machine.bestRepetitions} reps' : '${machine.bestDurationSeconds}s', style: const TextStyle(color: AppTheme.electricLime, fontWeight: FontWeight.w600, fontSize: 19)),
+                    Text(machine.recordWeight > 0 ? '${WeightUnits.format(machine.recordWeight, app.unit, locale)} ${app.unit}' : machine.bestRepetitions > 0 ? '${machine.bestRepetitions} reps' : '${machine.bestDurationSeconds}s', style: const TextStyle(color: AppTheme.electricLime, fontWeight: FontWeight.w600, fontSize: 19)),
                     TextButton(
                       onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => ExerciseInsightsScreen(machineId: machine.id))),
                       child: Text(context.strings.t('Analisar', 'Analyze', 'Analizar')),
