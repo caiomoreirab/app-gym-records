@@ -107,9 +107,9 @@ class _NameScreenState extends State<NameScreen> {
                     Text.rich(
                       TextSpan(
                         children: [
-                          TextSpan(text: context.strings.t('Como você quer ser ', 'What should we ')),
+                          TextSpan(text: context.strings.t('Como você quer ser ', 'What should we ', '¿Cómo quieres que te ')),
                           TextSpan(
-                            text: context.strings.t('chamado?', 'call you?'),
+                            text: context.strings.t('chamado?', 'call you?', 'llamemos?'),
                             style: Theme.of(context)
                                 .textTheme
                                 .headlineLarge
@@ -198,7 +198,7 @@ class _NameScreenState extends State<NameScreen> {
                           const SizedBox(width: 14),
                           Expanded(
                             child: Text(
-                              context.strings.t('Você pode usar seu nome ou apelido.', 'You can use your name or nickname.'),
+                              context.strings.t('Você pode usar seu nome ou apelido.', 'You can use your name or nickname.', 'Puedes usar tu nombre o apodo.'),
                               style: Theme.of(context)
                                   .textTheme
                                   .bodyLarge
