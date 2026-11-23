@@ -26,8 +26,11 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('main_nav_1')));
     await tester.pumpAndSettle();
-    expect(tester.widget<TextField>(find.byKey(const Key('catalog_search')))
-      .controller?.text, 'supino');
+    final catalogEditor = find.descendant(
+      of: find.byKey(const Key('catalog_search')),
+      matching: find.byType(EditableText),
+    );
+    expect(tester.widget<EditableText>(catalogEditor).controller.text, 'supino');
 
     await tester.tap(find.byKey(const Key('main_nav_0')));
     await tester.pumpAndSettle();
