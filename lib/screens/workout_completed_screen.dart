@@ -14,7 +14,7 @@ import '../theme/app_theme.dart';
 import '../widgets/page_body.dart';
 import '../widgets/section_card.dart';
 import '../widgets/workout_svg_icon.dart';
-import 'reports_hub_screen.dart';
+import 'main_tabs_shell.dart';
 import 'settings_screen.dart';
 
 /// Celebration that reuses the classic dark/cyan GymRecords design.
@@ -265,7 +265,7 @@ class _WorkoutCompletedScreenState extends State<WorkoutCompletedScreen> {
               OutlinedButton.icon(
                 onPressed: () => Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute<void>(
-                    builder: (_) => const ReportsHubScreen()),
+                    builder: (_) => const MainTabsShell(initialIndex: 2)),
                   (_) => false),
                 icon: const Icon(Icons.history_rounded),
                 label: const Text('Ver histórico'),

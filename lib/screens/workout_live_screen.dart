@@ -782,8 +782,8 @@ class _ActiveExerciseCard extends StatelessWidget {
                 label: Text(latest == null
                   ? context.strings.t('Série rápida',
                     'Quick set', 'Serie rápida')
-                  : context.strings.t('Repetir última série',
-                    'Repeat last set', 'Repetir última serie')),
+                  : context.strings.t('Usar valores da última série',
+                    'Use previous set values', 'Usar valores anteriores')),
               )
             else
               Expanded(child: FilledButton.icon(
@@ -793,8 +793,8 @@ class _ActiveExerciseCard extends StatelessWidget {
                 label: Text(latest == null
                   ? context.strings.t('Série rápida',
                     'Quick set', 'Serie rápida')
-                  : context.strings.t('Repetir série',
-                    'Repeat set', 'Repetir serie')),
+                  : context.strings.t('Usar última série',
+                    'Use last set values', 'Usar última serie')),
               )),
           ],
         ),
