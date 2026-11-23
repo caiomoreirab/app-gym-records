@@ -1,5 +1,9 @@
 import 'dart:convert';
 
+import '../data/mock_data.dart';
+import '../models/machine.dart';
+import 'workout_snapshot_codec.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
@@ -26,7 +30,7 @@ abstract class LocalDataStore {
   }
 }
 
-/// SQLite v2: immutable backup snapshot + transactional relational indexes.
+/// SQLite v3: immutable backup snapshot + transactional relational indexes.
 ///
 /// The canonical v2 JSON remains the compatibility/backup source of truth,
 /// while normalized projection tables support future local queries without a
@@ -41,7 +45,7 @@ class SqliteLocalDataStore implements LocalDataStore {
     final path = p.join(await getDatabasesPath(), 'gymrecords_v1.db');
     final db = await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onConfigure: (database) async {
         await database.execute('PRAGMA foreign_keys = ON');
       },
@@ -52,10 +56,25 @@ class SqliteLocalDataStore implements LocalDataStore {
           'payload TEXT NOT NULL, updated_at TEXT NOT NULL)',
         );
         await _createV2Tables(database);
+        await _createV3Tables(database);
       },
       onUpgrade: (database, oldVersion, newVersion) async {
         if (oldVersion < 2) await _createV2Tables(database);
-        // Existing user_state rows remain untouched and readable.
+        if (oldVersion < 3) {
+          await _createV3Tables(database);
+          // Upgrade relational mirrors without modifying the historical JSON.
+          // This also handles original v1 backups with implicit daily sessions.
+          final rows = await database.query('user_state',
+            columns: ['payload'], where: 'id = ?', whereArgs: [1], limit: 1);
+          if (rows.isNotEmpty) {
+            final payload = jsonDecode(rows.single['payload'] as String);
+            if (payload is! Map<String, dynamic>) {
+              throw const FormatException('Snapshot legado inválido.');
+            }
+            await _rebuildIndexes(database, _projectionSnapshot(payload));
+          }
+        }
+        // Original user_state payload is never rewritten by migration.
       },
     );
     _database = db;
@@ -113,6 +132,64 @@ class SqliteLocalDataStore implements LocalDataStore {
     );
   }
 
+  /// Additive, non-destructive v3 migration for planned groups/cardio and
+  /// the link between a cardio record and its originating workout.
+  static Future<void> _createV3Tables(DatabaseExecutor database) async {
+    await database.execute(
+      'CREATE TABLE IF NOT EXISTS session_groups ('
+      'session_id TEXT NOT NULL, group_id TEXT NOT NULL, '
+      'position INTEGER NOT NULL CHECK(position >= 0), '
+      'PRIMARY KEY(session_id, group_id), '
+      'FOREIGN KEY(session_id) REFERENCES workout_sessions(id) '
+      'ON DELETE CASCADE)',
+    );
+    await database.execute(
+      'CREATE TABLE IF NOT EXISTS session_cardio ('
+      'session_id TEXT NOT NULL, activity_id TEXT NOT NULL, '
+      'position INTEGER NOT NULL CHECK(position >= 0), '
+      'PRIMARY KEY(session_id, activity_id), '
+      'FOREIGN KEY(session_id) REFERENCES workout_sessions(id) '
+      'ON DELETE CASCADE)',
+    );
+    await database.execute(
+      'ALTER TABLE cardio_entries ADD COLUMN session_id TEXT',
+    );
+    await database.execute(
+      'CREATE INDEX IF NOT EXISTS idx_cardio_session_date '
+      'ON cardio_entries(session_id, occurred_at)',
+    );
+    await database.execute(
+      'CREATE INDEX IF NOT EXISTS idx_group_session '
+      'ON session_groups(group_id, session_id)',
+    );
+    await database.execute(
+      'CREATE INDEX IF NOT EXISTS idx_planned_cardio '
+      'ON session_cardio(activity_id, session_id)',
+    );
+  }
+
+  /// Relational mirrors need normalized IDs even for imported legacy v1 JSON.
+  /// Their historical payload itself is preserved byte-for-byte.
+  static Map<String, dynamic> _projectionSnapshot(
+      Map<String, dynamic> snapshot) {
+    if (snapshot['schemaVersion'] == 2 && snapshot['sessions'] is List) {
+      return snapshot;
+    }
+    final restored = WorkoutSnapshotCodec.decode(snapshot);
+    final machines = <Machine>[];
+    final cardioActivities = buildCardioActivities();
+    final preserved = restored.applyTo(machines, cardioActivities);
+    return WorkoutSnapshotCodec.encode(
+      machines: machines,
+      cardioActivities: cardioActivities,
+      preservedCardio: preserved,
+      sessions: restored.sessions,
+      favorites: restored.favorites,
+      activeSessionId: restored.activeSessionId,
+      rootExtras: restored.rootExtras,
+    );
+  }
+
   @override
   Future<Map<String, dynamic>?> load() async {
     final db = await _open();
@@ -157,19 +234,21 @@ class SqliteLocalDataStore implements LocalDataStore {
       await txn.insert('user_state', {
         'id': 1, 'payload': json, 'updated_at': now,
       }, conflictAlgorithm: ConflictAlgorithm.replace);
-      await _rebuildIndexes(txn, snapshot);
+      await _rebuildIndexes(txn, _projectionSnapshot(snapshot));
     });
   }
 
   /// Read-only projections of the canonical snapshot. Legacy JSON stays
   /// intact, while all future workout queries have indexed SQL tables.
   static Future<void> _rebuildIndexes(
-      Transaction txn, Map<String, dynamic> snapshot) async {
+      DatabaseExecutor txn, Map<String, dynamic> snapshot) async {
     // One batch keeps projection updates fast as the history grows.
     final batch = txn.batch();
     // Children first, respecting foreign key constraints.
     batch.delete('workout_sets');
     batch.delete('session_exercises');
+    batch.delete('session_groups');
+    batch.delete('session_cardio');
     batch.delete('workout_sessions');
     batch.delete('cardio_entries');
 
@@ -188,6 +267,22 @@ class SqliteLocalDataStore implements LocalDataStore {
         'started_at': raw['startedAt']?.toString() ?? '',
         'completed_at': raw['completedAt']?.toString(),
       });
+      final groupIds = raw['selectedGroupIds'];
+      if (groupIds is List) {
+        for (var i = 0; i < groupIds.length; i++) {
+          batch.insert('session_groups', {
+            'session_id': id, 'group_id': groupIds[i], 'position': i,
+          });
+        }
+      }
+      final plannedCardio = raw['plannedCardioIds'];
+      if (plannedCardio is List) {
+        for (var i = 0; i < plannedCardio.length; i++) {
+          batch.insert('session_cardio', {
+            'session_id': id, 'activity_id': plannedCardio[i], 'position': i,
+          });
+        }
+      }
       final list = raw['exerciseIds'];
       final done = raw['completedExerciseIds'] is List
           ? (raw['completedExerciseIds'] as List).toSet() : const <Object>{};
@@ -242,12 +337,14 @@ class SqliteLocalDataStore implements LocalDataStore {
           final record = records[index];
           if (record is! Map) continue;
           batch.insert('cardio_entries', {
-            'entry_key': '${activity.key}_$index',
+            // JSON composite keys avoid collisions for custom activity IDs.
+            'entry_key': jsonEncode([activity.key, index]),
             'activity_id': activity.key,
             'occurred_at': record['date'],
             'duration_seconds': record['seconds'],
             'distance_km': record['distanceKm'],
             'calories': record['calories'],
+            'session_id': record['sessionId'],
           });
         }
       }
