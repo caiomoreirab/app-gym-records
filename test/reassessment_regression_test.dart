@@ -103,7 +103,6 @@ void main() {
       child: MaterialApp(theme: AppTheme.dark,
         home: const ProExportScreen())));
     await tester.pumpAndSettle();
-    expect(find.textContaining('Nenhum registro neste filtro'), findsOneWidget);
     final csv = tester.widget<FilledButton>(
       find.widgetWithText(FilledButton, 'Copiar CSV'));
     expect(csv.onPressed, isNull);
@@ -113,6 +112,11 @@ void main() {
     final download = tester.widget<OutlinedButton>(
       find.widgetWithText(OutlinedButton, 'Baixar PDF'));
     expect(download.onPressed, isNull);
+    await tester.scrollUntilVisible(
+      find.textContaining('Nenhum registro neste filtro'), 160,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.textContaining('Nenhum registro neste filtro'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
