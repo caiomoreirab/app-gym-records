@@ -1,4 +1,9 @@
+import 'dart:ui' as ui;
+import 'dart:typed_data';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:file_saver/file_saver.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../l10n/app_strings.dart';
@@ -7,6 +12,7 @@ import '../models/workout_record.dart';
 import '../state/app_controller.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
+import '../services/weight_units.dart';
 import 'blue_confetti_overlay.dart';
 import 'section_card.dart';
 
@@ -23,15 +29,29 @@ Future<void> showRecordAchievementSheet({
   final app = AppScope.of(context);
   final latest = machine.latestRecord!;
   final locale = Localizations.localeOf(context);
-  final name = app.displayName.isEmpty ? context.strings.user : app.displayName;
-  final highlight = _highlightValue(metric, latest, app.unit, locale);
+   final highlight = _highlightValue(metric, latest, app.unit, locale);
   final previous = _previousValue(metric, previousWeight, previousRepetitions, previousDurationSeconds, app.unit, locale);
   final shareText = context.strings.t(
-    '$name bateu um novo recorde em ${machine.localizedName(locale)}: $highlight com o GymRecords.',
-    '$name hit a new record on ${machine.localizedName(locale)}: $highlight with GymRecords.',
-    '$name logró un nuevo récord en ${machine.localizedName(locale)}: $highlight con GymRecords.',
+    'Novo recorde em ${machine.localizedName(locale)}: $highlight com o GymRecords.',
+    'New record on ${machine.localizedName(locale)}: $highlight with GymRecords.',
+    'Nuevo récord en ${machine.localizedName(locale)}: $highlight con GymRecords.',
   );
-  final mockLink = 'https://gymrecords.app/conquista/${machine.id}';
+  final recordCardKey = GlobalKey(debugLabel: 'record-share-card');
+  Future<Uint8List> captureRecord() async {
+    await WidgetsBinding.instance.endOfFrame;
+    final render = recordCardKey.currentContext?.findRenderObject();
+    if (render is! RenderRepaintBoundary) {
+      throw StateError('Cartão de recorde indisponível.');
+    }
+    final image = await render.toImage(pixelRatio: 2.4);
+    try {
+      final data = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (data == null) throw StateError('Imagem indisponível.');
+      return data.buffer.asUint8List();
+    } finally {
+      image.dispose();
+    }
+  }
 
   await showModalBottomSheet<void>(
     context: context,
@@ -85,7 +105,9 @@ Future<void> showRecordAchievementSheet({
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 Text(context.strings.t('Compartilhe sua conquista', 'Share your achievement', 'Comparte tu logro'), style: Theme.of(sheetContext).textTheme.headlineSmall),
                 const SizedBox(height: 16),
-                SectionCard(
+                RepaintBoundary(
+                  key: recordCardKey,
+                  child: SectionCard(
                   padding: const EdgeInsets.all(14),
                   child: Row(children: [
                     SizedBox(
@@ -103,26 +125,64 @@ Future<void> showRecordAchievementSheet({
                     const SizedBox(width: 12),
                     Expanded(child: Text(shareText, style: Theme.of(sheetContext).textTheme.bodyMedium)),
                   ]),
-                ),
+                )),
                 const SizedBox(height: 14),
                 FilledButton.icon(
                   onPressed: () async {
-                    await Clipboard.setData(ClipboardData(text: shareText));
-                    if (!sheetContext.mounted) return;
-                    ScaffoldMessenger.of(sheetContext).showSnackBar(SnackBar(content: Text(context.strings.t('Texto da conquista copiado. A integração com o WhatsApp entra na próxima etapa funcional.', 'Achievement text copied. WhatsApp integration will be connected in the next functional phase.', 'Texto del logro copiado. La integración con WhatsApp se conectará en la próxima etapa funcional.'))));
+                    try {
+                      final bytes = await captureRecord();
+                      if (!sheetContext.mounted) return;
+                      await SharePlus.instance.share(ShareParams(
+                        files: [XFile.fromData(bytes,
+                          name: 'gymrecords-recorde.png',
+                          mimeType: 'image/png')],
+                        fileNameOverrides: const ['gymrecords-recorde.png'],
+                        text: shareText,
+                        downloadFallbackEnabled: true,
+                      ));
+                    } catch (_) {
+                      if (!sheetContext.mounted) return;
+                      ScaffoldMessenger.of(sheetContext).showSnackBar(
+                        const SnackBar(content: Text(
+                          'Compartilhamento indisponível. Use Salvar cartão PNG.')));
+                    }
                   },
-                  icon: const Icon(Icons.chat_bubble_outline_rounded),
-                  label: Text(context.strings.t('Compartilhar no WhatsApp', 'Share on WhatsApp', 'Compartir en WhatsApp')),
+                  icon: const Icon(Icons.ios_share_rounded),
+                  label: Text(context.strings.t('Compartilhar conquista',
+                    'Share achievement', 'Compartir logro')),
                 ),
                 const SizedBox(height: 10),
                 OutlinedButton.icon(
                   onPressed: () async {
-                    await Clipboard.setData(ClipboardData(text: mockLink));
-                    if (!sheetContext.mounted) return;
-                    ScaffoldMessenger.of(sheetContext).showSnackBar(SnackBar(content: Text(context.strings.t('Link de demonstração copiado.', 'Demo link copied.', 'Enlace de demostración copiado.'))));
+                    try {
+                      final bytes = await captureRecord();
+                      await FileSaver.instance.saveFile(
+                        name: 'gymrecords_recorde', bytes: bytes,
+                        fileExtension: 'png', mimeType: MimeType.png);
+                      if (!sheetContext.mounted) return;
+                      ScaffoldMessenger.of(sheetContext).showSnackBar(
+                        const SnackBar(content: Text('Imagem preparada para salvar.')));
+                    } catch (_) {
+                      if (!sheetContext.mounted) return;
+                      ScaffoldMessenger.of(sheetContext).showSnackBar(
+                        const SnackBar(content: Text('Não foi possível salvar imagem.')));
+                    }
                   },
-                  icon: const Icon(Icons.link_rounded),
-                  label: Text(context.strings.t('Copiar link', 'Copy link', 'Copiar enlace')),
+                  icon: const Icon(Icons.download_outlined),
+                  label: Text(context.strings.t('Salvar cartão PNG',
+                    'Save PNG card', 'Guardar tarjeta PNG')),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    await Clipboard.setData(ClipboardData(text: shareText));
+                    if (!sheetContext.mounted) return;
+                    ScaffoldMessenger.of(sheetContext).showSnackBar(
+                      const SnackBar(content: Text('Texto da conquista copiado.')));
+                  },
+                  icon: const Icon(Icons.copy_rounded),
+                  label: Text(context.strings.t('Copiar texto',
+                    'Copy text', 'Copiar texto')),
                 ),
                 TextButton(onPressed: () => Navigator.of(sheetContext).pop(), child: Text(context.strings.t('Agora não', 'Not now', 'Ahora no'), style: const TextStyle(color: AppTheme.iceBlue))),
               ]),
@@ -137,7 +197,7 @@ Future<void> showRecordAchievementSheet({
 String _highlightValue(StrengthAchievementMetric metric, WorkoutRecord latest, String unit, Locale locale) {
   switch (metric) {
     case StrengthAchievementMetric.weight:
-      return '${formatWeight(latest.weight, locale)} $unit';
+      return '${WeightUnits.format(latest.weight, unit, locale)} $unit';
     case StrengthAchievementMetric.repetitions:
       return '${latest.repetitions ?? 0} reps';
     case StrengthAchievementMetric.duration:
@@ -148,7 +208,7 @@ String _highlightValue(StrengthAchievementMetric metric, WorkoutRecord latest, S
 String _previousValue(StrengthAchievementMetric metric, double weight, int reps, int duration, String unit, Locale locale) {
   switch (metric) {
     case StrengthAchievementMetric.weight:
-      return weight > 0 ? '${formatWeight(weight, locale)} $unit' : '—';
+      return weight > 0 ? '${WeightUnits.format(weight, unit, locale)} $unit' : '—';
     case StrengthAchievementMetric.repetitions:
       return reps > 0 ? '$reps reps' : '—';
     case StrengthAchievementMetric.duration:
