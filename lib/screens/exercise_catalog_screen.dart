@@ -15,9 +15,10 @@ import 'machine_screen.dart';
 class ExerciseCatalogScreen extends StatefulWidget {
   /// Picker mode returns the chosen machine to the active workout Home.
   const ExerciseCatalogScreen({super.key, this.pickForWorkout = false,
-    this.showBottomNav = true});
+    this.showBottomNav = true, this.preferredGroupIds = const []});
   final bool pickForWorkout;
   final bool showBottomNav;
+  final List<String> preferredGroupIds;
 
   @override
   State<ExerciseCatalogScreen> createState() => _ExerciseCatalogScreenState();
@@ -26,6 +27,7 @@ class ExerciseCatalogScreen extends StatefulWidget {
 class _ExerciseCatalogScreenState extends State<ExerciseCatalogScreen> {
   String _query = '';
   MuscleGroup? _group;
+  bool _showAll = false;
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +36,9 @@ class _ExerciseCatalogScreenState extends State<ExerciseCatalogScreen> {
     final normalized = _query.trim().toLowerCase();
     final matches = app.availableMachines.where((m) {
       if (_group != null && m.group != _group) return false;
+      if (_group == null && widget.pickForWorkout && !_showAll &&
+          widget.preferredGroupIds.isNotEmpty &&
+          !widget.preferredGroupIds.contains(m.group.name)) return false;
       if (normalized.isEmpty) return true;
       return m.localizedName(locale).toLowerCase().contains(normalized) ||
         m.group.localizedLabel(locale).toLowerCase().contains(normalized) ||
@@ -45,7 +50,8 @@ class _ExerciseCatalogScreenState extends State<ExerciseCatalogScreen> {
       bottomNavigationBar: widget.pickForWorkout || !widget.showBottomNav
         ? null : const GymBottomNavigation(index: 1),
       appBar: widget.pickForWorkout
-        ? AppBar(title: Text(context.strings.addEquipment))
+        ? AppBar(title: Text(context.strings.t('Adicionar exercício',
+            'Add exercise', 'Añadir ejercicio')))
         : null,
       body: PageBody(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -55,7 +61,7 @@ class _ExerciseCatalogScreenState extends State<ExerciseCatalogScreen> {
             const SizedBox(height: 18),
           ],
           Text(widget.pickForWorkout
-              ? context.strings.t('Escolha um aparelho', 'Choose equipment', 'Elige equipo')
+              ? context.strings.t('Escolha um exercício', 'Choose an exercise', 'Elige un ejercicio')
               : context.strings.t('Exercícios', 'Exercises', 'Ejercicios'),
             style: Theme.of(context).textTheme.headlineMedium),
           if (widget.pickForWorkout) ...[
@@ -77,15 +83,31 @@ class _ExerciseCatalogScreenState extends State<ExerciseCatalogScreen> {
           const SizedBox(height: 12),
           SingleChildScrollView(scrollDirection: Axis.horizontal,
             child: Row(children: [
+              if (widget.pickForWorkout && widget.preferredGroupIds.isNotEmpty) ...[
+                ChoiceChip(
+                  key: const Key('catalog_preferred_groups'),
+                  label: Text(context.strings.t('Grupos do treino',
+                    'Workout groups', 'Grupos del entrenamiento')),
+                  selected: _group == null && !_showAll,
+                  onSelected: (_) => setState(() {
+                    _group = null; _showAll = false;
+                  })),
+                const SizedBox(width: 8),
+              ],
               ChoiceChip(label: Text(context.strings.all),
-                selected: _group == null,
-                onSelected: (_) => setState(() => _group = null)),
+                selected: _group == null && (_showAll ||
+                  widget.preferredGroupIds.isEmpty || !widget.pickForWorkout),
+                onSelected: (_) => setState(() {
+                  _group = null; _showAll = true;
+                })),
               const SizedBox(width: 8),
               for (final group in MuscleGroup.values) ...[
                 ChoiceChip(
                   label: Text(group.localizedLabel(locale)),
                   selected: _group == group,
-                  onSelected: (_) => setState(() => _group = group)),
+                  onSelected: (_) => setState(() {
+                    _group = group; _showAll = false;
+                  })),
                 const SizedBox(width: 8),
               ],
             ]),

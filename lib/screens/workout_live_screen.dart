@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import '../l10n/app_strings.dart';
 import '../models/machine.dart';
+import '../models/muscle_group.dart';
 import '../models/workout_record.dart';
 import '../models/workout_session.dart';
 import '../services/strength_set_validation.dart';
@@ -16,6 +17,9 @@ import '../widgets/section_card.dart';
 import 'exercise_catalog_screen.dart';
 import 'machine_screen.dart';
 import 'workout_completed_screen.dart';
+import 'workout_group_selection_screen.dart';
+import 'cardio_screen.dart';
+import 'cardio_activity_screen.dart';
 
 /// Active workout command center. No fake sets, no server calls and
 /// no changes to the existing record form or the classic visual identity.
@@ -126,12 +130,33 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
     ));
   }
 
+  Future<void> _editGroups() async {
+    final app = AppScope.of(context);
+    final session = app.activeSession;
+    if (session == null) return;
+    final selected = await Navigator.of(context).push<List<String>>(
+      MaterialPageRoute(builder: (_) => WorkoutGroupSelectionScreen(
+        editing: true, initialGroupIds: session.selectedGroupIds)),
+    );
+    if (!mounted || selected == null || app.activeSession?.id != session.id) {
+      return;
+    }
+    app.setActiveSessionGroups(selected);
+    await app.flushPendingWrites();
+  }
+
+  Future<void> _openCardioActivity(String id) async {
+    await Navigator.of(context).push<void>(MaterialPageRoute<void>(
+      builder: (_) => CardioActivityScreen(activityId: id)));
+  }
+
   Future<void> _addExercise() async {
     final app = AppScope.of(context);
     if (app.activeSession == null) return;
     final selected = await Navigator.of(context).push<Machine>(
       MaterialPageRoute(builder: (_) =>
-          const ExerciseCatalogScreen(pickForWorkout: true)),
+          ExerciseCatalogScreen(pickForWorkout: true,
+          preferredGroupIds: app.activeSession?.selectedGroupIds ?? const [])),
     );
     if (!mounted || selected == null) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -543,6 +568,48 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
               ]),
             ],
           )),
+          SectionCard(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(children: [
+                Expanded(child: Text(context.strings.t(
+                  'Grupos do treino', 'Workout groups',
+                  'Grupos del entrenamiento'),
+                  style: Theme.of(context).textTheme.titleMedium)),
+                TextButton.icon(
+                  key: const Key('live_edit_groups'),
+                  onPressed: _editGroups,
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  label: Text(context.strings.t('Alterar', 'Edit', 'Cambiar')),
+                ),
+              ]),
+              const SizedBox(height: 6),
+              if (session.selectedGroupIds.isEmpty)
+                Text(context.strings.t('Todos os grupos', 'All groups',
+                  'Todos los grupos'),
+                  style: const TextStyle(color: AppTheme.iceBlue))
+              else Wrap(spacing: 7, runSpacing: 6, children: [
+                for (final group in MuscleGroup.values)
+                  if (session.selectedGroupIds.contains(group.name))
+                    Chip(label: Text(group.localizedLabel(
+                      Localizations.localeOf(context)))),
+                if (session.selectedGroupIds.contains('cardio'))
+                  Chip(label: Text(context.strings.cardio)),
+              ]),
+              if (session.selectedGroupIds.contains('cardio')) ...[
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  key: const Key('live_cardio_catalog'),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const CardioScreen())),
+                  icon: const Icon(Icons.directions_run_rounded),
+                  label: Text(context.strings.t('Ver atividades de cardio',
+                    'View cardio activities', 'Ver actividades de cardio')),
+                ),
+              ],
+            ],
+          )),
+          const SizedBox(height: 12),
           if (_restEndsAt != null || _restFinished) ...[
             const SizedBox(height: 12),
             _restControls(context),
@@ -580,6 +647,46 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
                 ),
               ],
             )),
+          ],
+          if (session.plannedCardioIds.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Text(context.strings.t('Cardio planejado', 'Planned cardio',
+              'Cardio planificado'),
+              style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 8),
+            for (final activity in app.cardioActivities)
+              if (session.plannedCardioIds.contains(activity.id))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 9),
+                  child: SectionCard(child: Row(children: [
+                    const Icon(Icons.directions_run_rounded,
+                      color: AppTheme.electricLime),
+                    const SizedBox(width: 10),
+                    Expanded(child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(activity.localizedName(
+                          Localizations.localeOf(context)),
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
+                        Text(activity.records.any((r) => r.sessionId == session.id)
+                          ? context.strings.t('Registrado neste treino',
+                            'Logged in this workout',
+                            'Registrado en este entrenamiento')
+                          : context.strings.t('Ainda sem registro neste treino',
+                            'Not logged in this workout',
+                            'Sin registro en este entrenamiento'),
+                          style: const TextStyle(color: AppTheme.iceBlue,
+                            fontSize: 12)),
+                      ],
+                    )),
+                    IconButton(
+                      tooltip: context.strings.t('Registrar cardio',
+                        'Log cardio', 'Registrar cardio'),
+                      onPressed: () => _openCardioActivity(activity.id),
+                      icon: const Icon(Icons.chevron_right_rounded,
+                        color: AppTheme.electricLime)),
+                  ]))),
+                ),
           ],
           const SizedBox(height: 18),
           Row(children: [

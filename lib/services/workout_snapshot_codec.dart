@@ -99,6 +99,7 @@ class WorkoutSnapshotCodec {
                   'inclinePercent': r.inclinePercent,
                   'resistanceLevel': r.resistanceLevel,
                   'notes': r.notes,
+                  'sessionId': r.sessionId,
                 },
             ],
         },

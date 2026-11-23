@@ -24,6 +24,7 @@ import 'pro_overview_screen.dart';
 import 'workout_completed_screen.dart';
 import 'exercise_catalog_screen.dart';
 import 'workout_live_screen.dart';
+import 'workout_group_selection_screen.dart';
 
 enum _RecordFilter { all, recorded, unrecorded }
 
@@ -376,9 +377,22 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _startWorkout() {
+  Future<void> _startWorkout() async {
     final app = AppScope.of(context);
-    app.startSession();
+    if (app.activeSession != null) { _openActiveWorkout(); return; }
+    final plan = await Navigator.of(context).push<WorkoutSetupResult>(
+      MaterialPageRoute<WorkoutSetupResult>(
+        builder: (_) => const WorkoutGroupSelectionScreen(),
+      ),
+    );
+    if (!mounted || plan == null) return;
+    app.startSession(selectedGroupIds: plan.groupIds,
+      plannedCardioIds: plan.cardioIds);
+    for (final machine in plan.exercises) {
+      app.addExerciseToSession(app.ensureMachineAdded(machine));
+    }
+    await app.flushPendingWrites();
+    if (!mounted) return;
     _openActiveWorkout();
   }
 
@@ -393,7 +407,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (controller.activeSession == null) return;
     final chosen = await Navigator.of(context).push<Machine>(
       MaterialPageRoute<Machine>(
-        builder: (_) => const ExerciseCatalogScreen(pickForWorkout: true),
+        builder: (_) => ExerciseCatalogScreen(pickForWorkout: true,
+          preferredGroupIds: controller.activeSession?.selectedGroupIds ?? const []),
       ),
     );
     if (!mounted || chosen == null) return;
