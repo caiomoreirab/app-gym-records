@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:gymrecords/screens/home_screen.dart';
 import 'package:gymrecords/screens/exercise_catalog_screen.dart';
+import 'package:gymrecords/screens/workout_live_screen.dart';
 import 'package:gymrecords/state/app_controller.dart';
 import 'package:gymrecords/widgets/machine_list_card.dart';
 import 'package:gymrecords/theme/app_theme.dart';
@@ -31,9 +32,10 @@ void main() {
     await tester.tap(find.byKey(const Key('start_workout_session')));
     await tester.pumpAndSettle();
     expect(app.activeSession, isNotNull);
-    expect(find.byKey(const Key('add_exercise_to_session')), findsOneWidget);
+    expect(find.byType(WorkoutLiveScreen), findsOneWidget);
+    expect(find.byKey(const Key('live_add_exercise')), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('add_exercise_to_session')));
+    await tester.tap(find.byKey(const Key('live_add_exercise')));
     await tester.pumpAndSettle();
     expect(find.byType(ExerciseCatalogScreen), findsOneWidget);
     expect(find.byKey(const Key('catalog_search')), findsOneWidget);
@@ -42,11 +44,11 @@ void main() {
       scrollable: find.byType(Scrollable).last);
     await tester.tap(find.byType(MachineListCard).first);
     await tester.pumpAndSettle();
-    expect(find.byType(HomeScreen), findsOneWidget);
+    expect(find.byType(WorkoutLiveScreen), findsOneWidget);
     final session = app.activeSession!;
     expect(session.exerciseIds.length, 1);
     expect(app.recordsForSession(session.id), isEmpty);
-    expect(find.byKey(const Key('add_exercise_to_session')), findsOneWidget);
+    expect(find.byKey(const Key('live_add_exercise')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
