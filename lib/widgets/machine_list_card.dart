@@ -8,11 +8,14 @@ import '../services/weight_units.dart';
 import 'adaptive_illustration.dart';
 
 class MachineListCard extends StatelessWidget {
-  const MachineListCard({super.key, required this.machine, required this.unit, required this.onTap});
+  const MachineListCard({super.key, required this.machine, required this.unit,
+    required this.onTap, this.selectable = false, this.selected = false});
 
   final Machine machine;
   final String unit;
   final VoidCallback onTap;
+  final bool selectable;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -20,9 +23,13 @@ class MachineListCard extends StatelessWidget {
     final compact = MediaQuery.sizeOf(context).width < 380;
     return Material(
       color: AppTheme.surfaceNavy,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius), side: const BorderSide(color: AppTheme.deepBlue)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radius),
+        side: BorderSide(color: selected ? AppTheme.electricLime
+          : AppTheme.deepBlue, width: selected ? 2 : 1)),
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
+      child: Semantics(
+        button: true, selected: selectable && selected,
+        child: InkWell(
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -45,7 +52,12 @@ class MachineListCard extends StatelessWidget {
                 ]),
               ),
               SizedBox(width: compact ? 8 : 10),
-              SizedBox(
+              if (selectable)
+                Icon(selected ? Icons.check_circle_rounded
+                  : Icons.radio_button_unchecked_rounded,
+                  color: selected ? AppTheme.electricLime : AppTheme.iceBlue,
+                  size: 28)
+              else SizedBox(
                 width: compact ? 70 : 93,
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
@@ -64,6 +76,7 @@ class MachineListCard extends StatelessWidget {
             ],
           ),
         ),
+        ), // Semantics
       ),
     );
   }
