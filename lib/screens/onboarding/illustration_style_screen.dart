@@ -64,9 +64,9 @@ class _IllustrationStyleScreenState extends State<IllustrationStyleScreen> {
                   TextSpan(
                     children: [
                       TextSpan(text: name.isEmpty ? '' : '$name, '),
-                      TextSpan(text: context.strings.t('como você prefere visualizar os ', 'how do you prefer to view ')),
+                      TextSpan(text: context.strings.t('como você prefere visualizar os ', 'how do you prefer to view ', '¿cómo prefieres ver los ')),
                       TextSpan(
-                        text: context.strings.t('exercícios?', 'exercises?'),
+                        text: context.strings.t('exercícios?', 'exercises?', 'ejercicios?'),
                         style: Theme.of(context)
                             .textTheme
                             .headlineLarge
