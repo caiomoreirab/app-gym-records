@@ -1,4 +1,7 @@
 /// A workout is a time-bounded session. Records hold the session ID.
+///
+/// [completedExerciseIds] tracks deliberate user validation independently
+/// from saved sets. Checking an exercise never creates a fake strength set.
 class WorkoutSession {
   const WorkoutSession({
     required this.id,
@@ -6,6 +9,7 @@ class WorkoutSession {
     this.name = 'Treino',
     this.completedAt,
     this.exerciseIds = const [],
+    this.completedExerciseIds = const [],
   });
 
   final String id;
@@ -13,17 +17,30 @@ class WorkoutSession {
   final String name;
   final DateTime? completedAt;
   final List<String> exerciseIds;
+  final List<String> completedExerciseIds;
 
   bool get isCompleted => completedAt != null;
+  bool isExerciseCompleted(String machineId) =>
+      completedExerciseIds.contains(machineId);
 
-  WorkoutSession copyWith({String? name, DateTime? completedAt,
-      List<String>? exerciseIds}) =>
-      WorkoutSession(
+  int get completedCount => completedExerciseIds
+      .where(exerciseIds.contains).length;
+  int get pendingCount => exerciseIds.length - completedCount;
+  double get progress => exerciseIds.isEmpty
+      ? 0 : completedCount / exerciseIds.length;
+
+  WorkoutSession copyWith({
+    String? name,
+    DateTime? completedAt,
+    List<String>? exerciseIds,
+    List<String>? completedExerciseIds,
+  }) => WorkoutSession(
         id: id,
         startedAt: startedAt,
         name: name ?? this.name,
         completedAt: completedAt ?? this.completedAt,
         exerciseIds: exerciseIds ?? this.exerciseIds,
+        completedExerciseIds: completedExerciseIds ?? this.completedExerciseIds,
       );
 
   static String legacyId(DateTime day) =>
