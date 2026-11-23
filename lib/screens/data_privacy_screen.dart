@@ -155,6 +155,37 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
     }
   }
 
+  Future<void> _recoverPreviousSqlite(AppController app) async {
+    if (_working || !app.supportsPreviousSqliteSnapshot) return;
+    final confirmed = await showDialog<bool>(context: context,
+      builder: (dialog) => AlertDialog(
+        title: const Text('Recuperar cópia local anterior?'),
+        content: const Text(
+          'O GymRecords tentará restaurar a última versão válida '
+          'guardada pelo SQLite. Alterações mais recentes podem ser '
+          'perdidas. Nenhum dado será apagado sem uma cópia recuperável.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialog, false),
+            child: const Text('Cancelar')),
+          FilledButton(onPressed: () => Navigator.pop(dialog, true),
+            child: const Text('Recuperar')),
+        ],
+      ),
+    );
+    if (!mounted || confirmed != true) return;
+    setState(() => _working = true);
+    try {
+      final recovered = await app.restorePreviousLocalSnapshot();
+      if (mounted) _message(recovered
+        ? 'Cópia local anterior restaurada.'
+        : 'Não há uma cópia local anterior disponível.');
+    } catch (e) {
+      if (mounted) _message('Não foi possível recuperar: $e');
+    } finally {
+      if (mounted) setState(() => _working = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
@@ -195,6 +226,15 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
                         onPressed: _working ? null : () => _retrySave(app),
                         icon: const Icon(Icons.refresh_rounded),
                         label: const Text('Tentar salvar novamente'),
+                      ),
+                    ] else if (app.supportsPreviousSqliteSnapshot) ...[
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        key: const Key('recover_sqlite_previous'),
+                        onPressed: _working
+                          ? null : () => _recoverPreviousSqlite(app),
+                        icon: const Icon(Icons.restore_rounded),
+                        label: const Text('Recuperar cópia local anterior'),
                       ),
                     ],
                   ],
