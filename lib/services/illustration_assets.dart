@@ -5,6 +5,20 @@ import '../models/user_profile.dart';
 abstract final class IllustrationAssets {
   static const String fallbackMachine = 'assets/illustrations/generic_machine.webp';
 
+  /// Original, movement-specific vectors. No machine photo is substituted
+  /// for a barbell exercise; each style keeps the same biomechanics.
+  static const Set<String> curatedMovementIds = {
+    'barbell_bench_press', 'barbell_squat', 'deadlift',
+  };
+
+  static String? curatedMovementSvg(Machine machine, IllustrationStyle style) {
+    if (machine.isCustom || !curatedMovementIds.contains(machine.id)) {
+      return null;
+    }
+    return 'assets/illustrations/movements/'
+        '${style.assetFolder}/${machine.id}.svg';
+  }
+
   static String onboarding(IllustrationStyle style) =>
       'assets/images/onboarding/illustration_${style.assetFolder}.webp';
 
