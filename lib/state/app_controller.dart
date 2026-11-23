@@ -377,6 +377,28 @@ class AppController extends ChangeNotifier {
 
   Future<void> flushPendingWrites() => _writeQueue;
 
+  /// Explicit recovery from the previous committed SQLite snapshot. Unlike
+  /// an automatic reset, this never replaces an unreadable DB with blank data.
+  bool get supportsPreviousSqliteSnapshot => _store is SqliteLocalDataStore;
+
+  Future<bool> restorePreviousLocalSnapshot() async {
+    final store = _store;
+    if (store is! SqliteLocalDataStore) return false;
+    final previous = await store.loadPreviousSnapshot();
+    if (previous == null) return false;
+    final restored = WorkoutSnapshotCodec.decode(previous);
+    await flushPendingWrites();
+    await store.save(previous);
+    _preservedCardio
+      ..clear()
+      ..addAll(restored.applyTo(_machines, _cardioActivities));
+    _applyRestoredSessions(restored);
+    _failedToReadStorage = false;
+    persistenceError = null;
+    notifyListeners();
+    return true;
+  }
+
   /// Allows retry after a transient write failure (low disk space, I/O
   /// interruption). It deliberately refuses to overwrite an unreadable DB.
   Future<bool> retrySave() async {
