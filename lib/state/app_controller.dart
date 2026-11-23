@@ -144,6 +144,46 @@ class AppController extends ChangeNotifier {
     _scheduleSave();
   }
 
+  /// Validates an exercise without generating a record or affecting PRs.
+  void setExerciseCompleted(String machineId, bool completed) {
+    final session = activeSession;
+    if (session == null) throw StateError('Não há treino ativo.');
+    if (!session.exerciseIds.contains(machineId)) {
+      throw StateError('O exercício não está neste treino.');
+    }
+    if (session.isExerciseCompleted(machineId) == completed) return;
+    final index = _sessions.indexWhere((s) => s.id == session.id);
+    final updated = [...session.completedExerciseIds];
+    if (completed) {
+      updated.add(machineId);
+    } else {
+      updated.remove(machineId);
+    }
+    _sessions[index] = session.copyWith(completedExerciseIds: updated);
+    notifyListeners();
+    _scheduleSave();
+  }
+
+  /// Only planned exercises without saved series may be removed here.
+  /// Removing sets requires the explicit edit/delete flow.
+  void removeUnusedExerciseFromSession(String machineId) {
+    final session = activeSession;
+    if (session == null || !session.exerciseIds.contains(machineId)) return;
+    if (recordsForSession(session.id)
+        .any((record) => _machines.any((m) =>
+            m.id == machineId && m.records.contains(record)))) {
+      throw StateError('Este exercício já tem séries registradas.');
+    }
+    final index = _sessions.indexWhere((s) => s.id == session.id);
+    _sessions[index] = session.copyWith(
+      exerciseIds: session.exerciseIds.where((id) => id != machineId).toList(),
+      completedExerciseIds: session.completedExerciseIds
+          .where((id) => id != machineId).toList(),
+    );
+    notifyListeners();
+    _scheduleSave();
+  }
+
   /// Completes once and returns the exact saved session for the celebration.
   WorkoutSession? completeSession({DateTime? at}) {
     final id = activeSessionId;
