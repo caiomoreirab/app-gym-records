@@ -36,7 +36,7 @@ void main() {
     await tester.tap(find.byKey(const Key('add_exercise_to_session')));
     await tester.pumpAndSettle();
     expect(find.byType(ExerciseCatalogScreen), findsOneWidget);
-    expect(find.text('Escolha um aparelho'), findsOneWidget);
+    expect(find.byKey(const Key('catalog_search')), findsOneWidget);
 
     await tester.scrollUntilVisible(find.byType(MachineListCard).first, 120,
       scrollable: find.byType(Scrollable).last);
