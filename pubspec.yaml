@@ -1,7 +1,7 @@
 name: gymrecords
 description: Front-end de validação do GymRecords.
 publish_to: none
-version: 0.9.1+19
+version: 0.10.0+20
 
 environment:
   sdk: '>=3.13.0 <4.0.0'
