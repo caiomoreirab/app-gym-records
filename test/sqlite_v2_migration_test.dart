@@ -5,6 +5,8 @@ import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:gymrecords/data/mock_data.dart';
+import 'package:gymrecords/models/workout_record.dart';
+import 'package:gymrecords/services/workout_snapshot_codec.dart';
 import 'package:gymrecords/services/local_data_store.dart';
 import 'package:gymrecords/state/app_controller.dart';
 
@@ -76,6 +78,48 @@ void main() {
     expect(indexes, contains('idx_sets_session_date'));
     expect((await store.load())!['schemaVersion'], 2);
     expect(await store.loadPreviousSnapshot(), isNotNull);
+    await db.close();
+    app.dispose();
+    await store.close();
+  });
+
+  test('histórico preenchido no SQLite v1 migra sem perder séries', () async {
+    final exercise = buildExerciseCatalog().firstWhere(
+      (m) => m.id == 'barbell_squat');
+    exercise.records.add(WorkoutRecord(
+      date: DateTime(2026, 11, 18, 13, 30),
+      weight: 65, repetitions: 6));
+    final legacy = WorkoutSnapshotCodec.encode(
+      machines: [exercise], cardioActivities: []);
+    legacy['schemaVersion'] = 1;
+    legacy.remove('sessions');
+    final old = await openDatabase(databasePath, version: 1,
+      onCreate: (db, version) async {
+        await db.execute('CREATE TABLE user_state '
+          '(id INTEGER PRIMARY KEY, payload TEXT NOT NULL, '
+          'updated_at TEXT NOT NULL)');
+      });
+    await old.insert('user_state', {
+      'id': 1, 'payload': jsonEncode(legacy),
+      'updated_at': '2026-11-18',
+    });
+    await old.close();
+
+    final store = SqliteLocalDataStore();
+    final app = AppController(persistenceEnabled: false, store: store);
+    await app.loadPreferences();
+    final restored = app.machineById(exercise.id);
+    expect(restored.records.length, 1);
+    expect(restored.records.single.weight, 65);
+    app.startSession();
+    app.addRecord(restored, weight: 70, repetitions: 5);
+    await app.flushPendingWrites();
+    expect(app.persistenceError, isNull);
+    final db = await openDatabase(databasePath, version: 2);
+    final rows = await db.query('workout_sets');
+    expect(rows.length, 2);
+    expect(rows.map((r) => r['weight_kg']),
+      containsAll([65, 70]));
     await db.close();
     app.dispose();
     await store.close();

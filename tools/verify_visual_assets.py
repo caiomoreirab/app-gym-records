@@ -56,6 +56,47 @@ adaptive=(root/'lib'/'widgets'/'adaptive_illustration.dart').read_text(
 if 'fit: BoxFit.contain' not in adaptive:
     problems.append('Exercise media must use BoxFit.contain')
 
+# Verify source WebP dimensions, not only file presence. The UI uses
+# BoxFit.contain for movement images: no stretching/cropping on small screens.
+def webp_dimensions(path):
+    raw = path.read_bytes()[:40]
+    if len(raw) < 30 or raw[:4] != b'RIFF' or raw[8:12] != b'WEBP':
+        raise ValueError('Invalid WebP header')
+    kind = raw[12:16]
+    if kind == b'VP8X':
+        width = int.from_bytes(raw[24:27], 'little') + 1
+        height = int.from_bytes(raw[27:30], 'little') + 1
+    elif kind == b'VP8L' and raw[20] == 0x2f:
+        bits = int.from_bytes(raw[21:25], 'little')
+        width = (bits & 0x3fff) + 1
+        height = ((bits >> 14) & 0x3fff) + 1
+    elif kind == b'VP8 ' and raw[23:26] == b'\x9d\x01\x2a':
+        width = int.from_bytes(raw[26:28], 'little') & 0x3fff
+        height = int.from_bytes(raw[28:30], 'little') & 0x3fff
+    else:
+        raise ValueError(f'Unrecognized WebP format: {kind!r}')
+    if width < 1 or height < 1:
+        raise ValueError('Invalid image dimensions')
+    return width, height
+
+dimensions = []
+extreme_ratios = []
+for picture in assets.rglob('*.webp'):
+    try:
+        width, height = webp_dimensions(picture)
+        dimensions.append((picture, width, height))
+        if max(width, height) / min(width, height) > 3:
+            extreme_ratios.append(f'{picture.relative_to(root)}: {width}x{height}')
+    except ValueError as error:
+        problems.append(f'{picture.relative_to(root)}: {error}')
+print(f'WebP image sources checked: {len(dimensions)}')
+if dimensions:
+    print('WebP dimensions: minimum side', min(min(w,h) for _,w,h in dimensions),
+          '| maximum side', max(max(w,h) for _,w,h in dimensions))
+if extreme_ratios:
+    print('Unusual image aspect ratios (review composition, no stretch):')
+    for issue in extreme_ratios[:30]: print('-', issue)
+
 print(f'Exercise catalog: {len(ids)} unique names: {len(set(ids))}')
 print(f'Explicit exercise asset IDs: {len(refs)} (unique stems: {len(set(b for a,b in refs))})')
 for profile in profiles:
