@@ -20,8 +20,10 @@ class ReportsHubScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
     final records = app.machines.fold<int>(0, (sum, m) => sum + m.records.length);
-    final sessions = app.sessions.where((s) =>
-      s.completedAt != null && app.recordsForSession(s.id).isNotEmpty).toList()
+    final sessions = app.sessions.where((s) => s.completedAt != null && (
+      app.recordsForSession(s.id).isNotEmpty ||
+      app.cardioActivities.any((activity) => activity.records
+        .any((record) => record.sessionId == s.id)))).toList()
       ..sort((a,b) => b.startedAt.compareTo(a.startedAt));
 
     return Scaffold(
@@ -52,7 +54,7 @@ class ReportsHubScreen extends StatelessWidget {
               style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             if (sessions.isEmpty) ...[
-              const Text('Nenhum treino concluído com séries ainda.',
+              const Text('Nenhum treino concluído com registros ainda.',
                 style: TextStyle(color: AppTheme.iceBlue)),
               const SizedBox(height: 10),
               OutlinedButton.icon(
@@ -77,7 +79,8 @@ class ReportsHubScreen extends StatelessWidget {
                 subtitle: Text('${session.startedAt.day.toString().padLeft(2, '0')}/'
                   '${session.startedAt.month.toString().padLeft(2, '0')}/'
                   '${session.startedAt.year} · '
-                  '${app.recordsForSession(session.id).length} séries'),
+                  '${app.recordsForSession(session.id).length} séries'
+                  '${app.cardioActivities.expand((a) => a.records).where((r) => r.sessionId == session.id).isNotEmpty ? ' · cardio registrado' : ''}'),
               ),
           ],
         )),

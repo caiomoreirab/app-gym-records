@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gymrecords/data/mock_data.dart';
 import 'package:gymrecords/models/workout_record.dart';
+import 'package:gymrecords/models/cardio_record.dart';
+import 'package:gymrecords/models/cardio_activity.dart';
 import 'package:gymrecords/models/workout_session.dart';
 import 'package:gymrecords/services/completed_workout_summary.dart';
 
@@ -33,6 +35,24 @@ void main() {
     expect(summary.volumeKg, 1800);
     expect(summary.weightPersonalRecords, 1);
     expect(summary.estimatedKcal, closeTo(294, 0.001));
+  });
+
+  test('cardio ligado à sessão entra no resumo sem inventar MET', () {
+    final start = DateTime(2026, 11, 23, 10);
+    final activity = CardioActivity(id: 'run', name: 'Corrida',
+      nameEn: 'Running', kind: CardioKind.outdoorRun,
+      records: [CardioRecord(date: start,
+        duration: const Duration(minutes: 15), distanceKm: 2.5,
+        sessionId: 'active')]);
+    final summary = CompletedWorkoutSummary(
+      session: WorkoutSession(id: 'active', startedAt: start,
+        completedAt: start.add(const Duration(minutes: 20))),
+      machines: const [], cardioActivities: [activity], bodyWeightKg: 80);
+    expect(summary.cardioActivityCount, 1);
+    expect(summary.cardioRecordCount, 1);
+    expect(summary.cardioDuration, const Duration(minutes: 15));
+    expect(summary.cardioDistanceKm, 2.5);
+    expect(summary.estimatedKcal, isNull);
   });
 
   test('sem peso ou sessão inválida não inventa calorias', () {

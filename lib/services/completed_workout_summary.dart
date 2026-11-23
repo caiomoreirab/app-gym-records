@@ -1,4 +1,6 @@
 import '../models/machine.dart';
+import '../models/cardio_activity.dart';
+import '../models/cardio_record.dart';
 import '../models/workout_record.dart';
 import '../models/workout_session.dart';
 
@@ -8,6 +10,7 @@ class CompletedWorkoutSummary {
   CompletedWorkoutSummary({
     required this.session,
     required Iterable<Machine> machines,
+    Iterable<CardioActivity> cardioActivities = const [],
     required this.bodyWeightKg,
   }) {
     final byExercise = <String, List<WorkoutRecord>>{};
@@ -44,6 +47,25 @@ class CompletedWorkoutSummary {
     totalSets = sets;
     volumeKg = volume;
     weightPersonalRecords = newRecords;
+
+    final byCardio = <String, List<CardioRecord>>{};
+    var totalSeconds = 0;
+    var totalDistance = 0.0;
+    for (final activity in cardioActivities) {
+      final records = activity.records
+        .where((r) => r.sessionId == session.id).toList();
+      if (records.isEmpty) continue;
+      byCardio[activity.name] = records;
+      for (final r in records) {
+        totalSeconds += r.duration.inSeconds;
+        totalDistance += r.distanceKm ?? 0;
+      }
+    }
+    cardio = Map<String, List<CardioRecord>>.unmodifiable(
+      byCardio.map((key, value) => MapEntry(key,
+        List<CardioRecord>.unmodifiable(value))));
+    cardioDuration = Duration(seconds: totalSeconds);
+    cardioDistanceKm = totalDistance;
   }
 
   final WorkoutSession session;
@@ -53,6 +75,12 @@ class CompletedWorkoutSummary {
   late final int totalSets;
   late final double volumeKg;
   late final int weightPersonalRecords;
+  late final Map<String, List<CardioRecord>> cardio;
+  late final Duration cardioDuration;
+  late final double cardioDistanceKm;
+  int get cardioActivityCount => cardio.length;
+  int get cardioRecordCount =>
+    cardio.values.fold<int>(0, (sum, items) => sum + items.length);
 
   int get exerciseCount => exercises.length;
 
@@ -71,8 +99,10 @@ class CompletedWorkoutSummary {
   double? get estimatedKcal {
     final kg = bodyWeightKg;
     final minutes = duration.inSeconds / 60;
-    if (kg == null || !kg.isFinite || kg < 20 || kg > 400 ||
-        minutes < 5 || minutes > 240 || totalSets == 0) return null;
+    // Mixed sessions cannot use full elapsed time as resistance-only MET.
+    if (cardio.isNotEmpty || kg == null || !kg.isFinite ||
+        kg < 20 || kg > 400 || minutes < 5 || minutes > 240 ||
+        totalSets == 0) return null;
     return generalResistanceMet * 3.5 * kg / 200 * minutes;
   }
 }

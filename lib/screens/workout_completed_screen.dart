@@ -147,6 +147,7 @@ class _WorkoutCompletedScreenState extends State<WorkoutCompletedScreen> {
     final summary = CompletedWorkoutSummary(
       session: session,
       machines: app.machines,
+      cardioActivities: app.cardioActivities,
       bodyWeightKg: app.bodyWeightKg,
     );
 
@@ -203,6 +204,27 @@ class _WorkoutCompletedScreenState extends State<WorkoutCompletedScreen> {
                     ]),
                   ],
                 ])),
+              if (summary.cardio.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text('Cardio realizado',
+                  style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 9),
+                SectionCard(child: Column(children: [
+                  for (final entry in summary.cardio.entries) ...[
+                    if (entry.key != summary.cardio.keys.first)
+                      const Divider(color: AppTheme.deepBlue, height: 16),
+                    Row(children: [
+                      const Icon(Icons.directions_run_rounded,
+                        color: AppTheme.electricLime),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text(entry.key,
+                        style: const TextStyle(fontWeight: FontWeight.w600))),
+                      Text('${entry.value.fold<int>(0, (sum, record) => sum + record.duration.inMinutes)} min',
+                        style: const TextStyle(color: AppTheme.iceBlue)),
+                    ]),
+                  ],
+                ])),
+              ],
               const SizedBox(height: 16),
               if (summary.estimatedKcal == null)
                 SectionCard(child: Column(
@@ -211,33 +233,38 @@ class _WorkoutCompletedScreenState extends State<WorkoutCompletedScreen> {
                     const Text('Calorias estimadas: —',
                       style: TextStyle(fontWeight: FontWeight.w600)),
                     const SizedBox(height: 6),
-                    const Text(
-                      'Para obter uma estimativa, informe seu peso corporal '
-                      'e registre um treino com duração válida.',
-                      style: TextStyle(color: AppTheme.iceBlue,
+                    Text(summary.cardio.isNotEmpty
+                      ? 'Treinos com cardio não usam a estimativa de musculação. '
+                        'As atividades de cardio foram registradas separadamente.'
+                      : 'Para obter uma estimativa, informe seu peso corporal '
+                        'e registre um treino com duração válida.',
+                      style: const TextStyle(color: AppTheme.iceBlue,
                         fontSize: 13)),
-                    const SizedBox(height: 6),
-                    TextButton.icon(
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const SettingsScreen())),
-                      icon: const Icon(Icons.monitor_weight_outlined),
-                      label: const Text('Informar peso no Perfil'),
-                    ),
+                    if (summary.cardio.isEmpty) ...[
+                      const SizedBox(height: 6),
+                      TextButton.icon(
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const SettingsScreen())),
+                        icon: const Icon(Icons.monitor_weight_outlined),
+                        label: const Text('Informar peso no Perfil'),
+                      ),
+                    ],
                   ],
                 )),
               if (summary.estimatedKcal == null)
                 const SizedBox(height: 12),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 2),
-                child: Text(
-                  'Gasto energético estimado por 3,5 MET para musculação '
-                  'geral. Considera a duração total, incluindo descansos. '
-                  'Não equivale a uma medição individual.',
-                  style: TextStyle(color: AppTheme.iceBlue,
-                    fontSize: 12, height: 1.45),
+              if (summary.cardio.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 2),
+                  child: Text(
+                    'Gasto energético estimado por 3,5 MET para musculação '
+                    'geral. Considera a duração total, incluindo descansos. '
+                    'Não equivale a uma medição individual.',
+                    style: TextStyle(color: AppTheme.iceBlue,
+                      fontSize: 12, height: 1.45),
+                  ),
                 ),
-              ),
               if (app.persistenceError != null) ...[
                 const SizedBox(height: 14),
                 const SectionCard(child: Text(
@@ -437,6 +464,14 @@ class _ShareCard extends StatelessWidget {
               value: WeightUnits.volumeForDisplay(summary.volumeKg, weightUnit).toStringAsFixed(0),
               label: 'Volume ($weightUnit)')),
           ]),
+          if (summary.cardio.isNotEmpty) ...[
+            const SizedBox(height: 11),
+            Text('Cardio: ${summary.cardioRecordCount} registros · '
+              '${summary.cardioDuration.inMinutes} min',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppTheme.iceBlue,
+                fontSize: 12)),
+          ],
           if (summary.weightPersonalRecords > 0) ...[
             const SizedBox(height: 15),
             Container(
