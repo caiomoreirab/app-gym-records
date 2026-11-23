@@ -5,7 +5,6 @@ import '../models/muscle_group.dart';
 import '../services/analytics_service.dart';
 import '../state/app_controller.dart';
 import '../theme/app_theme.dart';
-import '../utils/formatters.dart';
 import '../services/weight_units.dart';
 import '../widgets/analytics_widgets.dart';
 import '../widgets/page_body.dart';
