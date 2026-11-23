@@ -65,7 +65,7 @@ class AppController extends ChangeNotifier {
   String unit = 'kg';
   String distanceUnit = 'km';
   double increment = 2.5;
-  bool isPro = true; // front-end preview; billing will replace this flag later
+  bool isPro = false; // preview only; no billing entitlement
   String languageCode = 'system';
   bool largeText = false;
   /// Optional local profile value; never inferred from workout weights.
@@ -257,7 +257,7 @@ class AppController extends ChangeNotifier {
       unit = await preferences.getString(_preferenceKey(_unitKey)) ?? 'kg';
       distanceUnit = await preferences.getString(_preferenceKey(_distanceUnitKey)) ?? 'km';
       increment = await preferences.getDouble(_preferenceKey(_incrementKey)) ?? 2.5;
-      isPro = await preferences.getBool(_preferenceKey(_proPreviewKey)) ?? true;
+      isPro = await preferences.getBool(_preferenceKey(_proPreviewKey)) ?? false;
       languageCode = await preferences.getString(_preferenceKey(_languageKey)) ?? 'system';
       largeText = await preferences.getBool(_preferenceKey(_largeTextKey)) ?? false;
       final storedKg = await preferences.getDouble(_preferenceKey(_bodyWeightKey));
