@@ -99,7 +99,9 @@ class _NameScreenState extends State<NameScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const BrandHeader(),
-                    const SizedBox(height: 42),
+                    const SizedBox(height: 18),
+                    const _OnboardingPreferences(),
+                    const SizedBox(height: 24),
                     const OnboardingProgress(step: 1),
                     const SizedBox(height: 56),
                     Text.rich(
@@ -220,6 +222,59 @@ class _NameScreenState extends State<NameScreen> {
           },
         ),
       ),
+    );
+  }
+}
+
+class _OnboardingPreferences extends StatelessWidget {
+  const _OnboardingPreferences();
+
+  @override
+  Widget build(BuildContext context) {
+    final app = AppScope.of(context);
+    final strings = context.strings;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceNavy,
+        border: Border.all(color: AppTheme.deepBlue),
+        borderRadius: BorderRadius.circular(17),
+      ),
+      child: Column(children: [
+        Row(children: [
+          const Icon(Icons.language_rounded,
+            color: AppTheme.electricLime, size: 22),
+          const SizedBox(width: 10),
+          Expanded(child: Text(strings.t('Idioma do aplicativo',
+            'App language', 'Idioma de la aplicación'),
+            style: const TextStyle(fontSize: 13))),
+          DropdownButton<String>(
+            key: const Key('onboarding_language'),
+            value: app.languageCode,
+            underline: const SizedBox.shrink(),
+            isDense: true,
+            items: const [
+              DropdownMenuItem(value: 'system', child: Text('Auto')),
+              DropdownMenuItem(value: 'pt', child: Text('PT-BR')),
+              DropdownMenuItem(value: 'en', child: Text('EN')),
+              DropdownMenuItem(value: 'es', child: Text('ES')),
+            ],
+            onChanged: (value) {
+              if (value != null) app.setLanguageCode(value);
+            },
+          ),
+        ]),
+        const Divider(height: 10, color: AppTheme.deepBlue),
+        SwitchListTile(
+          key: const Key('onboarding_large_text'),
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+          title: Text(strings.t('Fonte ampliada', 'Larger text',
+            'Texto ampliado')),
+          value: app.largeText,
+          onChanged: app.setLargeText,
+        ),
+      ]),
     );
   }
 }
