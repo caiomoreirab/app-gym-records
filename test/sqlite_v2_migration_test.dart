@@ -323,4 +323,36 @@ void main() {
     await store.close();
   });
 
+  test('health check verifies real SQLite indexes and detects divergence',
+      () async {
+    final store = SqliteLocalDataStore();
+    final clean = <String, dynamic>{
+      'schemaVersion': 2, 'machines': [], 'cardio': {},
+      'sessions': [], 'favorites': [], 'activeSessionId': null,
+    };
+    await store.save(clean);
+    var status = await store.inspectIntegrity();
+    expect(status.schemaVersion, 3);
+    expect(status.sqliteQuickCheck, 'ok');
+    expect(status.foreignKeyProblems, 0);
+    expect(status.isHealthy, isTrue);
+
+    final db = await openDatabase(databasePath, version: 3);
+    await db.insert('cardio_entries', {
+      'entry_key': 'fake', 'activity_id': 'outdoor_run',
+      'occurred_at': '2026-11-23T10:00:00Z',
+      'duration_seconds': 60,
+    });
+    status = await store.inspectIntegrity();
+    expect(status.isHealthy, isFalse,
+      reason: 'The relational view must match the canonical JSON.');
+    expect(status.actualCounts['cardio_entries'], 1);
+    expect(status.expectedCounts['cardio_entries'], 0);
+    expect(await store.load(), clean);
+    await store.save(clean);
+    expect((await store.inspectIntegrity()).isHealthy, isTrue);
+    await db.close();
+    await store.close();
+  });
+
 }

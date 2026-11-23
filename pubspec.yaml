@@ -1,5 +1,5 @@
 name: gymrecords
-description: Front-end de validação do GymRecords.
+description: GymRecords - registro de treinos offline para Android e iOS.
 publish_to: none
 version: 0.10.1+21
 

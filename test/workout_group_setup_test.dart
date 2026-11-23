@@ -144,4 +144,20 @@ void main() {
     expect(all, app.availableMachines.length + 1 + app.cardioActivities.length);
     expect(tester.takeException(), isNull);
   });
+  test('invalid strength input does not add phantom planned exercises', () {
+    final app = AppController(persistenceEnabled: false);
+    addTearDown(app.dispose);
+    app.startSession(selectedGroupIds: ['chest']);
+    final machine = app.ensureMachineAdded(buildExerciseCatalog()
+      .firstWhere((m) => m.id == 'barbell_bench_press'));
+    expect(app.activeSession!.exerciseIds, isEmpty);
+    expect(() => app.addRecord(machine, weight: -1, repetitions: 8),
+      throwsFormatException);
+    expect(() => app.addRecord(machine, weight: 10, repetitions: -3),
+      throwsFormatException);
+    expect(app.activeSession!.exerciseIds, isEmpty);
+    expect(app.activeSession!.selectedGroupIds, ['chest']);
+    expect(app.activeSession!.progress, 0);
+  });
+
 }
