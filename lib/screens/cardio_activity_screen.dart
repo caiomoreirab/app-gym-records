@@ -198,9 +198,9 @@ class _CardioActivityScreenState extends State<CardioActivityScreen> {
       seconds: int.tryParse(_seconds.text) ?? 0,
     );
     final achievement = app.addCardioRecord(
-            sessionId: app.activeSession?.id,
       activity,
       CardioRecord(
+        sessionId: app.activeSession?.id,
         date: DateTime.now(),
         duration: duration,
         distanceKm: activity.supportsDistance ? _distanceInKm(_distance.text, app.distanceUnit) : null,
