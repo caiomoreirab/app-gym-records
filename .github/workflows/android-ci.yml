@@ -2,7 +2,7 @@ name: GymRecords - Testes e APK Android
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'feat/fase1-registro-confiavel-classico']
   pull_request:
   workflow_dispatch:
 
