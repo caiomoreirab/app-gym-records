@@ -386,9 +386,9 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     if (!mounted || chosen == null) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('${chosen.name} adicionado ao treino.'),
+      content: Text(context.strings.t('${chosen.name} adicionado ao treino.', '${chosen.localizedName(Localizations.localeOf(context))} added to workout.', '${chosen.localizedName(Localizations.localeOf(context))} añadido al entrenamiento.')),
       action: SnackBarAction(
-        label: 'Registrar',
+        label: context.strings.t('Registrar', 'Log', 'Registrar'),
         onPressed: () => _openMachine(context, chosen),
       ),
     ));
@@ -659,38 +659,37 @@ class _TodayWorkoutCard extends StatelessWidget {
           const Icon(Icons.fitness_center_rounded,
             color: AppTheme.electricLime),
           const SizedBox(width: 10),
-          Expanded(child: Text('Treino de hoje',
+          Expanded(child: Text(context.strings.t('Treino de hoje', 'Today’s workout', 'Entrenamiento de hoy'),
             style: Theme.of(context).textTheme.titleLarge)),
           if (session != null) TextButton(
             key: const Key('finish_workout'),
             onPressed: onComplete,
-            child: const Text('Concluir')),
+            child: Text(context.strings.t('Concluir', 'Finish', 'Finalizar'))),
         ]),
         const SizedBox(height: 8),
         if (session == null) ...[
-          const Text('Organize suas séries sem perder o histórico.',
+          Text(context.strings.t('Organize suas séries sem perder o histórico.', 'Keep your sets organized without losing history.', 'Organiza tus series sin perder el historial.'),
             style: TextStyle(color: AppTheme.iceBlue)),
           const SizedBox(height: 12),
           OutlinedButton.icon(
             key: const Key('start_workout_session'),
             onPressed: () => app.startSession(),
             icon: const Icon(Icons.play_arrow_rounded),
-            label: const Text('Iniciar treino'),
+            label: Text(context.strings.t('Iniciar treino', 'Start workout', 'Iniciar entrenamiento')),
           ),
         ] else ...[
-          Text('${selected.length} exercícios · ${records.length} séries',
+          Text('${selected.length} ${context.strings.t('exercícios', 'exercises', 'ejercicios')} · ${records.length} ${context.strings.t('séries', 'sets', 'series')}',
             style: const TextStyle(color: AppTheme.iceBlue)),
           const SizedBox(height: 12),
           FilledButton.icon(
             key: const Key('add_exercise_to_session'),
             onPressed: onAddExercise,
             icon: const Icon(Icons.add_circle_outline_rounded),
-            label: const Text('Adicionar exercício'),
+            label: Text(context.strings.addEquipment),
           ),
           if (selected.isEmpty) ...[
             const SizedBox(height: 12),
-            const Text('Seu treino ainda está vazio. Adicione um exercício '
-              'para começar a registrar as séries.',
+            Text(context.strings.t('Seu treino ainda está vazio. Adicione um exercício para começar a registrar as séries.', 'Your workout is empty. Add an exercise to start logging sets.', 'Tu entrenamiento está vacío. Añade un ejercicio para comenzar a registrar series.'),
               style: TextStyle(color: AppTheme.iceBlue, fontSize: 13)),
           ] else ...[
             const SizedBox(height: 10),
@@ -703,7 +702,7 @@ class _TodayWorkoutCard extends StatelessWidget {
                 title: Text(machine.name, maxLines: 1,
                   overflow: TextOverflow.ellipsis),
                 subtitle: Text(
-                  '${machine.records.where((r) => r.effectiveSessionId == session.id).length} séries'),
+                  '${machine.records.where((r) => r.effectiveSessionId == session.id).length} ${context.strings.t('séries', 'sets', 'series')}'),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: () => onOpenMachine(machine),
               ),
