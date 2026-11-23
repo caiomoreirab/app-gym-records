@@ -483,6 +483,7 @@ class _ActiveExerciseCard extends StatelessWidget {
     final WorkoutRecord? latest = sets.isNotEmpty
         ? sets.last : machine.latestRecord;
     final canRemove = sets.isEmpty;
+    final compact = MediaQuery.sizeOf(context).width < 390;
     final status = done
       ? context.strings.t('Concluído', 'Completed', 'Completado')
       : sets.isNotEmpty
@@ -542,27 +543,52 @@ class _ActiveExerciseCard extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 11),
-        Row(children: [
-          Expanded(child: OutlinedButton.icon(
-            key: Key('live_log_${machine.id}'),
-            onPressed: onLog,
-            icon: const Icon(Icons.edit_note_rounded, size: 20),
-            label: Text(context.strings.t('Registrar',
-              'Log set', 'Registrar')),
-          )),
-          const SizedBox(width: 9),
-          Expanded(child: FilledButton.icon(
-            key: Key('live_repeat_${machine.id}'),
-            onPressed: onQuick,
-            icon: Icon(latest == null
-              ? Icons.add_rounded : Icons.repeat_rounded, size: 20),
-            label: Text(latest == null
-              ? context.strings.t('Série rápida',
-                'Quick set', 'Serie rápida')
-              : context.strings.t('Repetir série',
-                'Repeat set', 'Repetir serie')),
-          )),
-        ]),
+        Flex(
+          direction: compact ? Axis.vertical : Axis.horizontal,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (compact)
+              OutlinedButton.icon(
+                key: Key('live_log_${machine.id}'),
+                onPressed: onLog,
+                icon: const Icon(Icons.edit_note_rounded, size: 20),
+                label: Text(context.strings.t('Registrar série',
+                  'Log set', 'Registrar serie')),
+              )
+            else
+              Expanded(child: OutlinedButton.icon(
+                key: Key('live_log_${machine.id}'),
+                onPressed: onLog,
+                icon: const Icon(Icons.edit_note_rounded, size: 20),
+                label: Text(context.strings.t('Registrar',
+                  'Log set', 'Registrar')),
+              )),
+            SizedBox(width: compact ? 0 : 9,
+              height: compact ? 7 : 0),
+            if (compact)
+              FilledButton.icon(
+                key: Key('live_repeat_${machine.id}'),
+                onPressed: onQuick,
+                icon: const Icon(Icons.repeat_rounded, size: 20),
+                label: Text(latest == null
+                  ? context.strings.t('Série rápida',
+                    'Quick set', 'Serie rápida')
+                  : context.strings.t('Repetir última série',
+                    'Repeat last set', 'Repetir última serie')),
+              )
+            else
+              Expanded(child: FilledButton.icon(
+                key: Key('live_repeat_${machine.id}'),
+                onPressed: onQuick,
+                icon: const Icon(Icons.repeat_rounded, size: 20),
+                label: Text(latest == null
+                  ? context.strings.t('Série rápida',
+                    'Quick set', 'Serie rápida')
+                  : context.strings.t('Repetir série',
+                    'Repeat set', 'Repetir serie')),
+              )),
+          ],
+        ),
         if (canRemove) Align(
           alignment: Alignment.centerRight,
           child: TextButton.icon(
