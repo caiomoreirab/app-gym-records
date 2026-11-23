@@ -37,7 +37,8 @@ Future<void> showRecordAchievementSheet({
   );
   final recordCardKey = GlobalKey(debugLabel: 'record-share-card');
   Future<Uint8List> captureRecord() async {
-    await WidgetsBinding.instance.endOfFrame;
+    // The share card is already laid out when its button can be tapped;
+    // awaiting endOfFrame without scheduling a frame may hang indefinitely.
     final render = recordCardKey.currentContext?.findRenderObject();
     if (render is! RenderRepaintBoundary) {
       throw StateError('Cartão de recorde indisponível.');
