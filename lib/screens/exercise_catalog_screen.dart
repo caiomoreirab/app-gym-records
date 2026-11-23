@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../models/muscle_group.dart';
 import '../models/machine.dart';
 import '../state/app_controller.dart';
+import '../l10n/app_strings.dart';
 import '../theme/app_theme.dart';
 import '../widgets/brand_header.dart';
 import '../widgets/gym_bottom_navigation.dart';
@@ -42,7 +43,7 @@ class _ExerciseCatalogScreenState extends State<ExerciseCatalogScreen> {
       bottomNavigationBar: widget.pickForWorkout
         ? null : const GymBottomNavigation(index: 1),
       appBar: widget.pickForWorkout
-        ? AppBar(title: const Text('Adicionar exercício'))
+        ? AppBar(title: Text(context.strings.addEquipment))
         : null,
       body: PageBody(child: Column(crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -52,26 +53,29 @@ class _ExerciseCatalogScreenState extends State<ExerciseCatalogScreen> {
             const SizedBox(height: 18),
           ],
           Text(widget.pickForWorkout
-              ? 'Escolha um aparelho' : 'Exercícios',
+              ? context.strings.t('Escolha um aparelho', 'Choose equipment', 'Elige equipo')
+              : context.strings.t('Exercícios', 'Exercises', 'Ejercicios'),
             style: Theme.of(context).textTheme.headlineMedium),
           if (widget.pickForWorkout) ...[
             const SizedBox(height: 5),
-            const Text('Toque no exercício para adicionar ao treino atual.',
-              style: TextStyle(color: AppTheme.iceBlue, fontSize: 13)),
+            Text(context.strings.t('Toque no exercício para adicionar ao treino atual.',
+              'Tap an exercise to add it to your workout.',
+              'Toca un ejercicio para añadirlo al entrenamiento.'),
+              style: const TextStyle(color: AppTheme.iceBlue, fontSize: 13)),
           ],
           const SizedBox(height: 12),
           TextField(
             key: const Key('catalog_search'),
             onChanged: (value) => setState(() => _query = value),
             decoration: const InputDecoration(
-              hintText: 'Buscar exercício ou aparelho',
+              hintText: context.strings.t('Buscar exercício ou aparelho', 'Search exercise or equipment', 'Buscar ejercicio o equipo'),
               prefixIcon: Icon(Icons.search_rounded),
             ),
           ),
           const SizedBox(height: 12),
           SingleChildScrollView(scrollDirection: Axis.horizontal,
             child: Row(children: [
-              ChoiceChip(label: const Text('Todos'),
+              ChoiceChip(label: Text(context.strings.all),
                 selected: _group == null,
                 onSelected: (_) => setState(() => _group = null)),
               const SizedBox(width: 8),
@@ -85,12 +89,12 @@ class _ExerciseCatalogScreenState extends State<ExerciseCatalogScreen> {
             ]),
           ),
           const SizedBox(height: 10),
-          Text('${matches.length} exercícios',
+          Text('${matches.length} ${context.strings.t('exercícios', 'exercises', 'ejercicios')}',
             style: const TextStyle(color: AppTheme.iceBlue)),
           const SizedBox(height: 8),
           Expanded(child: matches.isEmpty
-            ? const Center(child: Text('Nenhum exercício encontrado.',
-                style: TextStyle(color: AppTheme.iceBlue)))
+            ? Center(child: Text(context.strings.t('Nenhum exercício encontrado.', 'No exercises found.', 'No se encontraron ejercicios.'),
+                style: const TextStyle(color: AppTheme.iceBlue)))
             : ListView.separated(
                 keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                 itemCount: matches.length,
