@@ -426,6 +426,16 @@ class AppController extends ChangeNotifier {
   /// an automatic reset, this never replaces an unreadable DB with blank data.
   bool get supportsPreviousSqliteSnapshot => _store is SqliteLocalDataStore;
 
+  Future<LocalDatabaseStatus?> checkLocalDatabaseIntegrity() async {
+    final store = _store;
+    if (store is! SqliteLocalDataStore) return null;
+    await flushPendingWrites();
+    if (_failedToReadStorage) {
+      throw StateError('Banco local não pôde ser carregado com segurança.');
+    }
+    return store.inspectIntegrity();
+  }
+
   Future<bool> restorePreviousLocalSnapshot() async {
     final store = _store;
     if (store is! SqliteLocalDataStore) return false;
@@ -727,11 +737,12 @@ class AppController extends ChangeNotifier {
         note.length > 3000) {
       throw const FormatException('Valores de série inválidos.');
     }
-    addExerciseToSession(machine);
     final validation = StrengthSetValidation.error(
       machine: machine, weight: weight,
       repetitions: repetitions, durationSeconds: durationSeconds);
     if (validation != null) throw FormatException(validation);
+    // Invalid values never modify the exercise list or active session.
+    addExerciseToSession(machine);
     final session = _ensureSession();
     final now = when ?? DateTime.now();
     final record = WorkoutRecord(

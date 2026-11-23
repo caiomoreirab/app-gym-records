@@ -30,6 +30,28 @@ abstract class LocalDataStore {
   }
 }
 
+/// Read-only health report for the mobile SQLite database.
+class LocalDatabaseStatus {
+  const LocalDatabaseStatus({
+    required this.schemaVersion,
+    required this.sqliteQuickCheck,
+    required this.foreignKeyProblems,
+    required this.actualCounts,
+    required this.expectedCounts,
+  });
+
+  final int schemaVersion;
+  final String sqliteQuickCheck;
+  final int foreignKeyProblems;
+  final Map<String, int> actualCounts;
+  final Map<String, int> expectedCounts;
+
+  bool get isHealthy => schemaVersion == 3 &&
+      sqliteQuickCheck == 'ok' && foreignKeyProblems == 0 &&
+      expectedCounts.keys.every((key) =>
+        actualCounts[key] == expectedCounts[key]);
+}
+
 /// SQLite v3: immutable backup snapshot + transactional relational indexes.
 ///
 /// The canonical v2 JSON remains the compatibility/backup source of truth,
@@ -203,6 +225,50 @@ class SqliteLocalDataStore implements LocalDataStore {
     return decoded;
   }
 
+  /// Non-destructive integrity verification available to mobile testers.
+  /// It checks SQLite pages, FK constraints and mirror counts vs the snapshot.
+  Future<LocalDatabaseStatus> inspectIntegrity() async {
+    final db = await _open();
+    final quickRows = await db.rawQuery('PRAGMA quick_check');
+    final quick = quickRows.isEmpty
+      ? 'not available' : quickRows.first.values.first.toString();
+    final foreignKeys = await db.rawQuery('PRAGMA foreign_key_check');
+    final stored = await load();
+    final projected = stored == null ? <String, dynamic>{
+      'machines': const [], 'sessions': const [], 'cardio': const {},
+    } : _projectionSnapshot(stored);
+    final sessions = projected['sessions'] as List;
+    final machines = projected['machines'] as List;
+    final cardio = projected['cardio'] as Map;
+    int countRecords(Iterable<dynamic> items, String field) =>
+        items.fold<int>(0, (sum, item) =>
+          sum + (item is Map && item[field] is List
+            ? (item[field] as List).length : 0));
+    final expected = <String, int>{
+      'workout_sessions': sessions.length,
+      'session_exercises': countRecords(sessions, 'exerciseIds'),
+      'session_groups': countRecords(sessions, 'selectedGroupIds'),
+      'session_cardio': countRecords(sessions, 'plannedCardioIds'),
+      'workout_sets': countRecords(machines, 'records'),
+      'cardio_entries': countRecords(cardio.values, 'records'),
+    };
+    // Cardio is stored as a map of lists rather than an array of objects.
+    expected['cardio_entries'] = cardio.values.fold<int>(0, (sum, list) =>
+      sum + (list is List ? list.length : 0));
+    final actual = <String, int>{};
+    for (final table in expected.keys) {
+      final result = await db.rawQuery('SELECT COUNT(*) AS count FROM $table');
+      actual[table] = result.single['count'] as int;
+    }
+    return LocalDatabaseStatus(
+      schemaVersion: await db.getVersion(),
+      sqliteQuickCheck: quick,
+      foreignKeyProblems: foreignKeys.length,
+      actualCounts: actual,
+      expectedCounts: expected,
+    );
+  }
+
   Future<Map<String, dynamic>?> loadPreviousSnapshot() async {
     final db = await _open();
     final rows = await db.query('user_state_previous', columns: ['payload'],
@@ -332,10 +398,26 @@ class SqliteLocalDataStore implements LocalDataStore {
     if (cardio is Map) {
       for (final activity in cardio.entries) {
         final records = activity.value;
-        if (records is! List) continue;
+        if (activity.key is! String || records is! List) {
+          throw const FormatException('Atividade de cardio inválida.');
+        }
         for (var index = 0; index < records.length; index++) {
           final record = records[index];
-          if (record is! Map) continue;
+          if (record is! Map) {
+            throw const FormatException('Registro de cardio inválido.');
+          }
+          final seconds = record['seconds'];
+          final distance = record['distanceKm'];
+          final calories = record['calories'];
+          final sessionId = record['sessionId'];
+          if (seconds is! int || seconds < 0 ||
+              (distance != null && (distance is! num ||
+                  !distance.isFinite || distance < 0)) ||
+              (calories != null && (calories is! int || calories < 0)) ||
+              (sessionId != null && (sessionId is! String ||
+                  sessionId.isEmpty || sessionId.length > 160))) {
+            throw const FormatException('Cardio inconsistente no snapshot.');
+          }
           batch.insert('cardio_entries', {
             // JSON composite keys avoid collisions for custom activity IDs.
             'entry_key': jsonEncode([activity.key, index]),

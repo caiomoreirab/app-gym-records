@@ -7,6 +7,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../state/app_controller.dart';
+import '../services/local_data_store.dart';
 import '../services/firebase_usage_sink.dart';
 import '../theme/app_theme.dart';
 import '../widgets/page_body.dart';
@@ -22,6 +23,7 @@ class DataPrivacyScreen extends StatefulWidget {
 
 class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
   bool _working = false;
+  LocalDatabaseStatus? _dbStatus;
 
   void _message(String value) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(value)));
@@ -141,6 +143,26 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
     }
   }
 
+  Future<void> _checkIntegrity(AppController app) async {
+    if (_working) return;
+    setState(() => _working = true);
+    try {
+      final result = await app.checkLocalDatabaseIntegrity();
+      if (!mounted) return;
+      setState(() => _dbStatus = result);
+      _message(result == null
+        ? 'A verificação SQLite está disponível apenas no Android e iOS.'
+        : result.isHealthy
+          ? 'Banco SQLite verificado: estrutura e registros consistentes.'
+          : 'A verificação encontrou divergências. Exporte o backup e não '
+            'limpe os dados do aplicativo.');
+    } catch (error) {
+      if (mounted) _message('Não foi possível verificar o banco: $error');
+    } finally {
+      if (mounted) setState(() => _working = false);
+    }
+  }
+
   Future<void> _retrySave(AppController app) async {
     setState(() => _working = true);
     try {
@@ -255,6 +277,32 @@ class _DataPrivacyScreenState extends State<DataPrivacyScreen> {
                     'Android e iOS: SQLite privado do app. Na prévia Web, '
                     'os dados ficam no navegador. Não há sincronização entre eles.',
                   ),
+                  if (app.supportsPreviousSqliteSnapshot) ...[
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      key: const Key('verify_sqlite_integrity'),
+                      onPressed: _working ? null : () => _checkIntegrity(app),
+                      icon: const Icon(Icons.verified_user_outlined),
+                      label: const Text('Verificar banco local'),
+                    ),
+                    if (_dbStatus != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        _dbStatus!.isHealthy
+                          ? 'SQLite v${_dbStatus!.schemaVersion} íntegro · '
+                            '${_dbStatus!.actualCounts['workout_sessions']} treinos · '
+                            '${_dbStatus!.actualCounts['workout_sets']} séries · '
+                            '${_dbStatus!.actualCounts['cardio_entries']} registros de cardio'
+                          : 'Atenção: divergência no SQLite. '
+                            'Verifique e faça backup dos dados.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: _dbStatus!.isHealthy
+                            ? AppTheme.iceBlue : AppTheme.warning,
+                        ),
+                      ),
+                    ],
+                  ],
                   const SizedBox(height: 16),
                   FilledButton.icon(
                     onPressed: _working ? null : () => _copyBackup(app),
