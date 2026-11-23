@@ -29,7 +29,7 @@ void main() {
     await deleteDatabase(databasePath);
   });
 
-  test('migra banco real v1 para v2 sem apagar snapshot e cria índices',
+  test('migra banco real v1 para v3 sem apagar snapshot e cria índices',
       () async {
     final before = <String, dynamic>{
       'schemaVersion': 1,
@@ -62,7 +62,7 @@ void main() {
     app.setExerciseCompleted(exercise.id, true);
     await app.flushPendingWrites();
     expect(app.persistenceError, isNull);
-    final db = await openDatabase(databasePath, version: 2);
+    final db = await openDatabase(databasePath, version: 3);
     final sessions = await db.query('workout_sessions');
     final progress = await db.query('session_exercises');
     final sets = await db.query('workout_sets');
@@ -106,6 +106,15 @@ void main() {
     await old.close();
 
     final store = SqliteLocalDataStore();
+    // The relational projection is rebuilt immediately at migration time,
+    // even before the legacy JSON is saved in the modern format.
+    expect((await store.load())!['schemaVersion'], 1);
+    final migratedDb = await openDatabase(databasePath, version: 3);
+    final migratedSets = await migratedDb.query('workout_sets');
+    expect(migratedSets.length, 1);
+    expect(migratedSets.single['weight_kg'], 65);
+    expect((await migratedDb.query('workout_sessions')).length, 1);
+    await migratedDb.close();
     final app = AppController(persistenceEnabled: false, store: store);
     await app.loadPreferences();
     final restored = app.machineById(exercise.id);
@@ -115,7 +124,7 @@ void main() {
     app.addRecord(restored, weight: 70, repetitions: 5);
     await app.flushPendingWrites();
     expect(app.persistenceError, isNull);
-    final db = await openDatabase(databasePath, version: 2);
+    final db = await openDatabase(databasePath, version: 3);
     final rows = await db.query('workout_sets');
     expect(rows.length, 2);
     expect(rows.map((r) => r['weight_kg']),
@@ -165,4 +174,153 @@ void main() {
     expect((await store.load())!['favorites'], ['barbell_squat']);
     await store.close();
   });
+
+  test('v2 com grupos, cardio e séries migra para v3 sem perder dados', () async {
+    final date = DateTime.utc(2026, 11, 23, 13);
+    final original = <String, dynamic>{
+      'schemaVersion': 2,
+      'activeSessionId': 's1',
+      'favorites': ['barbell_bench_press'],
+      'sessions': [{
+        'id': 's1', 'name': 'Peito + corrida',
+        'startedAt': date.toIso8601String(), 'completedAt': null,
+        'exerciseIds': ['barbell_bench_press'],
+        'completedExerciseIds': ['barbell_bench_press'],
+        'selectedGroupIds': ['chest', 'cardio'],
+        'plannedCardioIds': ['outdoor_run'],
+      }],
+      'machines': [{
+        'id': 'barbell_bench_press', 'custom': false,
+        'name': 'Supino reto com barra', 'note': '', 'group': 'chest',
+        'equipment': 'barbell',
+        'records': [{
+          'id': 'set1', 'sessionId': 's1', 'date': date.toIso8601String(),
+          'weight': 80.0, 'repetitions': 8, 'durationSeconds': null,
+          'warmup': false, 'rpe': null, 'rir': null,
+          'restSeconds': 90, 'note': '',
+        }],
+      }],
+      'cardio': {
+        'outdoor_run': [{
+          'date': date.toIso8601String(), 'seconds': 600,
+          'distanceKm': 2.0, 'heartRateBpm': 120,
+          'calories': null, 'inclinePercent': null,
+          'resistanceLevel': null, 'notes': '',
+          'sessionId': 's1',
+        }],
+      },
+    };
+    final old = await openDatabase(databasePath, version: 2,
+      onCreate: (db, version) async {
+        await db.execute('CREATE TABLE user_state ('
+          'id INTEGER PRIMARY KEY, payload TEXT NOT NULL,'
+          'updated_at TEXT NOT NULL)');
+        await db.execute('CREATE TABLE user_state_previous ('
+          'id INTEGER PRIMARY KEY, payload TEXT NOT NULL,'
+          'updated_at TEXT NOT NULL)');
+        await db.execute('CREATE TABLE workout_sessions ('
+          'id TEXT PRIMARY KEY, name TEXT NOT NULL,'
+          'started_at TEXT NOT NULL, completed_at TEXT)');
+        await db.execute('CREATE TABLE session_exercises ('
+          'session_id TEXT NOT NULL, exercise_id TEXT NOT NULL,'
+          'position INTEGER NOT NULL, completed INTEGER NOT NULL,'
+          'PRIMARY KEY(session_id, exercise_id))');
+        await db.execute('CREATE TABLE workout_sets ('
+          'record_id TEXT PRIMARY KEY, session_id TEXT NOT NULL,'
+          'exercise_id TEXT NOT NULL, occurred_at TEXT NOT NULL,'
+          'weight_kg REAL NOT NULL, repetitions INTEGER,'
+          'duration_seconds INTEGER, is_warmup INTEGER,'
+          'rpe REAL, rir INTEGER, rest_seconds INTEGER, note TEXT)');
+        await db.execute('CREATE TABLE cardio_entries ('
+          'entry_key TEXT PRIMARY KEY, activity_id TEXT NOT NULL,'
+          'occurred_at TEXT NOT NULL, duration_seconds INTEGER,'
+          'distance_km REAL, calories REAL)');
+      });
+    await old.insert('user_state', {
+      'id': 1, 'payload': jsonEncode(original), 'updated_at': '2026-11-23',
+    });
+    await old.close();
+
+    final store = SqliteLocalDataStore();
+    expect(await store.load(), original,
+      reason: 'Upgrade must keep the original canonical snapshot.');
+    final db = await openDatabase(databasePath, version: 3);
+    final groups = await db.query('session_groups',
+      orderBy: 'position ASC');
+    final planned = await db.query('session_cardio');
+    final cardio = await db.query('cardio_entries');
+    final sets = await db.query('workout_sets');
+    expect(groups.map((x) => x['group_id']).toList(), ['chest', 'cardio']);
+    expect(planned.single['activity_id'], 'outdoor_run');
+    expect(cardio.single['session_id'], 's1');
+    expect(cardio.single['duration_seconds'], 600);
+    expect(sets.single['weight_kg'], 80.0);
+    expect(sets.single['repetitions'], 8);
+    expect((await db.rawQuery('PRAGMA foreign_key_check')), isEmpty);
+    final cols = await db.rawQuery('PRAGMA table_info(cardio_entries)');
+    expect(cols.map((x) => x['name']), contains('session_id'));
+    await db.close();
+
+    final app = AppController(persistenceEnabled: false, store: store);
+    await app.loadPreferences();
+    expect(app.storageRecoveryRequired, isFalse);
+    expect(app.activeSession?.selectedGroupIds, ['chest', 'cardio']);
+    expect(app.activeSession?.plannedCardioIds, ['outdoor_run']);
+    expect(app.recordsForSession('s1').single.weight, 80);
+    expect(app.cardioActivities.first.records.single.sessionId, 's1');
+    app.setActiveSessionGroups(['legs']);
+    await app.flushPendingWrites();
+    final savedDb = await openDatabase(databasePath, version: 3);
+    expect((await savedDb.query('session_groups')).single['group_id'], 'legs');
+    expect((await savedDb.query('workout_sets')).length, 1);
+    expect((await savedDb.query('cardio_entries')).length, 1);
+    await savedDb.close();
+    app.dispose();
+    await store.close();
+  });
+
+  test('importar snapshot legado v1 indexa séries sem exigir novo registro',
+      () async {
+    final store = SqliteLocalDataStore();
+    final exercise = buildExerciseCatalog().firstWhere(
+      (m) => m.id == 'barbell_bench_press');
+    exercise.records.add(WorkoutRecord(
+      date: DateTime.utc(2026, 11, 10), weight: 45, repetitions: 10));
+    final legacy = WorkoutSnapshotCodec.encode(
+      machines: [exercise], cardioActivities: []);
+    legacy['schemaVersion'] = 1;
+    legacy.remove('sessions');
+    await store.save(legacy);
+    expect((await store.load())!['schemaVersion'], 1);
+    final db = await openDatabase(databasePath, version: 3);
+    expect((await db.query('workout_sets')).length, 1);
+    expect((await db.query('workout_sessions')).length, 1);
+    expect((await db.query('session_groups')), isEmpty);
+    expect((await db.query('session_cardio')), isEmpty);
+    await db.close();
+    await store.close();
+  });
+
+  test('v3 rejects broken cardio projection without losing prior state',
+      () async {
+    final store = SqliteLocalDataStore();
+    final original = <String, dynamic>{
+      'schemaVersion': 2, 'machines': [],
+      'cardio': {}, 'sessions': [], 'favorites': [],
+      'activeSessionId': null,
+    };
+    await store.save(original);
+    final invalid = jsonDecode(jsonEncode(original)) as Map<String, dynamic>;
+    invalid['cardio'] = {
+      'outdoor_run': [{
+        'date': '2026-11-23T13:00:00Z', 'seconds': 900,
+        'distanceKm': -1, 'notes': '',
+        'sessionId': 'old',
+      }]
+    };
+    await expectLater(store.save(invalid), throwsA(isA<Exception>()));
+    expect(await store.load(), original);
+    await store.close();
+  });
+
 }
