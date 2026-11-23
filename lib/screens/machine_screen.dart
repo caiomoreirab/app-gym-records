@@ -607,6 +607,7 @@ class _NoteCard extends StatelessWidget {
 
 class _WeightCard extends StatelessWidget {
   const _WeightCard({
+    super.key,
     required this.machine,
     required this.showAdditionalWeight,
     required this.onToggleAdditionalWeight,
