@@ -74,19 +74,30 @@ class UnverifiedExerciseIllustration extends StatelessWidget {
     final equipmentLabel = machine.equipment.label(
       Localizations.localeOf(context));
     return LayoutBuilder(builder: (context, constraints) {
-      final tiny = compact || constraints.maxHeight < 100;
+      final tiny = compact || constraints.maxHeight < 185;
+      final padding = tiny ? 5.0 : 12.0;
+      // Do not overflow 54px thumbnails, 320px phones or enlarged text.
+      final available = constraints.maxHeight.isFinite
+        ? constraints.maxHeight - padding * 2
+        : 160.0;
+      final horizontal = constraints.maxWidth.isFinite
+        ? constraints.maxWidth - padding * 2
+        : 180.0;
+      final iconSize = [available, horizontal, tiny ? 85.0 : 160.0]
+        .reduce((a, b) => a < b ? a : b)
+        .clamp(16.0, 160.0);
       return ColoredBox(
         color: AppTheme.surfaceNavy,
         child: Center(child: Padding(
-          padding: EdgeInsets.all(tiny ? 6 : 12),
+          padding: EdgeInsets.all(padding),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             SvgPicture.string(
               '<svg xmlns="http://www.w3.org/2000/svg" '
               'viewBox="0 0 100 100" fill="none" stroke="#10B7F4" '
               'stroke-width="4" stroke-linecap="round" '
               'stroke-linejoin="round">${movementArt ? benchPressSchematic(machine.id) : _symbol()}</svg>',
-              width: tiny ? 62 : 180,
-              height: tiny ? 62 : 165,
+              width: iconSize,
+              height: iconSize,
               semanticsLabel: equipmentLabel,
             ),
             if (!tiny) ...[
