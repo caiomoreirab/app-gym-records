@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:file_saver/file_saver.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../l10n/app_strings.dart';
@@ -24,6 +25,34 @@ class _ProExportScreenState extends State<ProExportScreen> {
   MuscleGroup? _group;
   AnalyticsPeriod _period = AnalyticsPeriod.all;
   bool _working = false;
+
+  Future<void> _savePdfLocally(List<ReportEntry> entries) async {
+    if (entries.isEmpty || _working) return;
+    setState(() => _working = true);
+    try {
+      final data = await ReportExportService.buildPdf(
+        entries: entries, title: 'GymRecords - Relatório',
+        subtitle: 'Histórico de treinos · pesos em kg, distância em km',
+      );
+      final now = DateTime.now();
+      final name = 'gymrecords_relatorio_${now.year}'
+        '${now.month.toString().padLeft(2, '0')}'
+        '${now.day.toString().padLeft(2, '0')}';
+      await FileSaver.instance.saveFile(
+        name: name, bytes: data,
+        fileExtension: 'pdf',
+        mimeType: MimeType.pdf,
+      );
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(
+          'Arquivo PDF gerado. Confira os downloads ou arquivos do dispositivo.')));
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Não foi possível baixar PDF: $error')));
+    } finally {
+      if (mounted) setState(() => _working = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +86,7 @@ class _ProExportScreenState extends State<ProExportScreen> {
           ])),
           const SizedBox(height: 16),
           FilledButton.icon(
-            onPressed: _working ? null : () async {
+            onPressed: _working || entries.isEmpty ? null : () async {
               await Clipboard.setData(ClipboardData(text: ReportExportService.toCsv(entries)));
               if (!mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.strings.t('CSV copiado para a área de transferência.', 'CSV copied to clipboard.', 'CSV copiado al portapapeles.'))));
@@ -67,7 +96,7 @@ class _ProExportScreenState extends State<ProExportScreen> {
           ),
           const SizedBox(height: 10),
           OutlinedButton.icon(
-            onPressed: _working ? null : () async {
+            onPressed: _working || entries.isEmpty ? null : () async {
               setState(() => _working = true);
               try {
                 await ReportExportService.sharePdf(
@@ -76,7 +105,8 @@ class _ProExportScreenState extends State<ProExportScreen> {
                   subtitle: '${_period.label(Localizations.localeOf(context))} • ${_group?.label ?? 'Todos os grupos'}',
                 );
                 if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('PDF preparado. Confira as opções de compartilhamento do sistema.')));
+                  const SnackBar(content: Text(
+                    'PDF enviado ao compartilhamento. Se não houver janela, use Baixar PDF.')));
 
               } catch (error) {
                 if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Falha ao gerar PDF: $error')));
@@ -87,11 +117,24 @@ class _ProExportScreenState extends State<ProExportScreen> {
             icon: const Icon(Icons.picture_as_pdf_outlined),
             label: Text(_working ? context.strings.t('Gerando...', 'Generating...', 'Generando...') : context.strings.t('Gerar e compartilhar PDF', 'Generate & share PDF', 'Generar y compartir PDF')),
           ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            key: const Key('download_pdf'),
+            onPressed: _working || entries.isEmpty
+              ? null : () => _savePdfLocally(entries),
+            icon: const Icon(Icons.download_rounded),
+            label: const Text('Baixar PDF'),
+          ),
           const SizedBox(height: 20),
           Text(context.strings.t('Prévia dos dados', 'Data preview', 'Vista previa de datos'), style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 12),
           if (entries.isEmpty)
-            SectionCard(child: Text(context.strings.t('Nenhum registro neste filtro.', 'No records in this filter.', 'No hay registros en este filtro.')))
+            SectionCard(child: Text(context.strings.t(
+              'Nenhum registro neste filtro. Altere o período ou grupo muscular para exportar. '
+              'Os botões de exportação permanecem indisponíveis até haver dados.',
+              'No records for this filter. Change the period or muscle group to export.',
+              'No hay registros con este filtro. Cambia el período o el grupo muscular.'
+            )))
           else
             SectionCard(child: Column(children: [
               for (final entry in entries.take(15)) ...[
