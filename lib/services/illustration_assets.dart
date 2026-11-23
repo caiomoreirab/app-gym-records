@@ -9,6 +9,8 @@ abstract final class IllustrationAssets {
   /// for a barbell exercise; each style keeps the same biomechanics.
   static const Set<String> curatedMovementIds = {
     'barbell_bench_press', 'barbell_squat', 'deadlift',
+    'dumbbell_bench_press', 'barbell_curl',
+    'dumbbell_lateral_raise', 'pull_up',
   };
 
   static String? curatedMovementSvg(Machine machine, IllustrationStyle style) {

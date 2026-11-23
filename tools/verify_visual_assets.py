@@ -29,7 +29,7 @@ for profile in profiles:
 
 # Every curated movement is available for each on-device visual preference.
 # Missing or malformed SVGs fail CI instead of showing a broken icon.
-curated=('barbell_bench_press','barbell_squat','deadlift')
+curated=('barbell_bench_press','barbell_squat','deadlift','dumbbell_bench_press','barbell_curl','dumbbell_lateral_raise','pull_up')
 vector_dir=root/'assets'/'illustrations'/'movements'
 for exercise in curated:
     if exercise not in ids:
@@ -68,7 +68,7 @@ for profile in profiles:
         repeated=[names for names in hashes.values() if len(names)>1]
         if repeated:problems.append(f'{profile} {kind} identical files: {repeated}')
 print(f'Cardio: 9 activities x {len(profiles)} profiles x 2 views')
-print('Curated vectors: 3 distinct movements x 3 profiles (9 SVG files).')
+print(f'Curated vectors: {len(curated)} distinct movements x 3 profiles ({len(curated)*3} SVG files).')
 print('Important: dedicated illustrations still do not cover all 124 exercises; unmatched items use equipment-neutral art.')
 if problems:
     print('\nFOUND ISSUES:')

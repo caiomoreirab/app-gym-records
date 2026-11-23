@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="300" viewBox="0 0 360 300" role="img" aria-label="Supino reto com halteres">
+<title>Supino reto com halteres — ilustração esquemática</title>
+<defs><radialGradient id="glow"><stop offset="0" stop-color="#14384A"/><stop offset="1" stop-color="#08121D"/></radialGradient></defs>
+<rect width="360" height="300" rx="20" fill="url(#glow)"/>
+<path d="M18 272H342" stroke="#213F51" stroke-width="3"/>
+<g stroke-linecap="round" stroke-linejoin="round">
+<path d="M59 189H279 M74 189v69m191-69v69" stroke="#43768B" stroke-width="9"/>
+<path d="M112 179q63-23 123-3" fill="none" stroke="#2E647A" stroke-width="32"/>
+<path d="M231 179l40 31 2 42M230 180l65 7 25 64" fill="none" stroke="#C9A184" stroke-width="18"/>
+<path d="M260 254h29 M310 254h27" stroke="#38C3F1" stroke-width="12"/>
+<path d="M155 172 151 122 150 93 M207 170 209 125 211 93" fill="none" stroke="#C9A184" stroke-width="15"/>
+<path d="M128 88h43 M189 88h43" stroke="#97CFE3" stroke-width="6"/>
+<g fill="#1B394B" stroke="#3FC6EE" stroke-width="4">
+<rect x="126" y="76" width="10" height="25" rx="2"/><rect x="163" y="76" width="10" height="25" rx="2"/>
+<rect x="187" y="76" width="10" height="25" rx="2"/><rect x="224" y="76" width="10" height="25" rx="2"/></g>
+<ellipse cx="91" cy="169" rx="22" ry="19" fill="#C9A184" stroke="#73B1CA" stroke-width="3"/>
+<path d="M74 158q10-21 29-10" fill="none" stroke="#3A5666" stroke-width="10"/></g>
+</svg>

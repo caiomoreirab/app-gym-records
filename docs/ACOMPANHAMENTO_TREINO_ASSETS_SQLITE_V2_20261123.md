@@ -9,11 +9,11 @@
 | Tipo de imagem de execução | Exercícios | Status |
 |---|---:|---|
 | Assets WebP explícitos existentes, não bloqueados | 31 | Mapeados; revisão biomecânica individual ainda recomendada |
-| SVGs específicos novos (supino com barra, agachamento livre, terra) | 3 | 9 arquivos: 3 movimentos × 3 preferências visuais |
-| Sem arte exclusiva validada | 90 | Fallback vetorial que identifica equipamento, sem fingir uma execução correta |
+| SVGs específicos de movimentos (incluindo supino com halteres, rosca direta, elevação lateral e barra fixa) | 7 | 21 arquivos: 7 movimentos × 3 preferências visuais |
+| Sem arte exclusiva validada | 86 | Fallback vetorial que identifica equipamento, sem fingir uma execução correta |
 | **Total do catálogo** | **124** | |
 
-Os 9 novos SVGs ficam em `assets/illustrations/movements/{masculine,feminine,neutral}/`. 
+Os 21 SVGs ficam em `assets/illustrations/movements/{masculine,feminine,neutral}/`. 
 O visual utiliza `BoxFit.contain` para não esticar nem cortar ilustrações ao alterar o tamanho do cartão. 
 Um visual genérico **não** deve ser divulgado como demonstração biomecânica.
 
@@ -46,13 +46,12 @@ Existem índices por sessão, exercício e data, e constraints de chave estrange
 
 **Limite de arquitetura:** durante a fase de compatibilidade, as tabelas normalizadas são uma projeção do snapshot, reconstruída transacionalmente. Antes de uma escala maior, o próximo passo técnico é um repositório incremental com inserts/updates por série, evitando reindexar todo o histórico a cada alteração. Não adicionar nuvem ou autenticação à release offline.
 
-## Fila de imagens restantes (90)
+## Fila de imagens restantes (86)
 
 As entradas abaixo precisam de desenho específico, conferência do equipamento e revisão do movimento. A produção pode ser feita em lotes com aprovação visual antes de substituir o fallback neutro.
 
 | ID de catálogo | Exercício | Grupo | Equipamento |
 |---|---|---|---|
-| `dumbbell_bench_press` | Supino reto com halteres | chest | dumbbell |
 | `incline_barbell_press` | Supino inclinado com barra | chest | barbell |
 | `incline_dumbbell_press` | Supino inclinado com halteres | chest | dumbbell |
 | `smith_bench_press` | Supino reto no Smith | chest | smith |
@@ -64,7 +63,6 @@ As entradas abaixo precisam de desenho específico, conferência do equipamento 
 | `incline_dumbbell_fly` | Crucifixo inclinado com halteres | chest | dumbbell |
 | `low_to_high_cable_fly` | Crossover baixo para cima | chest | cable |
 | `high_to_low_cable_fly` | Crossover alto para baixo | chest | cable |
-| `pull_up` | Barra fixa pronada | back | bodyweight |
 | `chin_up` | Barra fixa supinada | back | bodyweight |
 | `barbell_row` | Remada curvada com barra | back | barbell |
 | `one_arm_dumbbell_row` | Remada unilateral com halter | back | dumbbell |
@@ -79,7 +77,6 @@ As entradas abaixo precisam de desenho específico, conferência do equipamento 
 | `barbell_overhead_press` | Desenvolvimento com barra | shoulders | barbell |
 | `dumbbell_shoulder_press` | Desenvolvimento com halteres | shoulders | dumbbell |
 | `arnold_press` | Desenvolvimento Arnold | shoulders | dumbbell |
-| `dumbbell_lateral_raise` | Elevação lateral com halteres | shoulders | dumbbell |
 | `cable_lateral_raise` | Elevação lateral na polia | shoulders | cable |
 | `front_raise` | Elevação frontal | shoulders | dumbbell |
 | `face_pull` | Face pull | shoulders | cable |
@@ -88,7 +85,6 @@ As entradas abaixo precisam de desenho específico, conferência do equipamento 
 | `cable_front_raise` | Elevação frontal na polia | shoulders | cable |
 | `cable_reverse_fly` | Crucifixo inverso na polia | shoulders | cable |
 | `landmine_press` | Landmine press | shoulders | barbell |
-| `barbell_curl` | Rosca direta com barra | biceps | barbell |
 | `ez_bar_curl` | Rosca direta com barra W | biceps | barbell |
 | `dumbbell_curl` | Rosca alternada com halteres | biceps | dumbbell |
 | `incline_dumbbell_curl` | Rosca inclinada com halteres | biceps | dumbbell |
@@ -156,7 +152,7 @@ As entradas abaixo precisam de desenho específico, conferência do equipamento 
 
 ## Próximo lote visual recomendado
 
-1. Supino reto com halteres, inclinado com barra e inclinado com halteres.
+1. Supino inclinado com barra e supino inclinado com halteres.
 2. Puxada alta, barra fixa, remada curvada e remada unilateral.
 3. Terra romeno, stiff, agachamento frontal e afundo búlgaro.
 4. Elevação lateral, rosca direta, tríceps testa.

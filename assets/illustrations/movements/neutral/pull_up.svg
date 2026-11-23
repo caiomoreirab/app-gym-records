@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="300" viewBox="0 0 360 300" role="img" aria-label="Barra fixa pronada">
+<title>Barra fixa pronada — ilustração esquemática</title>
+<defs><radialGradient id="glow"><stop offset="0" stop-color="#14384A"/><stop offset="1" stop-color="#08121D"/></radialGradient></defs>
+<rect width="360" height="300" rx="20" fill="url(#glow)"/>
+<path d="M18 272H342" stroke="#213F51" stroke-width="3"/>
+<g stroke-linecap="round" stroke-linejoin="round">
+<path d="M38 57h284" stroke="#9CCFE0" stroke-width="8"/>
+<path d="M142 137 111 88 99 58M213 137 249 88 260 58" stroke="#C9A184" fill="none" stroke-width="17"/>
+<g fill="#1A394B" stroke="#45C3EF" stroke-width="4"><rect x="83" y="52" width="25" height="13" rx="4"/><rect x="252" y="52" width="25" height="13" rx="4"/></g>
+<path d="M150 135 211 135 213 211 146 211Z" fill="#2E647A" stroke="#4AC5EA" stroke-width="5"/>
+<path d="M151 210 142 255 110 261M210 210 215 251 248 256" stroke="#C9A184" fill="none" stroke-width="20"/>
+<path d="M100 263h36m108-6h38" stroke="#4FC3EE" stroke-width="11"/>
+<path d="M166 135v-12m29 12v-12" stroke="#C9A184" stroke-width="9"/>
+<circle cx="180" cy="104" r="23" fill="#C9A184" stroke="#72AEC6" stroke-width="3"/>
+<path d="M159 92q8-23 30-14 11 5 11 18" fill="none" stroke="#3A5666" stroke-width="9"/></g>
+</svg>

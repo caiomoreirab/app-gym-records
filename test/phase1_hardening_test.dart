@@ -33,6 +33,19 @@ void main() {
     }
   });
 
+  test('vetores específicos para três preferências visuais', () {
+    for (final id in [
+      'dumbbell_bench_press', 'barbell_curl',
+      'dumbbell_lateral_raise', 'pull_up',
+    ]) {
+      final item = catalog.firstWhere((m) => m.id == id);
+      for (final style in IllustrationStyle.values) {
+        expect(IllustrationAssets.curatedMovementSvg(item, style),
+          'assets/illustrations/movements/${style.assetFolder}/$id.svg');
+      }
+    }
+  });
+
   test('abdominais distintos não compartilham pose enganosa', () {
     for (final id in [
       'side_plank', 'ab_wheel', 'russian_twist', 'dead_bug',

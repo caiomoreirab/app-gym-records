@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="300" viewBox="0 0 360 300" role="img" aria-label="Elevação lateral com halteres">
+<title>Elevação lateral com halteres — ilustração esquemática</title>
+<defs><radialGradient id="glow"><stop offset="0" stop-color="#14384A"/><stop offset="1" stop-color="#08121D"/></radialGradient></defs>
+<rect width="360" height="300" rx="20" fill="url(#glow)"/>
+<path d="M18 272H342" stroke="#213F51" stroke-width="3"/>
+<g stroke-linecap="round" stroke-linejoin="round">
+<path d="M148 163l-13 53-14 43M207 163l16 53 16 43" stroke="#C9A184" stroke-width="22"/>
+<path d="M107 265h45m80 0h42" stroke="#4FC3EE" stroke-width="12"/>
+<path d="M155 99h49l18 78h-86Z" fill="#2E647A" stroke="#4AC5EA" stroke-width="5"/>
+<path d="M149 117 111 101 64 100 M208 117 253 102 299 100" stroke="#C9A184" stroke-width="15" fill="none"/>
+<path d="M34 100h56m180 0h56" stroke="#8FCBE0" stroke-width="5"/>
+<g fill="#173849" stroke="#3FC7F1" stroke-width="4">
+<rect x="37" y="83" width="10" height="34" rx="2"/><rect x="78" y="83" width="10" height="34" rx="2"/>
+<rect x="273" y="83" width="10" height="34" rx="2"/><rect x="313" y="83" width="10" height="34" rx="2"/></g>
+<path d="M166 100V82m27 18V82" stroke="#C9A184" stroke-width="9"/>
+<circle cx="179" cy="62" r="25" fill="#C9A184" stroke="#72AEC6" stroke-width="3"/>
+<path d="M156 50q7-27 29-20 20 0 20 19" fill="none" stroke="#3A5666" stroke-width="10"/></g>
+</svg>

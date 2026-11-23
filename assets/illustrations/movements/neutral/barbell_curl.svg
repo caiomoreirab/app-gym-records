@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="300" viewBox="0 0 360 300" role="img" aria-label="Rosca direta com barra">
+<title>Rosca direta com barra — ilustração esquemática</title>
+<defs><radialGradient id="glow"><stop offset="0" stop-color="#14384A"/><stop offset="1" stop-color="#08121D"/></radialGradient></defs>
+<rect width="360" height="300" rx="20" fill="url(#glow)"/>
+<path d="M18 272H342" stroke="#213F51" stroke-width="3"/>
+<g stroke-linecap="round" stroke-linejoin="round">
+<path d="M152 151l-13 54-12 53M207 151l13 53 11 54" stroke="#C9A184" stroke-width="22"/>
+<path d="M108 265h46m78 0h43" stroke="#4FC3EE" stroke-width="12"/>
+<path d="M153 100 207 100 220 173 142 173Z" fill="#2E647A" stroke="#4AC5EA" stroke-width="5"/>
+<path d="M148 118l-20 44 22 9 M210 118l22 44-23 9" fill="none" stroke="#C9A184" stroke-width="17"/>
+<path d="M88 171h184" stroke="#9CCFE0" stroke-width="6"/>
+<g fill="#1A394B" stroke="#37BEEA" stroke-width="4">
+<rect x="91" y="149" width="12" height="44" rx="3"/><rect x="108" y="155" width="10" height="32" rx="3"/>
+<rect x="242" y="155" width="10" height="32" rx="3"/><rect x="257" y="149" width="12" height="44" rx="3"/></g>
+<path d="M164 98v-18m30 18v-18" stroke="#C9A184" stroke-width="9"/>
+<circle cx="180" cy="62" r="25" fill="#C9A184" stroke="#72AEC6" stroke-width="3"/>
+<path d="M156 50q5-30 30-19 17 2 18 17" fill="none" stroke="#3A5666" stroke-width="10"/></g>
+</svg>
