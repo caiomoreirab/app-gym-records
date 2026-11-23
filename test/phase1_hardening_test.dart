@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:gymrecords/data/mock_data.dart';
 import 'package:gymrecords/models/user_profile.dart';
@@ -114,7 +115,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.byType(UnverifiedExerciseIllustration), findsOneWidget);
-      expect(find.text('Barra'), findsOneWidget);
+      expect(find.byType(SvgPicture), findsOneWidget);
       expect(tester.takeException(), isNull);
     }
   });
