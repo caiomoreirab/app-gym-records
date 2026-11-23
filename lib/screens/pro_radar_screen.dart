@@ -7,6 +7,7 @@ import '../services/pro_insights.dart';
 import '../state/app_controller.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
+import '../services/weight_units.dart';
 import '../widgets/analytics_widgets.dart';
 import '../widgets/page_body.dart';
 import '../widgets/section_card.dart';
@@ -29,7 +30,7 @@ class _ProRadarScreenState extends State<ProRadarScreen> {
     if (!app.isPro) return const ProOverviewScreen();
     final locale = Localizations.localeOf(context);
     final items = AnalyticsService.rankedMachines(app.machines, group: _group, period: _period);
-    items.sort((a, b) => ProInsights.forMachine(b, app.increment).prProbability.compareTo(ProInsights.forMachine(a, app.increment).prProbability));
+    items.sort((a, b) => ProInsights.forMachine(b, WeightUnits.toKilograms(app.increment, app.unit)).prProbability.compareTo(ProInsights.forMachine(a, WeightUnits.toKilograms(app.increment, app.unit)).prProbability));
 
     return Scaffold(
       backgroundColor: AppTheme.deepNavy,
@@ -76,7 +77,7 @@ class _ProRadarScreenState extends State<ProRadarScreen> {
           else
             for (final machine in items) ...[
               Builder(builder: (context) {
-                final insight = ProInsights.forMachine(machine, app.increment);
+                final insight = ProInsights.forMachine(machine, WeightUnits.toKilograms(app.increment, app.unit));
                 return SectionCard(child: InkWell(
                   onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => ExerciseInsightsScreen(machineId: machine.id))),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -90,7 +91,7 @@ class _ProRadarScreenState extends State<ProRadarScreen> {
                     const SizedBox(height: 9),
                     Text(
                       machine.recordWeight > 0
-                          ? '${context.strings.t('Alvo sugerido', 'Suggested target', 'Objetivo sugerido')}: ${formatWeight(insight.nextTarget, locale)} ${app.unit} × ${insight.targetRepetitions}'
+                          ? '${context.strings.t('Alvo sugerido', 'Suggested target', 'Objetivo sugerido')}: ${WeightUnits.format(insight.nextTarget, app.unit, locale)} ${app.unit} × ${insight.targetRepetitions}'
                           : '${context.strings.t('Repetições alvo', 'Target reps', 'Repeticiones objetivo')}: ${machine.bestRepetitions + 1}',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
