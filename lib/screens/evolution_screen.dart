@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../l10n/app_strings.dart';
 import '../models/muscle_group.dart';
 import '../services/analytics_service.dart';
+import '../services/weight_units.dart';
 import '../state/app_controller.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
@@ -76,6 +77,7 @@ class _EvolutionScreenState extends State<EvolutionScreen> {
               group: _group,
               period: _period,
               metric: _metric,
+              weightUnit: app.unit,
               onGroupChanged: (value) => setState(() => _group = value),
               onPeriodChanged: (value) => setState(() => _period = value),
               onMetricChanged: (value) => setState(() => _metric = value),
@@ -89,7 +91,7 @@ class _EvolutionScreenState extends State<EvolutionScreen> {
                   _SummaryValue(title: context.strings.t('Registros', 'Logs', 'Registros'), value: '${summary.logs}'),
                   _SummaryValue(title: context.strings.t('Dias ativos', 'Active days', 'Días activos'), value: '${summary.trainingDays}'),
                   _SummaryValue(title: context.strings.t('Exercícios ativos', 'Active exercises', 'Ejercicios activos'), value: '${summary.activeExercises}'),
-                  _SummaryValue(title: context.strings.t('Volume (kg)', 'Volume (kg)', 'Volumen (kg)'), value: formatWeight(summary.volumeKg, locale)),
+                  _SummaryValue(title: context.strings.t('Volume', 'Volume', 'Volumen') + ' (${app.unit})', value: formatWeight(WeightUnits.volumeForDisplay(summary.volumeKg, app.unit), locale)),
                   _SummaryValue(title: context.strings.t('Repetições', 'Repetitions', 'Repeticiones'), value: '${summary.repetitions}'),
                   _SummaryValue(title: context.strings.t('Tempo (min)', 'Time (min)', 'Tiempo (min)'), value: summary.durationMinutes.toStringAsFixed(1)),
                 ]),
@@ -109,7 +111,7 @@ class _EvolutionScreenState extends State<EvolutionScreen> {
                 ? const SectionCard(child: Text(
                     'Registre treinos em pelo menos 3 dias para ver seu primeiro gráfico.',
                     style: TextStyle(color: AppTheme.iceBlue)))
-                : TrendBarChart(values: trend, metric: _metric),
+                : TrendBarChart(values: trend, metric: _metric, weightUnit: app.unit),
             const SizedBox(height: 14),
             OutlinedButton.icon(
               onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const ProCardioAnalyticsScreen())),
