@@ -7,6 +7,7 @@ import '../models/workout_record.dart';
 import '../services/pro_insights.dart';
 import '../services/strength_records.dart';
 import '../services/strength_set_validation.dart';
+import '../services/weight_units.dart';
 import '../state/app_controller.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
@@ -150,7 +151,8 @@ class _MachineScreenState extends State<MachineScreen> {
               repetitions: _repetitions,
               minutes: _minutes,
               seconds: _seconds,
-              onWeightChanged: (value) => setState(() => _weight = value.clamp(0, 250).toDouble()),
+              onWeightChanged: (value) => setState(
+                () => _weight = value.clamp(0.0, 10000.0).toDouble()),
               onTapWeight: _editWeight,
               onRepetitionsChanged: (value) => setState(() => _repetitions = value),
               onMinutesChanged: (value) => setState(() => _minutes = value.clamp(0, 999)),
@@ -180,7 +182,7 @@ class _MachineScreenState extends State<MachineScreen> {
             _MachineProCard(
               machine: machine,
               unit: app.unit,
-              increment: app.increment,
+              increment: WeightUnits.toKilograms(app.increment, app.unit),
               enabled: app.isPro,
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
@@ -307,7 +309,8 @@ class _MachineScreenState extends State<MachineScreen> {
   }
 
   Future<void> _editWeight() async {
-    final controller = TextEditingController(text: formatWeight(_weight, Localizations.localeOf(context)));
+    final unit = AppScope.of(context).unit;
+    final controller = TextEditingController(text: WeightUnits.format(_weight, unit, Localizations.localeOf(context)));
     final value = await showDialog<double>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -317,7 +320,7 @@ class _MachineScreenState extends State<MachineScreen> {
           controller: controller,
           autofocus: true,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          decoration: const InputDecoration(suffixText: 'kg'),
+          decoration: InputDecoration(suffixText: unit),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: Text(context.strings.t('Cancelar', 'Cancel', 'Cancelar'))),
@@ -332,7 +335,11 @@ class _MachineScreenState extends State<MachineScreen> {
       ),
     );
     controller.dispose();
-    if (value != null && mounted) setState(() => _weight = value.clamp(0, 250).toDouble());
+    if (value != null && value.isFinite && value >= 0 && value <= 22046 &&
+        mounted) {
+      setState(() => _weight = WeightUnits.toKilograms(value, unit)
+        .clamp(0.0, 10000.0).toDouble());
+    }
   }
 
   Future<void> _editNote(Machine machine) async {
@@ -447,9 +454,9 @@ class _MachineProCard extends StatelessWidget {
                     Text(
                       enabled
                           ? context.strings.t(
-                              'Próximo objetivo • alvo ${formatWeight(insight.nextTarget, Localizations.localeOf(context))} $unit × ${insight.targetRepetitions}',
-                              'Next goal • target ${formatWeight(insight.nextTarget, Localizations.localeOf(context))} $unit × ${insight.targetRepetitions}',
-                              'Próximo objetivo • alvo ${formatWeight(insight.nextTarget, Localizations.localeOf(context))} $unit × ${insight.targetRepetitions}',
+                              'Próximo objetivo • alvo ${WeightUnits.format(insight.nextTarget, unit, Localizations.localeOf(context))} $unit × ${insight.targetRepetitions}',
+                              'Next goal • target ${WeightUnits.format(insight.nextTarget, unit, Localizations.localeOf(context))} $unit × ${insight.targetRepetitions}',
+                              'Próximo objetivo • alvo ${WeightUnits.format(insight.nextTarget, unit, Localizations.localeOf(context))} $unit × ${insight.targetRepetitions}',
                             )
                           : context.strings.t('Próximo objetivo e análise de recordes.', 'Next goal and record analysis.', 'Próximo objetivo y análisis de récords.'),
                       maxLines: 2,
@@ -542,12 +549,12 @@ class _RecordTypesCard extends StatelessWidget {
           style: TextStyle(color: AppTheme.iceBlue)),
         children: [
           _recordRow('Seu maior peso até hoje',
-            best <= 0 ? '—' : '${best.toStringAsFixed(1)} $unit'),
+            best <= 0 ? '—' : '${WeightUnits.format(best, unit)} $unit'),
           _recordRow('Maior carga entre 8 e 12 repetições',
-            range <= 0 ? '—' : '${range.toStringAsFixed(1)} $unit'),
+            range <= 0 ? '—' : '${WeightUnits.format(range, unit)} $unit'),
           _recordRow('Carga máxima estimada (1RM)',
             estimated == null ? '—' :
-            '${estimated.toStringAsFixed(1)} $unit'),
+            '${WeightUnits.format(estimated, unit)} $unit'),
           const Padding(
             padding: EdgeInsets.fromLTRB(10, 4, 10, 12),
             child: Text(
@@ -653,12 +660,16 @@ class _WeightCard extends StatelessWidget {
             if (showWeight) ...[
               Expanded(child: _SetMetricCard(
                 title: 'Carga ($unit)',
-                value: formatWeight(weight, Localizations.localeOf(context)),
+                value: WeightUnits.format(weight, unit, Localizations.localeOf(context)),
                 onValueTap: onTapWeight,
                 onMinus: () => onWeightChanged(
-                  (weight - increment).clamp(0.0, 250.0).toDouble()),
+                  WeightUnits.toKilograms(
+                    (WeightUnits.toDisplay(weight, unit) - increment)
+                      .clamp(0.0, 22046.0).toDouble(), unit)),
                 onPlus: () => onWeightChanged(
-                  (weight + increment).clamp(0.0, 250.0).toDouble()),
+                  WeightUnits.toKilograms(
+                    (WeightUnits.toDisplay(weight, unit) + increment)
+                      .clamp(0.0, 22046.0).toDouble(), unit)),
               )),
               if (machine.supportsRepetitions)
                 const SizedBox(width: 10),
@@ -678,10 +689,13 @@ class _WeightCard extends StatelessWidget {
         if (showWeight) ...[
           const SizedBox(height: 10),
           Slider(
-            value: weight.clamp(0, 250).toDouble(),
-            min: 0, max: 250, divisions: 100,
-            label: '${weight.toStringAsFixed(1)} $unit',
-            onChanged: onWeightChanged,
+            value: WeightUnits.toDisplay(weight, unit)
+                .clamp(0.0, unit == 'lb' ? 550.0 : 250.0).toDouble(),
+            min: 0, max: unit == 'lb' ? 550 : 250,
+            divisions: 100,
+            label: '${WeightUnits.format(weight, unit)} $unit',
+            onChanged: (displayed) => onWeightChanged(
+              WeightUnits.toKilograms(displayed, unit)),
           ),
         ],
         if (machine.supportsDuration) ...[
@@ -857,7 +871,7 @@ class _TimeStepper extends StatelessWidget {
 }
 
 String _machinePrimaryDisplay(Machine machine, String unit, Locale locale) {
-  if (machine.recordWeight > 0) return '${formatWeight(machine.recordWeight, locale)} $unit';
+  if (machine.recordWeight > 0) return '${WeightUnits.format(machine.recordWeight, unit, locale)} $unit';
   if (machine.bestRepetitions > 0) return '${machine.bestRepetitions} reps';
   if (machine.bestDurationSeconds > 0) return _formatDurationShort(machine.bestDurationSeconds);
   return '—';
