@@ -6,6 +6,7 @@ import '../models/muscle_group.dart';
 import '../state/app_controller.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
+import '../services/weight_units.dart';
 import '../widgets/adaptive_illustration.dart';
 import '../widgets/brand_header.dart';
 import '../widgets/cardio_group_card.dart';
@@ -956,7 +957,7 @@ class _QuickMachineCard extends StatelessWidget {
                             const SizedBox(width: 5),
                             Expanded(
                               child: Text(
-                                '${formatWeight(machine.recordWeight, Localizations.localeOf(context))} $unit',
+                                '${WeightUnits.format(machine.recordWeight, unit, Localizations.localeOf(context))} $unit',
                                 style: const TextStyle(
                                   color: AppTheme.electricLime,
                                   fontWeight: FontWeight.w600,
