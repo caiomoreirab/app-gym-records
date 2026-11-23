@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../models/machine.dart';
 import '../models/muscle_group.dart';
@@ -10,7 +11,7 @@ import 'two_view_image_pager.dart';
 import 'unverified_exercise_illustration.dart';
 
 class AdaptiveExerciseImage extends StatelessWidget {
-  const AdaptiveExerciseImage({super.key, required this.machine, this.fit = BoxFit.cover, this.width, this.height});
+  const AdaptiveExerciseImage({super.key, required this.machine, this.fit = BoxFit.contain, this.width, this.height});
   final Machine machine;
   final BoxFit fit;
   final double? width;
@@ -18,6 +19,11 @@ class AdaptiveExerciseImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = AppScope.of(context).effectiveIllustrationStyle;
+    final curated = IllustrationAssets.curatedMovementSvg(machine, style);
+    if (curated != null) {
+      return SvgPicture.asset(curated, width: width, height: height,
+        fit: BoxFit.contain);
+    }
     if (!IllustrationAssets.hasVerifiedExecution(machine)) {
       return SizedBox(
         width: width, height: height,
@@ -29,7 +35,7 @@ class AdaptiveExerciseImage extends StatelessWidget {
       IllustrationAssets.exercise(machine, style),
       width: width,
       height: height,
-      fit: machine.group == MuscleGroup.abs ? BoxFit.contain : fit,
+      fit: BoxFit.contain,
       alignment: Alignment.center,
       errorBuilder: (_, __, ___) => const ColoredBox(color: AppTheme.surfaceNavy, child: Center(child: Icon(Icons.image_not_supported_outlined))),
     );
@@ -71,6 +77,7 @@ class ExerciseVisualPager extends StatelessWidget {
   Widget build(BuildContext context) {
     final style = AppScope.of(context).effectiveIllustrationStyle;
     final verified = IllustrationAssets.hasVerifiedExecution(machine);
+    final curated = IllustrationAssets.curatedMovementSvg(machine, style);
     return TwoViewImagePager(
       key: ValueKey('pager:${machine.id}:${style.assetFolder}'),
       visualSetKey: '${machine.id}:${style.assetFolder}',
@@ -78,15 +85,17 @@ class ExerciseVisualPager extends StatelessWidget {
       musclePath: verified
           ? IllustrationAssets.muscle(machine, style)
           : IllustrationAssets.group(machine.group, style),
-      executionPlaceholder: verified ? null :
+      executionPlaceholder: curated != null
+          ? SvgPicture.asset(curated, fit: BoxFit.contain)
+          : verified ? null :
           UnverifiedExerciseIllustration(machine: machine,
             compact: compact || height < 110),
       // Same-profile anatomical fallback, never a different person's assets.
       muscleFallback: IllustrationAssets.group(machine.group, style),
       height: height,
       width: width,
-      fit: machine.group == MuscleGroup.abs ||
-          !verified ? BoxFit.contain : fit,
+      // Always fit the complete execution image; never crop or stretch it.
+      fit: BoxFit.contain,
       compact: compact,
       showLabel: showLabel,
     );
