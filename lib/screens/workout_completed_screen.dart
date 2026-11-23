@@ -1,4 +1,6 @@
 import 'dart:ui' as ui;
+import 'dart:typed_data';
+import 'package:file_saver/file_saver.dart';
 
 import 'package:flutter/rendering.dart';
 import 'package:material_ui/material_ui.dart';
@@ -28,52 +30,89 @@ class _WorkoutCompletedScreenState extends State<WorkoutCompletedScreen> {
   final GlobalKey _shareCardKey = GlobalKey(debugLabel: 'workout-share-card');
   bool _sharing = false;
 
+  Future<Uint8List> _captureCard() async {
+    final cardContext = _shareCardKey.currentContext;
+    if (cardContext == null) {
+      throw StateError('Cartão ainda não disponível.');
+    }
+    await Scrollable.ensureVisible(cardContext,
+      duration: const Duration(milliseconds: 160),
+      alignment: .04);
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) throw StateError('Tela fechada.');
+    final boundary = _shareCardKey.currentContext?.findRenderObject();
+    if (boundary is! RenderRepaintBoundary) {
+      throw StateError('Cartão indisponível.');
+    }
+    final image = await boundary.toImage(pixelRatio: 2.4);
+    try {
+      final data = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (data == null) throw StateError('Não foi possível gerar o PNG.');
+      return data.buffer.asUint8List();
+    } finally {
+      image.dispose();
+    }
+  }
+
+  Future<void> _downloadCard() async {
+    if (_sharing) return;
+    setState(() => _sharing = true);
+    try {
+      final bytes = await _captureCard();
+      await FileSaver.instance.saveFile(
+        name: 'gymrecords_treino',
+        bytes: bytes,
+        fileExtension: 'png',
+        mimeType: MimeType.png,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Imagem do treino preparada para salvar.')));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Não foi possível salvar a imagem neste dispositivo.')));
+      }
+    } finally {
+      if (mounted) setState(() => _sharing = false);
+    }
+  }
+
   Future<void> _share(CompletedWorkoutSummary summary) async {
     if (_sharing) return;
     setState(() => _sharing = true);
     try {
-      final cardContext = _shareCardKey.currentContext;
-      if (cardContext == null) {
-        throw StateError('Cartão ainda não está disponível.');
-      }
-      await Scrollable.ensureVisible(cardContext,
-        duration: const Duration(milliseconds: 160),
-        alignment: 0.04);
-      await WidgetsBinding.instance.endOfFrame;
+      final bytes = await _captureCard();
       if (!mounted) return;
-      final boundary = _shareCardKey.currentContext?.findRenderObject();
-      if (boundary is! RenderRepaintBoundary) {
-        throw StateError('Não foi possível localizar o cartão.');
-      }
-      final image = await boundary.toImage(pixelRatio: 2.4);
-      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-      image.dispose();
-      if (bytes == null) throw StateError('Não foi possível gerar o PNG.');
-      if (!mounted) return;
-
       final renderObject = context.findRenderObject();
       Rect? origin;
       if (renderObject is RenderBox) {
         origin = renderObject.localToGlobal(Offset.zero) & renderObject.size;
       }
       final result = await SharePlus.instance.share(ShareParams(
-        files: [XFile.fromData(bytes.buffer.asUint8List(),
-          mimeType: 'image/png',
+        files: [XFile.fromData(bytes, mimeType: 'image/png',
           name: 'gymrecords-treino.png')],
         fileNameOverrides: const ['gymrecords-treino.png'],
         text: 'Meu treino no GymRecords',
+        downloadFallbackEnabled: true,
         sharePositionOrigin: origin,
       ));
       if (mounted && result.status == ShareResultStatus.success) {
         AppScope.of(context).markRecordShared();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Treino compartilhado.')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Treino compartilhado.')));
+      } else if (mounted && result.status == ShareResultStatus.unavailable) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Compartilhamento indisponível. Use Salvar imagem PNG.')));
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(
-            'Não foi possível compartilhar a imagem neste dispositivo.')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: const Text('Não foi possível compartilhar. Use Salvar imagem PNG.'),
+          action: SnackBarAction(label: 'Salvar imagem',
+            onPressed: _downloadCard),
+        ));
       }
     } finally {
       if (mounted) setState(() => _sharing = false);
@@ -214,6 +253,13 @@ class _WorkoutCompletedScreenState extends State<WorkoutCompletedScreen> {
                 icon: const Icon(Icons.ios_share_rounded),
                 label: Text(_sharing
                   ? 'Preparando cartão...' : 'Compartilhar treino'),
+              ),
+              const SizedBox(height: 9),
+              OutlinedButton.icon(
+                key: const Key('download_workout_card'),
+                onPressed: _sharing ? null : _downloadCard,
+                icon: const Icon(Icons.download_outlined),
+                label: const Text('Salvar imagem PNG'),
               ),
               const SizedBox(height: 9),
               OutlinedButton.icon(
