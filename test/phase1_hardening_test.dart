@@ -117,7 +117,7 @@ void main() {
     app.dispose();
   });
 
-  testWidgets('vetores neutros para exercícios não verificados nos três perfis',
+  testWidgets('supino com SVG específico nos três perfis sem placeholder',
       (tester) async {
     final app = AppController(persistenceEnabled: false);
     addTearDown(app.dispose);
@@ -141,7 +141,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.byType(UnverifiedExerciseIllustration), findsOneWidget);
+      expect(find.byType(UnverifiedExerciseIllustration), findsNothing);
       expect(find.byType(SvgPicture), findsOneWidget);
       expect(tester.takeException(), isNull);
     }
