@@ -248,8 +248,11 @@ class _OnboardingPreferences extends StatelessWidget {
           Expanded(child: Text(strings.t('Idioma do aplicativo',
             'App language', 'Idioma de la aplicación'),
             style: const TextStyle(fontSize: 13))),
-          DropdownButton<String>(
+          SizedBox(
+            width: 92,
+            child: DropdownButton<String>(
             key: const Key('onboarding_language'),
+            isExpanded: true,
             value: app.languageCode,
             underline: const SizedBox.shrink(),
             isDense: true,
@@ -262,10 +265,12 @@ class _OnboardingPreferences extends StatelessWidget {
             onChanged: (value) {
               if (value != null) app.setLanguageCode(value);
             },
+            ),
           ),
         ]),
         const Divider(height: 10, color: AppTheme.deepBlue),
-        SwitchListTile(
+        Material(color: Colors.transparent,
+          child: SwitchListTile(
           key: const Key('onboarding_large_text'),
           dense: true,
           contentPadding: EdgeInsets.zero,
@@ -273,6 +278,7 @@ class _OnboardingPreferences extends StatelessWidget {
             'Texto ampliado')),
           value: app.largeText,
           onChanged: app.setLargeText,
+          ),
         ),
       ]),
     );
