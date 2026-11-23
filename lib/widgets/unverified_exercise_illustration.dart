@@ -85,7 +85,7 @@ class UnverifiedExerciseIllustration extends StatelessWidget {
         : 180.0;
       final iconSize = [available, horizontal, tiny ? 85.0 : 160.0]
         .reduce((a, b) => a < b ? a : b)
-        .clamp(16.0, 160.0);
+        .clamp(16.0, 160.0).toDouble();
       return ColoredBox(
         color: AppTheme.surfaceNavy,
         child: Center(child: Padding(
