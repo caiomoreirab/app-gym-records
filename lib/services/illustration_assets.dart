@@ -16,8 +16,23 @@ abstract final class IllustrationAssets {
   /// Only explicitly curated catalog illustrations are safe to show as
   /// a depiction of the actual execution. The generic per-group fallbacks
   /// were machines reused for free weights (and are therefore misleading).
+  // The old catalog reused a handful of abdominal illustrations for
+  // biomechanically different movements. Until a movement-specific asset
+  // exists, prefer the neutral SVG illustration to a misleading execution.
+  static const Set<String> _unverifiedSharedPoses = {
+    'side_plank',
+    'ab_wheel',
+    'russian_twist',
+    'dead_bug',
+    'hanging_knee_raise',
+    'captain_chair_raise',
+    'pallof_press',
+    'cable_woodchop',
+  };
+
   static bool hasVerifiedExecution(Machine machine) =>
       !machine.isCustom &&
+      !_unverifiedSharedPoses.contains(machine.id) &&
       machine.visualAssetId != null &&
       machine.visualAssetId!.isNotEmpty;
 
