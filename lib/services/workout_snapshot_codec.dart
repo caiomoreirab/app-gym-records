@@ -35,6 +35,7 @@ class WorkoutSnapshotCodec {
               'startedAt': item.startedAt.toUtc().toIso8601String(),
               'completedAt': item.completedAt?.toUtc().toIso8601String(),
               'exerciseIds': item.exerciseIds,
+              'completedExerciseIds': item.completedExerciseIds,
             },
         ],
         'machines': [
@@ -267,14 +268,30 @@ class WorkoutSnapshotCodec {
             sessions.containsKey(id)) {
           throw const FormatException('ID ou nome de sessão inválido.');
         }
+        final rawExerciseIds = item['exerciseIds'];
+        final rawDoneIds = item['completedExerciseIds'];
+        if ((rawExerciseIds != null && rawExerciseIds is! List) ||
+            (rawDoneIds != null && rawDoneIds is! List)) {
+          throw const FormatException('Lista de exercícios da sessão inválida.');
+        }
+        final ids = rawExerciseIds is List
+            ? rawExerciseIds.whereType<String>().toSet().toList() : <String>[];
+        final done = rawDoneIds is List
+            ? rawDoneIds.whereType<String>().toSet().toList() : <String>[];
+        if (ids.length > 500 || done.length > 500 ||
+            ids.any((id) => id.isEmpty || id.length > 160) ||
+            done.any((id) => !ids.contains(id)) ||
+            (rawExerciseIds is List && ids.length != rawExerciseIds.length) ||
+            (rawDoneIds is List && done.length != rawDoneIds.length)) {
+          throw const FormatException('Exercícios da sessão inconsistentes.');
+        }
         sessions[id] = WorkoutSession(
           id: id, name: name,
           startedAt: _date(item['startedAt']),
           completedAt: item['completedAt'] == null ? null
               : _date(item['completedAt']),
-          exerciseIds: item['exerciseIds'] is List
-              ? (item['exerciseIds'] as List).whereType<String>().toList()
-              : const [],
+          exerciseIds: ids,
+          completedExerciseIds: done,
         );
       }
     }
