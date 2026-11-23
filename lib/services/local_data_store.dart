@@ -165,11 +165,13 @@ class SqliteLocalDataStore implements LocalDataStore {
   /// intact, while all future workout queries have indexed SQL tables.
   static Future<void> _rebuildIndexes(
       Transaction txn, Map<String, dynamic> snapshot) async {
+    // One batch keeps projection updates fast as the history grows.
+    final batch = txn.batch();
     // Children first, respecting foreign key constraints.
-    await txn.delete('workout_sets');
-    await txn.delete('session_exercises');
-    await txn.delete('workout_sessions');
-    await txn.delete('cardio_entries');
+    batch.delete('workout_sets');
+    batch.delete('session_exercises');
+    batch.delete('workout_sessions');
+    batch.delete('cardio_entries');
 
     final rawSessions = snapshot['sessions'];
     final sessions = rawSessions is List ? rawSessions : const [];
@@ -180,7 +182,7 @@ class SqliteLocalDataStore implements LocalDataStore {
       }
       final id = raw['id'] as String;
       ids.add(id);
-      await txn.insert('workout_sessions', {
+      batch.insert('workout_sessions', {
         'id': id,
         'name': raw['name']?.toString() ?? 'Treino',
         'started_at': raw['startedAt']?.toString() ?? '',
@@ -191,7 +193,7 @@ class SqliteLocalDataStore implements LocalDataStore {
           ? (raw['completedExerciseIds'] as List).toSet() : const <Object>{};
       if (list is List) {
         for (var i = 0; i < list.length; i++) {
-          await txn.insert('session_exercises', {
+          batch.insert('session_exercises', {
             'session_id': id, 'exercise_id': list[i],
             'position': i, 'completed': done.contains(list[i]) ? 1 : 0,
           });
@@ -213,7 +215,7 @@ class SqliteLocalDataStore implements LocalDataStore {
             throw const FormatException(
               'Série sem sessão correspondente no banco.');
           }
-          await txn.insert('workout_sets', {
+          batch.insert('workout_sets', {
             'record_id': record['id'],
             'session_id': session,
             'exercise_id': machineId,
@@ -239,7 +241,7 @@ class SqliteLocalDataStore implements LocalDataStore {
         for (var index = 0; index < records.length; index++) {
           final record = records[index];
           if (record is! Map) continue;
-          await txn.insert('cardio_entries', {
+          batch.insert('cardio_entries', {
             'entry_key': '${activity.key}_$index',
             'activity_id': activity.key,
             'occurred_at': record['date'],
@@ -250,6 +252,7 @@ class SqliteLocalDataStore implements LocalDataStore {
         }
       }
     }
+    await batch.commit(noResult: true);
   }
 
   @override
