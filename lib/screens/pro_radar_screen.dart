@@ -30,7 +30,8 @@ class _ProRadarScreenState extends State<ProRadarScreen> {
     if (!app.isPro) return const ProOverviewScreen();
     final locale = Localizations.localeOf(context);
     final items = AnalyticsService.rankedMachines(app.machines, group: _group, period: _period);
-    items.sort((a, b) => ProInsights.forMachine(b, WeightUnits.toKilograms(app.increment, app.unit)).prProbability.compareTo(ProInsights.forMachine(a, WeightUnits.toKilograms(app.increment, app.unit)).prProbability));
+    items.sort((a, b) => (b.latestRecord?.date ?? DateTime(1970))
+        .compareTo(a.latestRecord?.date ?? DateTime(1970)));
 
     return Scaffold(
       backgroundColor: AppTheme.deepNavy,
@@ -40,7 +41,11 @@ class _ProRadarScreenState extends State<ProRadarScreen> {
           const SizedBox(height: 10),
           Text(context.strings.t('Próximos alvos', 'Next targets', 'Próximos objetivos'), style: Theme.of(context).textTheme.headlineMedium),
           const SizedBox(height: 8),
-          Text(context.strings.t('Índice exploratório de proximidade, não uma probabilidade estatística validada.', 'Exploratory proximity score, not a validated statistical probability.', 'Índice exploratorio de proximidad, no una probabilidad validada.'), style: Theme.of(context).textTheme.bodySmall),
+          Text(context.strings.t(
+            'Metas exploratórias calculadas a partir dos seus registros, não previsões.',
+            'Exploratory goals based on your records, not predictions.',
+            'Objetivos exploratorios basados en tus registros, no predicciones.'),
+            style: Theme.of(context).textTheme.bodySmall),
           Align(
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
@@ -78,21 +83,33 @@ class _ProRadarScreenState extends State<ProRadarScreen> {
             for (final machine in items) ...[
               Builder(builder: (context) {
                 final insight = ProInsights.forMachine(machine, WeightUnits.toKilograms(app.increment, app.unit));
+                final usable = machine.records.where((r) => !r.isWarmup).toList();
+                final sessions = usable.map((r) => r.effectiveSessionId).toSet();
+                final ready = usable.length >= 3 && sessions.length >= 2;
                 return SectionCard(child: InkWell(
                   onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => ExerciseInsightsScreen(machineId: machine.id))),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(children: [
                       Expanded(child: Text(machine.localizedName(locale), style: Theme.of(context).textTheme.titleMedium)),
-                      Text('${(insight.prProbability * 100).round()}/100', style: const TextStyle(color: AppTheme.electricLime, fontWeight: FontWeight.w600)),
+                      Text(ready
+                        ? context.strings.t('Sugestão', 'Suggestion', 'Sugerencia')
+                        : context.strings.t('Aguardando dados', 'More data needed', 'Faltan datos'),
+                        style: const TextStyle(color: AppTheme.electricLime,
+                          fontWeight: FontWeight.w600, fontSize: 12)),
                       const Icon(Icons.chevron_right_rounded),
                     ]),
                     const SizedBox(height: 8),
-                    LinearProgressIndicator(value: insight.prProbability, minHeight: 6, backgroundColor: AppTheme.deepBlue, valueColor: const AlwaysStoppedAnimation(AppTheme.electricLime)),
+                    const Divider(color: AppTheme.deepBlue),
                     const SizedBox(height: 9),
                     Text(
-                      machine.recordWeight > 0
-                          ? '${context.strings.t('Alvo sugerido', 'Suggested target', 'Objetivo sugerido')}: ${WeightUnits.format(insight.nextTarget, app.unit, locale)} ${app.unit} × ${insight.targetRepetitions}'
-                          : '${context.strings.t('Repetições alvo', 'Target reps', 'Repeticiones objetivo')}: ${machine.bestRepetitions + 1}',
+                      !ready
+                          ? context.strings.t(
+                              'Registre este exercício em pelo menos 2 sessões e 3 séries válidas.',
+                              'Log this exercise over 2 sessions and 3 valid sets.',
+                              'Registra este ejercicio en 2 sesiones y 3 series válidas.')
+                          : machine.recordWeight > 0
+                              ? '${context.strings.t('Alvo sugerido', 'Suggested target', 'Objetivo sugerido')}: ${WeightUnits.format(insight.nextTarget, app.unit, locale)} ${app.unit} × ${insight.targetRepetitions}'
+                              : '${context.strings.t('Repetições alvo', 'Target reps', 'Repeticiones objetivo')}: ${machine.bestRepetitions + 1}',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ]),
