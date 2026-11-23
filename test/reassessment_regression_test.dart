@@ -103,15 +103,22 @@ void main() {
       child: MaterialApp(theme: AppTheme.dark,
         home: const ProExportScreen())));
     await tester.pumpAndSettle();
-    final csv = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'Copiar CSV'));
-    expect(csv.onPressed, isNull);
-    final pdf = tester.widget<OutlinedButton>(
-      find.widgetWithText(OutlinedButton, 'Gerar e compartilhar PDF'));
-    expect(pdf.onPressed, isNull);
-    final download = tester.widget<OutlinedButton>(
-      find.widgetWithText(OutlinedButton, 'Baixar PDF'));
-    expect(download.onPressed, isNull);
+    final scrollable = find.byType(Scrollable).first;
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('export_csv_button')), 130,
+      scrollable: scrollable);
+    expect(tester.widget<FilledButton>(
+      find.byKey(const Key('export_csv_button'))).onPressed, isNull);
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('share_pdf_button')), 130,
+      scrollable: scrollable);
+    expect(tester.widget<OutlinedButton>(
+      find.byKey(const Key('share_pdf_button'))).onPressed, isNull);
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('download_pdf')), 130,
+      scrollable: scrollable);
+    expect(tester.widget<OutlinedButton>(
+      find.byKey(const Key('download_pdf'))).onPressed, isNull);
     await tester.scrollUntilVisible(
       find.textContaining('Nenhum registro neste filtro'), 160,
       scrollable: find.byType(Scrollable).first,
