@@ -13,6 +13,32 @@ class UnverifiedExerciseIllustration extends StatelessWidget {
   final Machine machine;
   final bool compact;
 
+  /// Exercise-specific vector art for flat bench presses. The two
+  /// implements are visibly different; machine press photos are never reused.
+  /// Simplified schematic, not a medical or personal coaching instruction.
+  static bool hasMovementSchematic(String id) =>
+      id == 'barbell_bench_press' || id == 'dumbbell_bench_press';
+
+  static String benchPressSchematic(String id) {
+    final common =
+      // Head, back, bent knees, floor and bench in side profile.
+      '<path d="M9 82h82" stroke="#2E5772" stroke-width="2"/>'
+      '<path d="M26 67H73M34 67v14M66 67v14" stroke="#32B9E6"/>'
+      '<circle cx="25" cy="54" r="7"/>'
+      '<path d="M32 55 67 55 77 64 83 78 93 78" stroke-width="4"/>'
+      '<path d="M35 56 33 64 26 64" stroke-width="4"/>';
+    if (id == 'barbell_bench_press') {
+      return common +
+        // A long bar with collars and two arms extending upward.
+        '<path d="M16 18h72M21 11v14M26 11v14M78 11v14M83 11v14" stroke-width="4"/>'
+        '<path d="M43 55 45 37 45 19M62 55 65 37 65 19" stroke-width="4"/>';
+    }
+    return common +
+      // Two separate dumbbells at the top and independent arms.
+      '<path d="M35 17v13M28 19v10M42 19v10M61 17v13M54 19v10M68 19v10" stroke-width="4"/>'
+      '<path d="M40 55 35 32 35 24M62 55 61 32 61 24" stroke-width="4"/>';
+  }
+
   String _symbol() => switch (machine.equipment) {
     EquipmentType.barbell =>
       '<path d="M10 48h80M20 37v22M28 32v32M72 32v32M80 37v22"/>',
@@ -37,9 +63,14 @@ class UnverifiedExerciseIllustration extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final language = Localizations.localeOf(context).languageCode;
-    final title = language == 'en' ? 'Illustration under review'
-      : language == 'es' ? 'Ilustración en revisión'
-      : 'Ilustração em revisão';
+    final movementArt = hasMovementSchematic(machine.id);
+    final title = movementArt
+      ? (language == 'en' ? 'Movement illustration'
+          : language == 'es' ? 'Ilustración del movimiento'
+          : 'Ilustração do movimento')
+      : (language == 'en' ? 'Equipment illustration'
+          : language == 'es' ? 'Ilustración del equipo'
+          : 'Ilustração do equipamento');
     final equipmentLabel = machine.equipment.label(
       Localizations.localeOf(context));
     return LayoutBuilder(builder: (context, constraints) {
@@ -53,14 +84,15 @@ class UnverifiedExerciseIllustration extends StatelessWidget {
               '<svg xmlns="http://www.w3.org/2000/svg" '
               'viewBox="0 0 100 100" fill="none" stroke="#10B7F4" '
               'stroke-width="4" stroke-linecap="round" '
-              'stroke-linejoin="round">${_symbol()}</svg>',
-              width: tiny ? 37 : 70,
-              height: tiny ? 37 : 70,
+              'stroke-linejoin="round">${movementArt ? benchPressSchematic(machine.id) : _symbol()}</svg>',
+              width: tiny ? 62 : 180,
+              height: tiny ? 62 : 165,
               semanticsLabel: equipmentLabel,
             ),
             if (!tiny) ...[
-              const SizedBox(height: 10),
-              Text(equipmentLabel, maxLines: 1,
+              const SizedBox(height: 8),
+              Text(movementArt ? machine.localizedName(Localizations.localeOf(context)) : equipmentLabel,
+                maxLines: 2, textAlign: TextAlign.center,
                 style: const TextStyle(color: AppTheme.polarWhite,
                   fontWeight: FontWeight.w600, fontSize: 13)),
               const SizedBox(height: 4),
