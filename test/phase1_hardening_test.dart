@@ -32,6 +32,22 @@ void main() {
     }
   });
 
+  test('abdominais distintos não compartilham pose enganosa', () {
+    for (final id in [
+      'side_plank', 'ab_wheel', 'russian_twist', 'dead_bug',
+      'hanging_knee_raise', 'captain_chair_raise',
+      'pallof_press', 'cable_woodchop',
+    ]) {
+      final exercise = catalog.firstWhere((m) => m.id == id);
+      expect(IllustrationAssets.hasVerifiedExecution(exercise), isFalse,
+        reason: '$id precisa de ilustração de execução específica');
+    }
+    expect(IllustrationAssets.hasVerifiedExecution(
+      catalog.firstWhere((m) => m.id == 'plank')), isTrue);
+    expect(IllustrationAssets.hasVerifiedExecution(
+      catalog.firstWhere((m) => m.id == 'crunch')), isTrue);
+  });
+
   test('validação separa carga externa, peso corporal e valores inválidos', () {
     expect(StrengthSetValidation.error(machine: barbell, weight: 0,
       repetitions: 8, durationSeconds: null), contains('carga'));
