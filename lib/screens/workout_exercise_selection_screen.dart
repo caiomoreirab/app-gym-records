@@ -86,22 +86,19 @@ class _WorkoutExerciseSelectionScreenState
             style: const TextStyle(color: AppTheme.iceBlue)),
           const SizedBox(height: 12),
           if (allowed.isNotEmpty) ...[
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(children: [
+            Wrap(spacing: 8, runSpacing: 6, children: [
                 ChoiceChip(
                   key: const Key('workout_exercises_filter_selected'),
                   label: Text(context.strings.t(
-                    'Grupos escolhidos', 'Selected groups', 'Grupos elegidos')),
+                    'Meus grupos', 'My groups', 'Mis grupos')),
                   selected: !_showAll,
                   onSelected: (_) => setState(() => _showAll = false)),
-                const SizedBox(width: 8),
                 ChoiceChip(
                   key: const Key('workout_exercises_filter_all'),
                   label: Text(context.strings.t('Todos', 'All', 'Todos')),
                   selected: _showAll,
                   onSelected: (_) => setState(() => _showAll = true)),
-              ])),
+              ]),
             const SizedBox(height: 10),
           ],
           TextField(
