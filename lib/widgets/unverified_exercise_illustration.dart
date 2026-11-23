@@ -77,8 +77,11 @@ class UnverifiedExerciseIllustration extends StatelessWidget {
       final tiny = compact || constraints.maxHeight < 185;
       final padding = tiny ? 5.0 : 12.0;
       // Do not overflow 54px thumbnails, 320px phones or enlarged text.
+      // Reserve room for two caption lines plus scalable text. The icon
+      // must never claim the entire card height when captions are visible.
+      final captionRoom = tiny ? 0.0 : 110.0;
       final available = constraints.maxHeight.isFinite
-        ? constraints.maxHeight - padding * 2
+        ? constraints.maxHeight - padding * 2 - captionRoom
         : 160.0;
       final horizontal = constraints.maxWidth.isFinite
         ? constraints.maxWidth - padding * 2
