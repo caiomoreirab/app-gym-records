@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="300" viewBox="0 0 360 300" role="img" aria-label="Ilustração de execução">
+<defs><radialGradient id="glow"><stop offset="0" stop-color="#14384A"/><stop offset="1" stop-color="#08121D"/></radialGradient></defs>
+<rect width="360" height="300" rx="20" fill="url(#glow)"/>
+<path d="M18 271H342" stroke="#213F51" stroke-width="3"/>
+
+<g stroke-linecap="round" stroke-linejoin="round">
+<path d="M32 110H332" stroke="#A0C6D8" stroke-width="6"/>
+<rect x="55" y="83" width="17" height="55" rx="5" fill="#142B3C" stroke="#38BBEF" stroke-width="4"/>
+<rect x="292" y="83" width="17" height="55" rx="5" fill="#142B3C" stroke="#38BBEF" stroke-width="4"/>
+<path d="M127 125 94 109M221 124 268 109" stroke="#C99779" stroke-width="18"/>
+<path d="M150 105 203 104 214 177 169 186Z" fill="#173D55" stroke="#37C6FF" stroke-width="5"/>
+<path d="M171 186 108 214 119 262M200 180 252 212 245 263" fill="none" stroke="#D1A181" stroke-width="20"/>
+<path d="M112 265h48 M233 265h49" stroke="#46C1F0" stroke-width="13"/>
+<path d="M148 109 153 81M198 108 203 81" stroke="#C99779" stroke-width="9"/>
+<circle cx="179" cy="68" r="23" fill="#CB9877" stroke="#72B7D0" stroke-width="3"/>
+<path d='M142 59q7-22 32-22q24 1 30 22'/>
+</g>
+</svg>
