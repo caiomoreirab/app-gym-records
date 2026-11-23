@@ -86,6 +86,7 @@ class _ProExportScreenState extends State<ProExportScreen> {
           ])),
           const SizedBox(height: 16),
           FilledButton.icon(
+            key: const Key('export_csv_button'),
             onPressed: _working || entries.isEmpty ? null : () async {
               await Clipboard.setData(ClipboardData(text: ReportExportService.toCsv(entries)));
               if (!mounted) return;
@@ -96,6 +97,7 @@ class _ProExportScreenState extends State<ProExportScreen> {
           ),
           const SizedBox(height: 10),
           OutlinedButton.icon(
+            key: const Key('share_pdf_button'),
             onPressed: _working || entries.isEmpty ? null : () async {
               setState(() => _working = true);
               try {
