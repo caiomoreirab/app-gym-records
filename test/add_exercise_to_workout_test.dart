@@ -3,6 +3,8 @@ import 'package:material_ui/material_ui.dart';
 import 'package:gymrecords/screens/home_screen.dart';
 import 'package:gymrecords/screens/exercise_catalog_screen.dart';
 import 'package:gymrecords/screens/workout_live_screen.dart';
+import 'package:gymrecords/screens/workout_group_selection_screen.dart';
+import 'package:gymrecords/screens/workout_exercise_selection_screen.dart';
 import 'package:gymrecords/state/app_controller.dart';
 import 'package:gymrecords/widgets/machine_list_card.dart';
 import 'package:gymrecords/theme/app_theme.dart';
@@ -31,7 +33,20 @@ void main() {
       scrollable: find.byType(Scrollable).first);
     await tester.tap(find.byKey(const Key('start_workout_session')));
     await tester.pumpAndSettle();
+    // Session is created only when setup is confirmed.
+    expect(app.activeSession, isNull);
+    expect(find.byType(WorkoutGroupSelectionScreen), findsOneWidget);
+    await tester.tap(find.byKey(const Key('workout_group_chest')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('workout_groups_continue')));
+    await tester.pumpAndSettle();
+    expect(find.byType(WorkoutExerciseSelectionScreen), findsOneWidget);
+    expect(app.activeSession, isNull);
+    await tester.tap(find.byType(MachineListCard).first);
+    await tester.tap(find.byKey(const Key('workout_exercises_finish')));
+    await tester.pumpAndSettle();
     expect(app.activeSession, isNotNull);
+    expect(app.activeSession!.selectedGroupIds, ['chest']);
     expect(find.byType(WorkoutLiveScreen), findsOneWidget);
     expect(find.byKey(const Key('live_add_exercise')), findsOneWidget);
 
@@ -46,7 +61,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(WorkoutLiveScreen), findsOneWidget);
     final session = app.activeSession!;
-    expect(session.exerciseIds.length, 1);
+    expect(session.exerciseIds.length, 2);
     expect(app.recordsForSession(session.id), isEmpty);
     expect(find.byKey(const Key('live_add_exercise')), findsOneWidget);
     expect(tester.takeException(), isNull);

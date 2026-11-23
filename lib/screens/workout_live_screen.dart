@@ -428,7 +428,11 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
     if (session == null) return;
     final count = session.pendingCount;
     final totalSets = app.recordsForSession(session.id).length;
-    final shouldConfirm = count > 0 || totalSets == 0;
+    final cardioRecords = app.cardioActivities.fold<int>(0,
+      (sum, activity) => sum + activity.records
+        .where((record) => record.sessionId == session.id).length);
+    final shouldConfirm = count > 0 ||
+      (totalSets == 0 && cardioRecords == 0);
     if (shouldConfirm) {
       final accepted = await showDialog<bool>(
         context: context,
@@ -686,7 +690,6 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
                       icon: const Icon(Icons.chevron_right_rounded,
                         color: AppTheme.electricLime)),
                   ]))),
-                ),
           ],
           const SizedBox(height: 18),
           Row(children: [
@@ -698,7 +701,7 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
               fontWeight: FontWeight.w600)),
           ]),
           const SizedBox(height: 10),
-          if (machines.isEmpty) ...[
+          if (machines.isEmpty && session.plannedCardioIds.isEmpty) ...[
             SectionCard(child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
