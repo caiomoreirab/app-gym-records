@@ -55,18 +55,14 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
   Future<void> _quickSet(Machine machine) async {
     final app = AppScope.of(context);
     final previous = machine.latestRecord;
-    final weight = TextEditingController(
-      text: previous == null ? '' :
-        WeightUnits.toDisplay(previous.weight, app.unit).toStringAsFixed(1));
-    final repetitions = TextEditingController(
-      text: previous?.repetitions?.toString() ?? '');
-    final duration = TextEditingController(
-      text: previous?.durationSeconds?.toString() ?? '');
+    var weightText = previous == null ? '' :
+      WeightUnits.toDisplay(previous.weight, app.unit).toStringAsFixed(1);
+    var repetitionsText = previous?.repetitions?.toString() ?? '';
+    var durationText = previous?.durationSeconds?.toString() ?? '';
     var saving = false;
     String? error;
 
-    try {
-      await showModalBottomSheet<void>(
+    await showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
         showDragHandle: true,
@@ -103,9 +99,10 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
                     const SizedBox(height: 15),
                     if (machine.supportsWeight || machine.equipment
                         != EquipmentType.bodyweight)
-                      TextField(
+                      TextFormField(
                         key: const Key('live_quick_weight'),
-                        controller: weight,
+                        initialValue: weightText,
+                        onChanged: (value) => weightText = value,
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true),
                         decoration: InputDecoration(
@@ -117,9 +114,10 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
                       ),
                     if (machine.supportsRepetitions) ...[
                       const SizedBox(height: 12),
-                      TextField(
+                      TextFormField(
                         key: const Key('live_quick_repetitions'),
-                        controller: repetitions,
+                        initialValue: repetitionsText,
+                        onChanged: (value) => repetitionsText = value,
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
                           labelText: context.strings.t(
@@ -130,9 +128,10 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
                     ],
                     if (machine.supportsDuration) ...[
                       const SizedBox(height: 12),
-                      TextField(
+                      TextFormField(
                         key: const Key('live_quick_duration'),
-                        controller: duration,
+                        initialValue: durationText,
+                        onChanged: (value) => durationText = value,
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
                           labelText: context.strings.t(
@@ -152,16 +151,16 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
                       key: const Key('live_save_quick_set'),
                       onPressed: saving ? null : () async {
                         final entered = double.tryParse(
-                          weight.text.trim().replaceAll(',', '.'));
+                          weightText.trim().replaceAll(',', '.'));
                         final kg = WeightUnits.toKilograms(entered ?? 0, app.unit);
-                        final reps = repetitions.text.trim().isEmpty
-                          ? null : int.tryParse(repetitions.text.trim());
-                        final seconds = duration.text.trim().isEmpty
-                          ? null : int.tryParse(duration.text.trim());
+                        final reps = repetitionsText.trim().isEmpty
+                          ? null : int.tryParse(repetitionsText.trim());
+                        final seconds = durationText.trim().isEmpty
+                          ? null : int.tryParse(durationText.trim());
                         final problem =
-                          (weight.text.trim().isNotEmpty && entered == null) ||
-                          (repetitions.text.trim().isNotEmpty && reps == null) ||
-                          (duration.text.trim().isNotEmpty && seconds == null)
+                          (weightText.trim().isNotEmpty && entered == null) ||
+                          (repetitionsText.trim().isNotEmpty && reps == null) ||
+                          (durationText.trim().isNotEmpty && seconds == null)
                             ? context.strings.t('Use números válidos.',
                               'Enter valid numbers.', 'Usa números válidos.')
                             : StrengthSetValidation.error(
@@ -215,11 +214,6 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
           ),
         ),
       );
-    } finally {
-      weight.dispose();
-      repetitions.dispose();
-      duration.dispose();
-    }
   }
 
   Future<void> _removeUnused(Machine machine) async {
