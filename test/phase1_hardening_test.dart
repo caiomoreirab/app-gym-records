@@ -95,12 +95,23 @@ void main() {
     addTearDown(app.dispose);
     for (final style in IllustrationStyle.values) {
       app.setIllustrationStyle(style);
-      await tester.pumpWidget(AppScope(controller: app,
-        child: MaterialApp(theme: AppTheme.dark,
-          locale: const Locale('pt', 'BR'),
-          home: Scaffold(body: Center(child: SizedBox(
-            width: 230, height: 180,
-            child: AdaptiveExerciseImage(machine: barbell))))));
+      await tester.pumpWidget(
+        AppScope(
+          controller: app,
+          child: MaterialApp(
+            theme: AppTheme.dark,
+            locale: const Locale('pt', 'BR'),
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 230, height: 180,
+                  child: AdaptiveExerciseImage(machine: barbell),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
       expect(find.byType(UnverifiedExerciseIllustration), findsOneWidget);
       expect(find.text('Barra'), findsOneWidget);
