@@ -6,6 +6,7 @@ import '../models/machine.dart';
 import '../models/workout_record.dart';
 import '../services/pro_insights.dart';
 import '../services/strength_records.dart';
+import '../services/strength_set_validation.dart';
 import '../state/app_controller.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
@@ -30,6 +31,7 @@ class MachineScreen extends StatefulWidget {
 class _MachineScreenState extends State<MachineScreen> {
   bool _initialized = false;
   bool _saving = false;
+  final GlobalKey _entryControlsKey = GlobalKey();
   double _weight = 0;
   int? _repetitions;
   bool _showAdditionalWeight = false;
@@ -101,6 +103,14 @@ class _MachineScreenState extends State<MachineScreen> {
       bottomNavigationBar: PrimaryBottomBar(
         label: context.strings.saveRecord,
         onPressed: !_saving && _canSave(machine) ? () => _saveRecord(machine) : null,
+        secondary: _saving || _canSave(machine) ? null :
+          Semantics(
+            liveRegion: true,
+            child: Text(_validationError(machine) ?? '',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 12, color: AppTheme.iceBlue)),
+          ),
       ),
       body: PageBody(
         child: ListView(
@@ -130,6 +140,7 @@ class _MachineScreenState extends State<MachineScreen> {
             _NoteCard(note: machine.note, onEdit: () => _editNote(machine)),
             const SizedBox(height: 16),
             _WeightCard(
+              key: _entryControlsKey,
               machine: machine,
               showAdditionalWeight: _showAdditionalWeight,
               onToggleAdditionalWeight: () => setState(() { _showAdditionalWeight = !_showAdditionalWeight; if (!_showAdditionalWeight) _weight = 0; }),
@@ -183,13 +194,14 @@ class _MachineScreenState extends State<MachineScreen> {
     );
   }
 
-  bool _canSave(Machine machine) {
-    final durationSeconds = _minutes * 60 + _seconds;
-    if (machine.prefersBodyMetrics) {
-      return _weight > 0 || (_repetitions ?? 0) > 0 || durationSeconds > 0;
-    }
-    return _weight > 0;
-  }
+  String? _validationError(Machine machine) =>
+      StrengthSetValidation.error(
+        machine: machine, weight: _weight,
+        repetitions: _repetitions,
+        durationSeconds: _minutes * 60 + _seconds);
+
+  bool _canSave(Machine machine) =>
+      _validationError(machine) == null;
 
   Future<void> _saveRecord(Machine machine) async {
     if (_saving) return;
@@ -269,33 +281,29 @@ class _MachineScreenState extends State<MachineScreen> {
 
   Future<void> _repeatLastSeries(Machine machine) async {
     if (_saving || machine.records.isEmpty) return;
-    setState(() => _saving = true);
-    try {
-      final app = AppScope.of(context);
-      final previous = machine.latestRecord!;
-      final saved = app.addRecord(machine,
-        weight: previous.weight,
-        repetitions: previous.repetitions,
-        durationSeconds: previous.durationSeconds,
-        rpe: previous.rpe,
-        rir: previous.rir,
-        restSeconds: previous.restSeconds,
-        note: previous.note,
-        isWarmup: previous.isWarmup,
-      );
-      await app.flushPendingWrites();
-      if (!mounted) return;
-      if (app.persistenceError == null) {
-        HapticFeedback.lightImpact();
-        _showUndoForSaved(app, machine, saved);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Falha ao gravar a série repetida.')));
-      }
-      setState(() {});
-    } finally {
-      if (mounted) setState(() => _saving = false);
+    final previous = machine.latestRecord!;
+    setState(() {
+      _weight = previous.weight;
+      _repetitions = previous.repetitions;
+      final duration = previous.durationSeconds ?? 0;
+      _minutes = duration ~/ 60;
+      _seconds = duration % 60;
+      _isWarmup = previous.isWarmup;
+      _rpe = previous.rpe?.round();
+      _restSeconds = previous.restSeconds;
+      _setNote = previous.note;
+      _showAdditionalWeight = previous.weight > 0;
+    });
+    final anchor = _entryControlsKey.currentContext;
+    if (anchor != null) {
+      await Scrollable.ensureVisible(anchor,
+        duration: const Duration(milliseconds: 180),
+        alignment: .22);
     }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text(
+        'Última série preenchida. Revise os valores e toque em Salvar registro.')));
   }
 
   Future<void> _editWeight() async {
@@ -624,11 +632,11 @@ class _WeightCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final showWeight = !machine.prefersBodyMetrics || showAdditionalWeight;
+    final showWeight = !StrengthSetValidation.allowsNoExternalWeight(machine) || showAdditionalWeight;
     return SectionCard(child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (machine.prefersBodyMetrics) ...[
+        if (StrengthSetValidation.allowsNoExternalWeight(machine)) ...[
           OutlinedButton.icon(
             onPressed: onToggleAdditionalWeight,
             icon: Icon(showAdditionalWeight
