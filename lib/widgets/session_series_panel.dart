@@ -97,7 +97,7 @@ class SessionSeriesPanel extends StatelessWidget {
                     id: record.id,
                     sessionId: record.sessionId,
                     date: record.date,
-                    weight: kg,
+                    weight: kg!,
                     repetitions: count,
                     durationSeconds: record.durationSeconds,
                     rpe: effort,
