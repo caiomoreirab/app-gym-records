@@ -3,6 +3,8 @@ import 'package:material_ui/material_ui.dart';
 import '../models/machine.dart';
 import '../models/workout_record.dart';
 import '../state/app_controller.dart';
+import '../services/weight_units.dart';
+import '../services/strength_set_validation.dart';
 import '../theme/app_theme.dart';
 import 'section_card.dart';
 
@@ -13,7 +15,9 @@ class SessionSeriesPanel extends StatelessWidget {
 
   Future<void> _edit(BuildContext context, WorkoutRecord record) async {
     final app = AppScope.of(context);
-    final weight = TextEditingController(text: record.weight.toStringAsFixed(1));
+    final unit = app.unit;
+    final weight = TextEditingController(
+      text: WeightUnits.toDisplay(record.weight, unit).toStringAsFixed(1));
     final reps = TextEditingController(text: record.repetitions?.toString() ?? '');
     final rpe = TextEditingController(text: record.rpe?.toStringAsFixed(0) ?? '');
     final rest = TextEditingController(text: record.restSeconds?.toString() ?? '');
@@ -29,7 +33,7 @@ class SessionSeriesPanel extends StatelessWidget {
               TextField(controller: weight,
                 key: const Key('edit_set_weight'),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Carga (kg)')),
+                decoration: InputDecoration(labelText: 'Carga ($unit)')),
               TextField(controller: reps,
                 key: const Key('edit_set_reps'),
                 keyboardType: TextInputType.number,
@@ -52,7 +56,10 @@ class SessionSeriesPanel extends StatelessWidget {
                 child: const Text('Cancelar')),
               FilledButton(
                 onPressed: () {
-                  final kg = double.tryParse(weight.text.trim().replaceAll(',', '.'));
+                  final displayedKg = double.tryParse(
+                    weight.text.trim().replaceAll(',', '.'));
+                  final kg = displayedKg == null
+                    ? null : WeightUnits.toKilograms(displayedKg, unit);
                   final count = reps.text.trim().isEmpty
                       ? null : int.tryParse(reps.text.trim());
                   final effort = rpe.text.trim().isEmpty
@@ -65,7 +72,11 @@ class SessionSeriesPanel extends StatelessWidget {
                       (effort != null && (effort < 1 || effort > 10)) ||
                       (rpe.text.trim().isNotEmpty && effort == null) ||
                       (seconds != null && (seconds < 0 || seconds > 36000)) ||
-                      (rest.text.trim().isNotEmpty && seconds == null)) {
+                      (rest.text.trim().isNotEmpty && seconds == null) ||
+                      (kg != null && StrengthSetValidation.error(
+                        machine: machine, weight: kg,
+                        repetitions: count,
+                        durationSeconds: record.durationSeconds) != null)) {
                     ScaffoldMessenger.of(dialogContext).showSnackBar(
                       const SnackBar(content: Text('Revise carga, repetições e campos opcionais.')));
                     return;
@@ -197,8 +208,9 @@ class _SetRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final unit = AppScope.of(context).unit;
     final parts = [
-      if (record.hasWeight) '${record.weight.toStringAsFixed(1)} kg',
+      if (record.hasWeight) '${WeightUnits.format(record.weight, unit)} $unit',
       if (record.hasRepetitions) '× ${record.repetitions} rep',
       if (record.hasDuration) '${record.durationSeconds}s',
       if (record.isWarmup) '· Aquecimento',
