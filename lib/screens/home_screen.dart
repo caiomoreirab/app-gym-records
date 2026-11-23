@@ -23,6 +23,7 @@ import 'cardio_screen.dart';
 import 'pro_overview_screen.dart';
 import 'workout_completed_screen.dart';
 import 'exercise_catalog_screen.dart';
+import 'workout_live_screen.dart';
 
 enum _RecordFilter { all, recorded, unrecorded }
 
@@ -256,6 +257,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 app: controller,
                 onComplete: () => _finishWorkout(controller),
                 onAddExercise: _addExerciseToWorkout,
+                onStart: _startWorkout,
+                onTrack: _openActiveWorkout,
                 onOpenMachine: (machine) => _openMachine(context, machine),
               ),
               const SizedBox(height: 22),
@@ -374,6 +377,18 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  void _startWorkout() {
+    final app = AppScope.of(context);
+    app.startSession();
+    _openActiveWorkout();
+  }
+
+  void _openActiveWorkout() {
+    Navigator.of(context).push<void>(MaterialPageRoute<void>(
+      builder: (_) => const WorkoutLiveScreen(),
+    ));
   }
 
   Future<void> _addExerciseToWorkout() async {
@@ -638,11 +653,15 @@ class _TodayWorkoutCard extends StatelessWidget {
     required this.onOpenMachine,
     required this.onComplete,
     required this.onAddExercise,
+    required this.onStart,
+    required this.onTrack,
   });
   final AppController app;
   final ValueChanged<Machine> onOpenMachine;
   final VoidCallback onComplete;
   final VoidCallback onAddExercise;
+  final VoidCallback onStart;
+  final VoidCallback onTrack;
 
   @override
   Widget build(BuildContext context) {
@@ -673,7 +692,7 @@ class _TodayWorkoutCard extends StatelessWidget {
           const SizedBox(height: 12),
           OutlinedButton.icon(
             key: const Key('start_workout_session'),
-            onPressed: () => app.startSession(),
+            onPressed: onStart,
             icon: const Icon(Icons.play_arrow_rounded),
             label: Text(context.strings.t('Iniciar treino', 'Start workout', 'Iniciar entrenamiento')),
           ),
@@ -681,6 +700,14 @@ class _TodayWorkoutCard extends StatelessWidget {
           Text('${selected.length} ${context.strings.t('exercícios', 'exercises', 'ejercicios')} · ${records.length} ${context.strings.t('séries', 'sets', 'series')}',
             style: const TextStyle(color: AppTheme.iceBlue)),
           const SizedBox(height: 12),
+          OutlinedButton.icon(
+            key: const Key('track_active_workout'),
+            onPressed: onTrack,
+            icon: const Icon(Icons.play_circle_outline_rounded),
+            label: Text(context.strings.t('Acompanhar treino',
+              'Track workout', 'Seguir entrenamiento')),
+          ),
+          const SizedBox(height: 10),
           FilledButton.icon(
             key: const Key('add_exercise_to_session'),
             onPressed: onAddExercise,
