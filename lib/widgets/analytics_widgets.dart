@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../models/muscle_group.dart';
 import '../services/analytics_service.dart';
+import '../services/weight_units.dart';
 import '../theme/app_theme.dart';
 import 'section_card.dart';
 
@@ -16,10 +17,12 @@ class AnalyticsFilters extends StatelessWidget {
     required this.onPeriodChanged,
     this.metric,
     this.onMetricChanged,
+    this.weightUnit = 'kg',
   });
   final MuscleGroup? group;
   final AnalyticsPeriod period;
   final AnalyticsMetric? metric;
+  final String weightUnit;
   final ValueChanged<MuscleGroup?> onGroupChanged;
   final ValueChanged<AnalyticsPeriod> onPeriodChanged;
   final ValueChanged<AnalyticsMetric>? onMetricChanged;
@@ -55,7 +58,7 @@ class AnalyticsFilters extends StatelessWidget {
           scrollDirection: Axis.horizontal,
           child: Row(children: [
             for (final candidate in AnalyticsMetric.values) ...[
-              _Chip(label: candidate.label(locale), selected: metric == candidate, onTap: () => onMetricChanged!(candidate)),
+              _Chip(label: candidate.label(locale, unit: weightUnit), selected: metric == candidate, onTap: () => onMetricChanged!(candidate)),
               const SizedBox(width: 6),
             ],
           ]),
@@ -85,9 +88,11 @@ class _Chip extends StatelessWidget {
 }
 
 class TrendBarChart extends StatelessWidget {
-  const TrendBarChart({super.key, required this.values, required this.metric});
+  const TrendBarChart({super.key, required this.values, required this.metric,
+      this.weightUnit = 'kg'});
   final List<AnalyticsBucket> values;
   final AnalyticsMetric metric;
+  final String weightUnit;
 
   @override
   Widget build(BuildContext context) {
@@ -96,7 +101,7 @@ class TrendBarChart extends StatelessWidget {
     final hasData = maxValue > 0;
     return SectionCard(
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(metric.label(Localizations.localeOf(context)), style: Theme.of(context).textTheme.titleMedium),
+        Text(metric.label(Localizations.localeOf(context), unit: weightUnit), style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 16),
         SizedBox(
           height: 192,
@@ -108,7 +113,9 @@ class TrendBarChart extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 3),
                     child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
-                      Text(bucket.value == 0 ? '' : _short(bucket.value), maxLines: 1, style: const TextStyle(fontSize: 10, color: AppTheme.iceBlue)),
+                      Text(bucket.value == 0 ? '' : _short(metric == AnalyticsMetric.volume
+                        ? WeightUnits.volumeForDisplay(bucket.value, weightUnit)
+                        : bucket.value), maxLines: 1, style: const TextStyle(fontSize: 10, color: AppTheme.iceBlue)),
                       const SizedBox(height: 5),
                       Container(
                         height: hasData ? math.max(3, 125 * bucket.value / maxValue) : 3,
