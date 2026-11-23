@@ -7,6 +7,7 @@ import 'package:gymrecords/models/user_profile.dart';
 import 'package:gymrecords/services/illustration_assets.dart';
 import 'package:gymrecords/services/strength_set_validation.dart';
 import 'package:gymrecords/services/weight_units.dart';
+import 'package:gymrecords/services/analytics_service.dart';
 import 'package:gymrecords/services/local_data_store.dart';
 import 'package:gymrecords/state/app_controller.dart';
 import 'package:gymrecords/widgets/adaptive_illustration.dart';
@@ -79,6 +80,16 @@ void main() {
     expect((jsonDecode(app.exportBackup())['machines'] as List)
       .single['records'].single['weight'], closeTo(100, 0.000001));
     app.dispose();
+  });
+
+  test('rótulos de volume respeitam unidade sem mudar os kg armazenados', () {
+    expect(AnalyticsMetric.volume.label(const Locale('pt', 'BR'), unit: 'lb'),
+      'Volume (lb)');
+    expect(AnalyticsMetric.volume.label(const Locale('en', 'US'), unit: 'kg'),
+      'Volume (kg)');
+    expect(WeightUnits.volumeForDisplay(1000, 'lb'),
+      closeTo(2204.6226, 0.001));
+    expect(WeightUnits.volumeForDisplay(1000, 'kg'), 1000);
   });
 
   test('backup v2 volta com séries e nunca perde registros após JSON inválido',
