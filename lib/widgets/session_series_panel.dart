@@ -73,7 +73,7 @@ class SessionSeriesPanel extends StatelessWidget {
                       (rpe.text.trim().isNotEmpty && effort == null) ||
                       (seconds != null && (seconds < 0 || seconds > 36000)) ||
                       (rest.text.trim().isNotEmpty && seconds == null) ||
-                      (kg != null && StrengthSetValidation.error(
+                      (StrengthSetValidation.error(
                         machine: machine, weight: kg,
                         repetitions: count,
                         durationSeconds: record.durationSeconds) != null)) {
