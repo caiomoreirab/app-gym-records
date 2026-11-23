@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../models/workout_session.dart';
 import '../services/completed_workout_summary.dart';
+import '../services/weight_units.dart';
 import '../state/app_controller.dart';
 import '../theme/app_theme.dart';
 import '../widgets/page_body.dart';
@@ -387,7 +388,7 @@ class _ShareCard extends StatelessWidget {
             const SizedBox(width: 6),
             Expanded(child: _SmallMetric(
               glyph: WorkoutGlyph.volume,
-              value: summary.volumeKg.toStringAsFixed(0),
+              value: WeightUnits.volumeForDisplay(summary.volumeKg, weightUnit).toStringAsFixed(0),
               label: 'Volume ($weightUnit)')),
           ]),
           if (summary.weightPersonalRecords > 0) ...[
