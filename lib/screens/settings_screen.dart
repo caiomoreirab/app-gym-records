@@ -16,8 +16,10 @@ import 'pro_overview_screen.dart';
 import 'pro_export_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key, this.asMainTab = false});
+  const SettingsScreen({super.key, this.asMainTab = false,
+    this.showBottomNav = true});
   final bool asMainTab;
+  final bool showBottomNav;
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +27,7 @@ class SettingsScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppTheme.deepNavy,
-      bottomNavigationBar: asMainTab
+      bottomNavigationBar: asMainTab && showBottomNav
         ? const GymBottomNavigation(index: 3) : null,
       appBar: AppBar(
         automaticallyImplyLeading: !asMainTab,

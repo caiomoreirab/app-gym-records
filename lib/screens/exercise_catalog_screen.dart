@@ -14,8 +14,10 @@ import 'machine_screen.dart';
 /// Full native catalog with the same images, typography, search and cards.
 class ExerciseCatalogScreen extends StatefulWidget {
   /// Picker mode returns the chosen machine to the active workout Home.
-  const ExerciseCatalogScreen({super.key, this.pickForWorkout = false});
+  const ExerciseCatalogScreen({super.key, this.pickForWorkout = false,
+    this.showBottomNav = true});
   final bool pickForWorkout;
+  final bool showBottomNav;
 
   @override
   State<ExerciseCatalogScreen> createState() => _ExerciseCatalogScreenState();
@@ -40,7 +42,7 @@ class _ExerciseCatalogScreenState extends State<ExerciseCatalogScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.deepNavy,
-      bottomNavigationBar: widget.pickForWorkout
+      bottomNavigationBar: widget.pickForWorkout || !widget.showBottomNav
         ? null : const GymBottomNavigation(index: 1),
       appBar: widget.pickForWorkout
         ? AppBar(title: Text(context.strings.addEquipment))

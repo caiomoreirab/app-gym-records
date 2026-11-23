@@ -8,7 +8,7 @@ import '../../widgets/brand_header.dart';
 import '../../widgets/illustration_style_card.dart';
 import '../../widgets/onboarding_progress.dart';
 import '../../widgets/primary_bottom_bar.dart';
-import '../home_screen.dart';
+import '../main_tabs_shell.dart';
 
 class IllustrationStyleScreen extends StatefulWidget {
   const IllustrationStyleScreen({super.key});
@@ -34,7 +34,7 @@ class _IllustrationStyleScreenState extends State<IllustrationStyleScreen> {
     app.setIllustrationStyle(style);
     app.completeOnboarding();
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
+      MaterialPageRoute<void>(builder: (_) => const MainTabsShell()),
       (_) => false,
     );
   }

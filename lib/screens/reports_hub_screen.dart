@@ -13,7 +13,8 @@ import 'pro_records_screen.dart';
 
 /// Free workout overview: users can inspect their own records at any tier.
 class ReportsHubScreen extends StatelessWidget {
-  const ReportsHubScreen({super.key});
+  const ReportsHubScreen({super.key, this.showBottomNav = true});
+  final bool showBottomNav;
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +26,8 @@ class ReportsHubScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppTheme.deepNavy,
-      bottomNavigationBar: const GymBottomNavigation(index: 2),
+      bottomNavigationBar: showBottomNav
+        ? const GymBottomNavigation(index: 2) : null,
       body: PageBody(child: ListView(children: [
         const SizedBox(height: 14),
         const BrandHeader(compact: true),

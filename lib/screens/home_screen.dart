@@ -30,7 +30,8 @@ enum _RecordFilter { all, recorded, unrecorded }
 enum _HomeSort { recent, alphabeticalAsc, alphabeticalDesc, recordDesc, muscleGroup }
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.showBottomNav = true});
+  final bool showBottomNav;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -69,7 +70,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: AppTheme.deepNavy,
-      bottomNavigationBar: const GymBottomNavigation(index: 0),
+      bottomNavigationBar: widget.showBottomNav
+        ? const GymBottomNavigation(index: 0) : null,
       body: PageBody(
         child: ListView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,

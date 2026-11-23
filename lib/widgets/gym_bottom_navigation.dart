@@ -1,16 +1,15 @@
 import 'package:material_ui/material_ui.dart';
 
-import '../screens/exercise_catalog_screen.dart';
-import '../screens/home_screen.dart';
-import '../screens/reports_hub_screen.dart';
-import '../screens/settings_screen.dart';
+import '../screens/main_tabs_shell.dart';
 import '../theme/app_theme.dart';
 import '../l10n/app_strings.dart';
 
 /// Navigation only at top level. Exercise details retain their existing CTA.
 class GymBottomNavigation extends StatelessWidget {
-  const GymBottomNavigation({super.key, required this.index});
+  const GymBottomNavigation({super.key, required this.index,
+    this.onDestinationSelected});
   final int index;
+  final ValueChanged<int>? onDestinationSelected;
 
   static List<String> labelsFor(BuildContext context) => [
     context.strings.t('Início', 'Home', 'Inicio'),
@@ -25,15 +24,15 @@ class GymBottomNavigation extends StatelessWidget {
 
   void _open(BuildContext context, int destination) {
     if (destination == index) return;
-    final Widget page = switch (destination) {
-      0 => const HomeScreen(),
-      1 => const ExerciseCatalogScreen(),
-      2 => const ReportsHubScreen(),
-      _ => const SettingsScreen(asMainTab: true),
-    };
     FocusManager.instance.primaryFocus?.unfocus();
+    if (onDestinationSelected != null) {
+      onDestinationSelected!(destination);
+      return;
+    }
+    // Standalone entry points transition into a persistent four-tab shell.
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute<void>(builder: (_) => page), (_) => false);
+      MaterialPageRoute<void>(builder: (_) =>
+        MainTabsShell(initialIndex: destination)), (_) => false);
   }
 
   @override
