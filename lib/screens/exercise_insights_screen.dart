@@ -22,6 +22,9 @@ class ExerciseInsightsScreen extends StatelessWidget {
     final insights = ProInsights.forMachine(machine, WeightUnits.toKilograms(app.increment, app.unit));
     final latest = machine.latestRecord;
     final mostReps = insights.mostRepsRecord;
+    final usable = machine.records.where((r) => !r.isWarmup).toList();
+    final sessions = usable.map((r) => r.effectiveSessionId).toSet();
+    final hasEnough = usable.length >= 3 && sessions.length >= 2;
 
     if (!app.isPro) {
       return const ProOverviewScreen();
@@ -62,33 +65,33 @@ class ExerciseInsightsScreen extends StatelessWidget {
                           children: [
                             const Icon(Icons.radar_rounded, color: AppTheme.electricLime),
                             const SizedBox(width: 7),
-                            Text('PR Radar', style: Theme.of(context).textTheme.titleLarge),
-                            const Spacer(),
-                            ProPill(label: insights.probabilityLabelFor(Localizations.localeOf(context))),
+                            Expanded(child: Text(context.strings.t('Próximo objetivo', 'Next goal', 'Próximo objetivo'), maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleLarge)),
+                            const SizedBox(width: 6),
+                            const ProPill(label: 'EXPLORATÓRIO'),
                           ],
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          insights.prProbability >= .82
-                              ? context.strings.t('Você está próximo de um novo recorde neste exercício.', 'You are close to a new record on this exercise.')
-                              : context.strings.t('Continue acumulando sessões para aumentar a confiança da análise.', 'Keep logging sessions to improve the analysis confidence.'),
+                          hasEnough
+                              ? context.strings.t(
+                                  'Sugestão baseada nos registros mais recentes. Não é uma previsão.',
+                                  'Suggestion based on recent records. This is not a prediction.',
+                                  'Sugerencia basada en registros recientes. No es una predicción.')
+                              : context.strings.t(
+                                  'Registre ao menos 3 séries em 2 sessões para receber sugestões.',
+                                  'Log at least 3 sets over 2 sessions for suggestions.',
+                                  'Registra 3 series en 2 sesiones para sugerencias.'),
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.iceBlue),
                         ),
-                        const SizedBox(height: 12),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(99),
-                          child: LinearProgressIndicator(
-                            value: insights.prProbability,
-                            minHeight: 7,
-                            backgroundColor: AppTheme.deepBlue,
-                            valueColor: const AlwaysStoppedAnimation(AppTheme.electricLime),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          context.strings.t('Índice exploratório ${(insights.prProbability * 100).round()}/100 (não é probabilidade validada)', 'Exploratory score ${(insights.prProbability * 100).round()}/100 (not a validated probability)', 'Índice exploratorio ${(insights.prProbability * 100).round()}/100 (no es una probabilidad validada)'),
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
+                        const SizedBox(height: 8),
+                        Text(context.strings.t(
+                          'Como calculamos: maior carga anterior + incremento '
+                          'selecionado; o histórico ajuda a contextualizar a sugestão.',
+                          'How it works: previous best + chosen increment, '
+                          'with historical context only.',
+                          'Cómo se calcula: mejor carga anterior + incremento '
+                          'elegido, con contexto del historial.'),
+                          style: Theme.of(context).textTheme.bodySmall),
                       ],
                     ),
                   ),
