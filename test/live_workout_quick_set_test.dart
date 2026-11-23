@@ -33,6 +33,9 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const Key('live_repeat_barbell_squat')), 120,
       scrollable: find.byType(Scrollable).first);
+    await tester.ensureVisible(
+      find.byKey(const Key('live_repeat_barbell_squat')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('live_repeat_barbell_squat')));
     await tester.pumpAndSettle();
 
@@ -46,6 +49,9 @@ void main() {
     await tester.tap(find.byKey(const Key('live_save_quick_set')));
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('live_rest_card')), -100,
+      scrollable: find.byType(Scrollable).first);
     expect(find.byKey(const Key('live_rest_card')), findsOneWidget);
     expect(find.byKey(const Key('live_rest_skip')), findsOneWidget);
     final recorded = app.recordsForSession(session.id);
@@ -56,6 +62,9 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const Key('live_done_barbell_squat')), 120,
       scrollable: find.byType(Scrollable).first);
+    await tester.ensureVisible(
+      find.byKey(const Key('live_done_barbell_squat')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('live_done_barbell_squat')));
     await tester.pumpAndSettle();
     expect(app.activeSession!.completedCount, 1);

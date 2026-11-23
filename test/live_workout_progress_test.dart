@@ -91,6 +91,12 @@ void main() {
     await tester.pumpWidget(AppScope(controller: app, child:
       MaterialApp(theme: AppTheme.dark, home: const WorkoutLiveScreen())));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('live_done_barbell_bench_press')), 100,
+      scrollable: find.byType(Scrollable).first);
+    await tester.ensureVisible(
+      find.byKey(const Key('live_done_barbell_bench_press')));
+    await tester.pumpAndSettle();
     expect(find.byKey(const Key('live_done_barbell_bench_press')),
       findsOneWidget);
     await tester.tap(find.byKey(const Key('live_done_barbell_bench_press')));

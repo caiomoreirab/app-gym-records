@@ -475,8 +475,10 @@ class _WorkoutLiveScreenState extends State<WorkoutLiveScreen> {
               ]),
             ],
           )),
-          const SizedBox(height: 12),
-          _restControls(context),
+          if (_restEndsAt != null) ...[
+            const SizedBox(height: 12),
+            _restControls(context),
+          ],
           if (focusExercise != null) ...[
             const SizedBox(height: 12),
             SectionCard(child: Column(
