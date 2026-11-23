@@ -47,11 +47,11 @@ enum AnalyticsMetric {
   repetitions,
   minutes;
 
-  String label(Locale locale) {
+  String label(Locale locale, {String unit = 'kg'}) {
     final pt = locale.languageCode == 'pt';
     final es = locale.languageCode == 'es';
     return switch (this) {
-      AnalyticsMetric.volume => pt ? 'Volume (kg)' : es ? 'Volumen (kg)' : 'Volume (kg)',
+      AnalyticsMetric.volume => pt ? 'Volume ($unit)' : es ? 'Volumen ($unit)' : 'Volume ($unit)',
       AnalyticsMetric.records => pt ? 'Registros' : es ? 'Registros' : 'Logs',
       AnalyticsMetric.repetitions => pt ? 'Repetições' : es ? 'Repeticiones' : 'Repetitions',
       AnalyticsMetric.minutes => pt ? 'Tempo (min)' : es ? 'Tiempo (min)' : 'Time (min)',
